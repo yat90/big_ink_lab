@@ -2,6 +2,9 @@
   import '../app.css';
   import { page } from '$app/stores';
   import logo from '../images/logo.svg';
+  import { injectAnalytics } from '@vercel/analytics/sveltekit'
+
+  injectAnalytics();
 
   const title = $derived(
     (() => {
