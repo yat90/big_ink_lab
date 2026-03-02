@@ -1,0 +1,21 @@
+{
+  "name": "big-ink-lab",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --workspace=web",
+    "dev:web": "npm run dev --workspace=web",
+    "dev:api": "npm run start:dev --workspace=api",
+    "build": "npm run build --workspaces --if-present",
+    "build:web": "npm run build --workspace=web",
+    "build:api": "npm run build --workspace=api",
+    "preview": "npm run preview --workspace=web",
+    "vercel:dev": "vercel dev"
+  },
+  "workspaces": [
+    "apps/web",
+    "apps/api"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}

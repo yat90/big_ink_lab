@@ -137,3 +137,24 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+apps/web/.vercel/output/config.json
+apps/web/.vercel/output/functions/index.func
+apps/web/.vercel/output/functions/!\[-]/catchall.func/.vc-config.json
+apps/web/.vercel/output/functions/!\[-]/catchall.func/package.json
+apps/web/.vercel/output/functions/!\[-]/catchall.func/apps/web/package.json
+apps/web/.vercel/output/functions/index/__data.json.func
+apps/web/.vercel/output/static/_app/version.json
+apps/web/.vercel/output/static/_app/immutable/assets/0.B0KLhSkv.css
+apps/web/.vercel/output/static/_app/immutable/assets/2.CFbnSiO3.css
+apps/web/.vercel/output/static/_app/immutable/chunks/BgSBYXTw.js
+apps/web/.vercel/output/static/_app/immutable/chunks/C9W5Igiu.js
+apps/web/.vercel/output/static/_app/immutable/chunks/D5_Jf9Zr.js
+apps/web/.vercel/output/static/_app/immutable/chunks/DCOBQSA0.js
+apps/web/.vercel/output/static/_app/immutable/chunks/DNqOOwov.js
+apps/web/.vercel/output/static/_app/immutable/chunks/DQGhPxJQ.js
+apps/web/.vercel/output/static/_app/immutable/chunks/DztQZPP8.js
+apps/web/.vercel/output/static/_app/immutable/entry/app.CmNj7r6s.js
+apps/web/.vercel/output/static/_app/immutable/entry/start.U84CsXZf.js
+apps/web/.vercel/output/static/_app/immutable/nodes/0.Di87Kelf.js
+apps/web/.vercel/output/static/_app/immutable/nodes/1.DBda8v4B.js
+apps/web/.vercel/output/static/_app/immutable/nodes/2.TPwLV1mz.js
