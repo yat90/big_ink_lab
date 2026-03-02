@@ -1,14 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { Match } from './schemas/lorcana-match.schema';
 import { MatchesService } from './matches.service';
+import { FindMatchesQueryDto } from './dto/find-matches-query.dto';
 
 @Controller('matches')
 export class MatchesController {
   constructor(private readonly matchesService: MatchesService) {}
 
   @Get()
-  async findAll(): Promise<Match[]> {
-    return this.matchesService.findAll();
+  async findAll(@Query() query: FindMatchesQueryDto): Promise<Match[]> {
+    return this.matchesService.findAll(query);
+  }
+
+  @Get('stats')
+  async getStats() {
+    return this.matchesService.getGlobalStats();
   }
 
   @Get(':id')

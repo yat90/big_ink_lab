@@ -146,7 +146,7 @@
     <form onsubmit={onSubmit} class="stack" style="margin-top: 8px;">
       <div class="formgrid">
         <label class="label" for="p1">
-          Player 1 *
+          Player 1
           <select id="p1" class="input" bind:value={p1} required>
             <option value="">Select player</option>
             {#each players as pl}
@@ -290,7 +290,7 @@
       <input id="notes" type="text" class="input" bind:value={notes} placeholder="Optional" />
 
       {#if error}
-        <p class="alert">{error}</p>
+        <p class="alert" role="alert" aria-live="assertive">{error}</p>
       {/if}
 
       <div class="row" style="margin-top: 8px; gap: 12px;">

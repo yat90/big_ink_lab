@@ -42,7 +42,7 @@
     <form onsubmit={onSubmit} class="stack" style="margin-top: 8px;">
       <div class="formgrid">
         <label class="label" for="name">
-          Name
+          Name <span aria-hidden="true">*</span>
           <input
             id="name"
             type="text"
@@ -54,20 +54,20 @@
           />
         </label>
         <label class="label" for="team">
-          Team
+          Team <span class="hint">(optional)</span>
           <input
             id="team"
             type="text"
             class="input"
             bind:value={team}
-            required
-            placeholder="Team name"
+            autocomplete="organization"
+            placeholder="Team or group"
           />
         </label>
       </div>
 
       {#if error}
-        <p class="alert">{error}</p>
+        <p class="alert" role="alert" aria-live="assertive">{error}</p>
       {/if}
 
       <div class="row" style="margin-top: 8px; gap: 12px;">

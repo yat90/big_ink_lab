@@ -1,31 +1,274 @@
 <script lang="ts">
   import { config } from '$lib/config';
+  import { onMount } from 'svelte';
+  import { type Game, deckColorToInk } from '$lib/matches';
 
-  let message = $state('');
+  type Player = { _id: string; name: string; team: string };
+  type Match = {
+    _id: string;
+    stage?: string;
+    tournamentName?: string;
+    playedAt?: string;
+    p1?: Player | string;
+    p2?: Player | string;
+    p1DeckColor?: string;
+    p2DeckColor?: string;
+    matchWinner?: Player | string;
+    games?: Game[];
+  };
 
-  async function fetchFromApi() {
+  type GlobalStats = {
+    totalMatches: number;
+    totalGames: number;
+  };
+
+  let stats = $state<GlobalStats | null>(null);
+  let playerCount = $state<number>(0);
+  let recentMatches = $state<Match[]>([]);
+  let loading = $state(true);
+  let error = $state('');
+
+  const apiUrl = config.apiUrl ?? '/api';
+
+  function playerName(p: Player | string | undefined): string {
+    if (!p) return '–';
+    return typeof p === 'string' ? p : p.name ?? '–';
+  }
+
+  function formatDate(s: string | undefined): string {
+    if (!s) return '–';
     try {
-      const res = await fetch(`${config.apiUrl ?? '/api'}/hello`);
-      const data = await res.json();
-      message = data.message ?? JSON.stringify(data);
+      return new Date(s).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
     } catch {
-      message = 'API not reachable (start the API or set VITE_API_URL in .env)';
+      return s;
     }
   }
+
+  function matchWinnerId(m: Match): string | undefined {
+    const w = m.matchWinner;
+    if (!w) return undefined;
+    return typeof w === 'object' && w !== null ? w._id : w;
+  }
+
+  function gameWinnerId(g: Game): string | undefined {
+    const w = g.winner;
+    if (w == null) return undefined;
+    return typeof w === 'object' && w !== null && '_id' in w ? (w as { _id: string })._id : String(w);
+  }
+
+  function gamesWon(match: Match, playerId: string): number {
+    const games = match.games ?? [];
+    return games.filter((g) => gameWinnerId(g) === playerId).length;
+  }
+
+  onMount(async () => {
+    try {
+      const [statsRes, playersRes, matchesRes] = await Promise.all([
+        fetch(`${apiUrl}/matches/stats`),
+        fetch(`${apiUrl}/players`),
+        fetch(`${apiUrl}/matches?sort=newest`),
+      ]);
+      if (statsRes.ok) {
+        const data = await statsRes.json();
+        stats = { totalMatches: data.totalMatches ?? 0, totalGames: data.totalGames ?? 0 };
+      }
+      if (playersRes.ok) {
+        const players = await playersRes.json();
+        playerCount = Array.isArray(players) ? players.length : 0;
+      }
+      if (matchesRes.ok) {
+        const matches = await matchesRes.json();
+        recentMatches = Array.isArray(matches) ? matches.slice(0, 5) : [];
+      }
+    } catch {
+      error = 'Could not load dashboard.';
+    } finally {
+      loading = false;
+    }
+  });
 </script>
 
+<svelte:head>
+  <title>Big Ink Lab</title>
+</svelte:head>
+
 <div class="page">
-  <div class="card stack">
-    <h2 class="card__title">Big Ink Lab</h2>
-    <p class="card__sub">SvelteKit + NestJS on Vercel</p>
-    <div class="row" style="flex-wrap: wrap; gap: 12px;">
-      <a href="/matches" class="btn btn--primary">Matches</a>
-      <a href="/players" class="btn">Players</a>
-      <a href="/matches/new" class="btn">New match</a>
-      <button type="button" class="btn" onclick={fetchFromApi}>Call API</button>
+  {#if loading}
+    <div class="card">
+      <div class="loading-skeleton" aria-busy="true" aria-live="polite">
+        <div class="loading-skeleton__line loading-skeleton__line--title"></div>
+        <div class="loading-skeleton__line loading-skeleton__line--short"></div>
+        <div class="loading-skeleton__line"></div>
+      </div>
+      <p class="muted" style="margin-top: var(--space-md);">Loading…</p>
     </div>
-    {#if message}
-      <p class="muted" style="margin-top: 12px;">{message}</p>
-    {/if}
-  </div>
+  {:else if error}
+    <div class="card" role="alert">
+      <p class="alert">{error}</p>
+      <div class="row" style="gap: 12px; margin-top: 12px;">
+        <a href="/matches" class="btn btn--primary">Matches</a>
+        <a href="/players" class="btn">Players</a>
+      </div>
+    </div>
+  {:else}
+    <div class="dashboard">
+      <div class="card stack dashboard__header">
+        <h2 class="card__title">Big Ink Lab</h2>
+        <p class="card__sub">Track matches, players, and Lorcana stats.</p>
+      </div>
+
+      {#if stats || playerCount > 0}
+        <div class="dashboard__summary card">
+          <h3 class="dashboard__summary-title">At a glance</h3>
+          <div class="dashboard__summary-grid">
+            {#if stats}
+              <div class="dashboard__stat">
+                <span class="dashboard__stat-value">{stats.totalMatches}</span>
+                <span class="dashboard__stat-label muted">Matches</span>
+              </div>
+              <div class="dashboard__stat">
+                <span class="dashboard__stat-value">{stats.totalGames}</span>
+                <span class="dashboard__stat-label muted">Games</span>
+              </div>
+            {/if}
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{playerCount}</span>
+              <span class="dashboard__stat-label muted">Players</span>
+            </div>
+          </div>
+        </div>
+      {/if}
+
+      {#if recentMatches.length > 0}
+        <div class="card stack">
+          <div class="row" style="justify-content: space-between; align-items: center;">
+            <h3 class="dashboard__section-title">Recent matches</h3>
+            <a href="/matches" class="btn btn--sm" style="font-size: 0.9rem;">View all</a>
+          </div>
+          <div class="stack">
+            {#each recentMatches as match}
+              {@const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1}
+              {@const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2}
+              {@const winnerId = matchWinnerId(match)}
+              <a
+                href="/matches/{match._id}"
+                class="card playercard matchcard dashboard__match"
+                style="text-decoration: none; color: inherit;"
+              >
+                <div class="matchcard__top muted">
+                  {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName} · {match.tournamentName}{/if}
+                </div>
+                <div class="matchcard__row">
+                  <div
+                    class="matchcard__player matchcard__player--left"
+                    class:matchcard__player--winner={winnerId === p1Id}
+                  >
+                    <span class="matchcard__name">
+                      {playerName(match.p1)}
+                      {#if winnerId === p1Id}
+                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+                      {:else if winnerId}
+                        <span class="matchcard__badge matchcard__badge--loser" aria-label="Loser">L</span>
+                      {/if}
+                    </span>
+                    {#if match.p1DeckColor}
+                      <span class="matchcard__ink" title={match.p1DeckColor} aria-hidden="true"
+                        >{deckColorToInk(match.p1DeckColor)}</span
+                      >
+                    {/if}
+                    <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p1Id ?? '')}</span>
+                  </div>
+                  <div class="matchcard__vs" aria-hidden="true">VS.</div>
+                  <div
+                    class="matchcard__player matchcard__player--right"
+                    class:matchcard__player--winner={winnerId === p2Id}
+                  >
+                    <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p2Id ?? '')}</span>
+                    {#if match.p2DeckColor}
+                      <span class="matchcard__ink" title={match.p2DeckColor} aria-hidden="true"
+                        >{deckColorToInk(match.p2DeckColor)}</span
+                      >
+                    {/if}
+                    <span class="matchcard__name">
+                      {playerName(match.p2)}
+                      {#if winnerId === p2Id}
+                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+                      {:else if winnerId}
+                        <span class="matchcard__badge matchcard__badge--loser" aria-label="Loser">L</span>
+                      {/if}
+                    </span>
+                  </div>
+                </div>
+              </a>
+            {/each}
+          </div>
+        </div>
+      {:else}
+        <div class="card stack">
+          <p class="card__sub muted">No matches yet. Create your first match to get started.</p>
+          <a href="/matches/new" class="btn btn--primary" style="align-self: flex-start;">New match</a>
+        </div>
+      {/if}
+    </div>
+  {/if}
 </div>
+
+<style>
+  .dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .dashboard__header {
+    padding: var(--space-lg);
+  }
+
+  .dashboard__summary {
+    padding: var(--space-lg);
+  }
+
+  .dashboard__summary-title {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--space-md);
+  }
+
+  .dashboard__summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: var(--space-lg);
+  }
+
+  .dashboard__stat {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .dashboard__stat-value {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .dashboard__stat-label {
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .dashboard__section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .dashboard__match {
+    padding: var(--space-md);
+  }
+
+  .btn--sm {
+    padding: 6px 12px;
+  }
+</style>

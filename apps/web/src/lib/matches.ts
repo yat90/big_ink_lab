@@ -49,4 +49,6 @@ export interface Game {
   p2Lore?: number;
   status?: GameStatus;
   winner?: string;
+  /** Player ID who started the game (went first). */
+  starter?: string;
 }

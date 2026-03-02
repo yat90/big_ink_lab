@@ -11,6 +11,8 @@ export interface Game {
   status?: GameStatus;
   /** Winner player ID (set when status is done). */
   winner?: Types.ObjectId;
+  /** Player who started the game (went first). */
+  starter?: Types.ObjectId;
 }
 
 export const GameSchema = new MongooseSchema<Game>(
@@ -19,6 +21,7 @@ export const GameSchema = new MongooseSchema<Game>(
     p2Lore: { type: Number, required: false },
     status: { type: String, enum: ['in_progress', 'done'], default: 'in_progress' },
     winner: { type: MongooseSchema.Types.ObjectId, ref: 'Player', required: false },
+    starter: { type: MongooseSchema.Types.ObjectId, ref: 'Player', required: false },
   },
   { _id: false },
 );
