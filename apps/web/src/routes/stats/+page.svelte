@@ -1,7 +1,6 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { onMount } from 'svelte';
-  import { DECK_COLOR_OPTIONS, deckColorToInk } from '$lib/matches';
+  import { DECK_COLOR_OPTIONS, STAGE_OPTIONS, deckColorToInk } from '$lib/matches';
 
   type GlobalStats = {
     totalMatches: number;
@@ -16,15 +15,23 @@
   let stats = $state<GlobalStats | null>(null);
   let loading = $state(true);
   let error = $state('');
+  type StageOption = (typeof STAGE_OPTIONS)[number];
+  let selectedStages = $state<StageOption[]>([...STAGE_OPTIONS]);
 
   const apiUrl = config.apiUrl ?? '/api';
 
-  onMount(async () => {
+  async function fetchStats(stages: StageOption[]) {
+    loading = true;
+    error = '';
     try {
-      const res = await fetch(`${apiUrl}/matches/stats`);
+      const params = new URLSearchParams();
+      if (stages.length > 0 && stages.length < STAGE_OPTIONS.length) {
+        stages.forEach((s) => params.append('stage', s));
+      }
+      const url = `${apiUrl}/matches/stats${params.toString() ? `?${params}` : ''}`;
+      const res = await fetch(url);
       if (!res.ok) {
         error = 'Failed to load statistics';
-        loading = false;
         return;
       }
       stats = await res.json();
@@ -33,6 +40,20 @@
     } finally {
       loading = false;
     }
+  }
+
+  function toggleStage(stage: StageOption) {
+    if (selectedStages.includes(stage)) {
+      selectedStages = selectedStages.filter((s) => s !== stage);
+    } else {
+      selectedStages = [...selectedStages, stage].sort(
+        (a, b) => STAGE_OPTIONS.indexOf(a) - STAGE_OPTIONS.indexOf(b),
+      );
+    }
+  }
+
+  $effect(() => {
+    fetchStats(selectedStages);
   });
 </script>
 
@@ -59,6 +80,29 @@
     <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: var(--space-md);">
       <h2 class="card__title" style="margin: 0;">Statistics</h2>
       <a href="/" class="btn">Back to home</a>
+    </div>
+
+    <div class="card match-stats__card match-stats__filter">
+      <h3 class="match-stats__title">Filter by stage</h3>
+      <div class="match-stats__stage-chips" role="group" aria-label="Stage filter">
+        {#each STAGE_OPTIONS as stage}
+          <label class="match-stats__stage-chip" class:match-stats__stage-chip--active={selectedStages.includes(stage)}>
+            <input
+              type="checkbox"
+              checked={selectedStages.includes(stage)}
+              onchange={() => toggleStage(stage)}
+              class="match-stats__stage-checkbox"
+              aria-label="{stage}"
+            />
+            <span class="match-stats__stage-label">{stage}</span>
+          </label>
+        {/each}
+      </div>
+      {#if selectedStages.length < STAGE_OPTIONS.length}
+        <p class="muted" style="margin: var(--space-sm) 0 0; font-size: 0.85rem;">
+          Showing stats for: {selectedStages.length === 0 ? 'all stages' : selectedStages.join(', ')}
+        </p>
+      {/if}
     </div>
 
     <div class="match-stats">
@@ -168,6 +212,62 @@
     padding: var(--space-lg);
   }
 
+  .match-stats__filter {
+    margin-bottom: 0;
+  }
+
+  .match-stats__stage-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+  }
+
+  .match-stats__stage-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: 8px 14px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border);
+    background: var(--glass-bg);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background var(--transition), border-color var(--transition), color var(--transition);
+  }
+
+  .match-stats__stage-chip:hover {
+    background: var(--glass-bg-strong);
+  }
+
+  .match-stats__stage-chip--active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: white;
+  }
+
+  .match-stats__stage-chip--active:hover {
+    background: var(--ink-hover);
+    border-color: var(--ink-hover);
+    color: white;
+  }
+
+  .match-stats__stage-checkbox {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .match-stats__stage-label {
+    user-select: none;
+  }
+
   .match-stats__card--wide {
     overflow: hidden;
   }
@@ -204,6 +304,7 @@
 
   .match-stats__matrix-wrap {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .match-stats__matrix {
@@ -220,9 +321,15 @@
     text-align: center;
   }
 
+  /* Sticky first column so row labels stay visible when scrolling horizontally */
   .match-stats__matrix-corner {
-    background: unset;
+    position: sticky;
+    left: 0;
+    z-index: 2;
     min-width: 2.5rem;
+    width: 2.5rem;
+    background: var(--card);
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.15);
   }
 
   .match-stats__matrix-header {
@@ -232,9 +339,13 @@
   }
 
   .match-stats__matrix-row-header {
+    position: sticky;
+    left: 0;
+    z-index: 1;
     font-weight: 600;
     background-color: rgba(138, 138, 138, 0.77);
     white-space: nowrap;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.15);
   }
 
   .match-stats__matrix-cell {

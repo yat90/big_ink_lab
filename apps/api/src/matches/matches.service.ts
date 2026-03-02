@@ -57,9 +57,13 @@ export class MatchesService {
 		return !!result;
 	}
 
-	async getGlobalStats(): Promise<GlobalMatchStats> {
+	async getGlobalStats(stages?: string[]): Promise<GlobalMatchStats> {
+		const filter: Record<string, unknown> = {};
+		if (stages?.length && stages.every((s) => Object.values(Stage).includes(s as Stage))) {
+			filter.stage = { $in: stages };
+		}
 		const matches = await this.matchModel
-			.find({})
+			.find(filter)
 			.select("stage matchWinner games p1DeckColor p2DeckColor p1 p2")
 			.lean()
 			.exec();

@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { Match } from './schemas/lorcana-match.schema';
 import { MatchesService } from './matches.service';
 import { FindMatchesQueryDto } from './dto/find-matches-query.dto';
+import { StatsQueryDto } from './dto/stats-query.dto';
 
 @Controller('matches')
 export class MatchesController {
@@ -13,8 +14,9 @@ export class MatchesController {
   }
 
   @Get('stats')
-  async getStats() {
-    return this.matchesService.getGlobalStats();
+  async getStats(@Query() query: StatsQueryDto) {
+    const stages = Array.isArray(query.stage) ? query.stage : query.stage ? [query.stage] : undefined;
+    return this.matchesService.getGlobalStats(stages);
   }
 
   @Get(':id')
