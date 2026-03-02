@@ -5,44 +5,27 @@
 
   async function fetchFromApi() {
     try {
-      const res = await fetch(`${config.apiUrl}/hello`);
+      const res = await fetch(`${config.apiUrl ?? '/api'}/hello`);
       const data = await res.json();
       message = data.message ?? JSON.stringify(data);
-    } catch (e) {
+    } catch {
       message = 'API not reachable (start the API or set VITE_API_URL in .env)';
     }
   }
 </script>
 
-<main>
-  <h1>Big Ink Lab</h1>
-  <p>SvelteKit + NestJS on Vercel</p>
-  <button onclick={fetchFromApi}>Call API</button>
-  {#if message}
-    <p class="message">{message}</p>
-  {/if}
-</main>
-
-<style>
-  main {
-    max-width: 40rem;
-    margin: 4rem auto;
-    padding: 2rem;
-    font-family: system-ui, sans-serif;
-  }
-  h1 {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
-  }
-  button {
-    padding: 0.5rem 1rem;
-    margin-top: 1rem;
-    cursor: pointer;
-  }
-  .message {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background: #f0f0f0;
-    border-radius: 0.5rem;
-  }
-</style>
+<div class="page">
+  <div class="card stack">
+    <h2 class="card__title">Big Ink Lab</h2>
+    <p class="card__sub">SvelteKit + NestJS on Vercel</p>
+    <div class="row" style="flex-wrap: wrap; gap: 12px;">
+      <a href="/matches" class="btn btn--primary">Matches</a>
+      <a href="/players" class="btn">Players</a>
+      <a href="/matches/new" class="btn">New match</a>
+      <button type="button" class="btn" onclick={fetchFromApi}>Call API</button>
+    </div>
+    {#if message}
+      <p class="muted" style="margin-top: 12px;">{message}</p>
+    {/if}
+  </div>
+</div>
