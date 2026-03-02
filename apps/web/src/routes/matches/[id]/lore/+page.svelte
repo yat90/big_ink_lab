@@ -26,6 +26,7 @@
   let saving = $state(false);
   let error = $state('');
   let winCheckTimeout: ReturnType<typeof setTimeout> | null = null;
+  let debouncedSaveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   /** Game indices for which the user dismissed the "flip coin?" prompt (Skip). */
   let coinFlipPromptDismissed = $state<Record<number, boolean>>({});
@@ -109,31 +110,21 @@
   }
 
   /** User chooses flip winner as starter. */
-  async function chooseStarterAsFlipWinner() {
+  function chooseStarterAsFlipWinner() {
     if (coinFlipResult === null || coinFlipResult === 'flipping') return;
     starter = coinFlipResult;
-    coinFlipSaving = true;
-    try {
-      await save();
-      showCoinFlipUI = false;
-      coinFlipResult = null;
-    } finally {
-      coinFlipSaving = false;
-    }
+    showCoinFlipUI = false;
+    coinFlipResult = null;
+    scheduleDebouncedSave();
   }
 
   /** User gives start to the opponent (other player). */
-  async function chooseOpponentStarter() {
+  function chooseOpponentStarter() {
     if (coinFlipResult === null || coinFlipResult === 'flipping' || !p1Id || !p2Id) return;
     starter = coinFlipResult === p1Id ? p2Id : p1Id;
-    coinFlipSaving = true;
-    try {
-      await save();
-      showCoinFlipUI = false;
-      coinFlipResult = null;
-    } finally {
-      coinFlipSaving = false;
-    }
+    showCoinFlipUI = false;
+    coinFlipResult = null;
+    scheduleDebouncedSave();
   }
 
   /** Auto-start flip when coin modal opens. */
@@ -153,19 +144,32 @@
     }, 1000);
   }
 
+  /** Schedule save 1s after last change; resets on each call. */
+  function scheduleDebouncedSave() {
+    if (debouncedSaveTimeout) clearTimeout(debouncedSaveTimeout);
+    debouncedSaveTimeout = setTimeout(async () => {
+      debouncedSaveTimeout = null;
+      if (!saving) await save();
+    }, 1000);
+  }
+
   function incP1() {
     p1Lore = Math.min(LORE_MAX, p1Lore + 1);
     scheduleWinCheck();
+    scheduleDebouncedSave();
   }
   function decP1() {
     p1Lore = Math.max(0, p1Lore - 1);
+    scheduleDebouncedSave();
   }
   function incP2() {
     p2Lore = Math.min(LORE_MAX, p2Lore + 1);
     scheduleWinCheck();
+    scheduleDebouncedSave();
   }
   function decP2() {
     p2Lore = Math.max(0, p2Lore - 1);
+    scheduleDebouncedSave();
   }
 
   async function saveAsDone() {

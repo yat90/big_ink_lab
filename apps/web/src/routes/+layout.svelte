@@ -49,10 +49,22 @@
     <span class="topbar__sitename">Big Ink Lab</span>
   </a>
   <nav class="topbar__nav" aria-label="Primary">
-    <a href="/" class="topbar__link" class:topbar__link--active={isHome} aria-current={isHome ? 'page' : undefined}>Home</a>
-    <a href="/matches" class="topbar__link" class:topbar__link--active={isMatches} aria-current={isMatches ? 'page' : undefined}>Matches</a>
-    <a href="/players" class="topbar__link" class:topbar__link--active={isPlayers} aria-current={isPlayers ? 'page' : undefined}>Players</a>
-    <a href="/stats" class="topbar__link" class:topbar__link--active={isStats} aria-current={isStats ? 'page' : undefined}>Statistics</a>
+    <a href="/" class="topbar__link" class:topbar__link--active={isHome} aria-current={isHome ? 'page' : undefined}>
+      <span class="topbar__link-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+      <span class="topbar__link-label">Home</span>
+    </a>
+    <a href="/matches" class="topbar__link" class:topbar__link--active={isMatches} aria-current={isMatches ? 'page' : undefined}>
+      <span class="topbar__link-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>
+      <span class="topbar__link-label">Matches</span>
+    </a>
+    <a href="/players" class="topbar__link" class:topbar__link--active={isPlayers} aria-current={isPlayers ? 'page' : undefined}>
+      <span class="topbar__link-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      <span class="topbar__link-label">Players</span>
+    </a>
+    <a href="/stats" class="topbar__link" class:topbar__link--active={isStats} aria-current={isStats ? 'page' : undefined}>
+      <span class="topbar__link-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg></span>
+      <span class="topbar__link-label">Statistics</span>
+    </a>
   </nav>
   <button
     type="button"

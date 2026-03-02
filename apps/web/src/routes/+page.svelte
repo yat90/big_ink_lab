@@ -8,6 +8,7 @@
     _id: string;
     stage?: string;
     tournamentName?: string;
+    round?: number;
     playedAt?: string;
     p1?: Player | string;
     p2?: Player | string;
@@ -161,7 +162,7 @@
                 style="text-decoration: none; color: inherit;"
               >
                 <div class="matchcard__top muted">
-                  {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName} · {match.tournamentName}{/if}
+                  {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName} · {match.tournamentName}{/if}{#if (match.stage === 'Tournament' || match.tournamentName) && match.round != null} · R{match.round}{/if}
                 </div>
                 <div class="matchcard__row">
                   <div

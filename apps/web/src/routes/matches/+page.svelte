@@ -8,6 +8,7 @@
     _id: string;
     stage?: string;
     tournamentName?: string;
+    round?: number;
     playedAt?: string;
     p1?: Player | string;
     p2?: Player | string;
@@ -168,7 +169,7 @@
           {@const winnerId = matchWinnerId(match)}
           <a href="/matches/{match._id}" class="card playercard matchcard" style="text-decoration: none; color: inherit;">
             <div class="matchcard__top muted">
-              {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName} · {match.tournamentName}{/if}
+              {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName} · {match.tournamentName}{/if}{#if (match.stage === 'Tournament' || match.tournamentName) && match.round != null} · R{match.round}{/if}
             </div>
             <div class="matchcard__row">
               <div class="matchcard__player matchcard__player--left" class:matchcard__player--winner={winnerId === p1Id}>

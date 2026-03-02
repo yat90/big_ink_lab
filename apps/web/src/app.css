@@ -121,20 +121,18 @@ a {
 }
 
 .topbar {
-	--topbar-height: calc(68px + env(safe-area-inset-bottom));
+	--topbar-height: calc(60px + env(safe-area-inset-bottom));
 	position: fixed;
 	bottom: 0;
 	left: 0;
 	right: 0;
 	top: auto;
 	z-index: 10;
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding-left: calc(12px + env(safe-area-inset-left));
-	padding-right: calc(12px + env(safe-area-inset-right));
-	padding-bottom: calc(12px + env(safe-area-inset-bottom));
-	padding-top: 12px;
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	align-items: stretch;
+	gap: 0;
+	padding: 8px env(safe-area-inset-right) calc(8px + env(safe-area-inset-bottom)) env(safe-area-inset-left);
 	background: var(--glass-bg);
 	backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
 	-webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
@@ -149,6 +147,9 @@ a {
 		bottom: auto;
 		left: auto;
 		right: auto;
+		display: flex;
+		grid-template-columns: unset;
+		align-items: center;
 		gap: 14px;
 		padding-left: 16px;
 		padding-right: 16px;
@@ -160,7 +161,7 @@ a {
 }
 
 .topbar__brand {
-	display: inline-flex;
+	display: none;
 	align-items: center;
 	justify-content: center;
 	gap: 8px;
@@ -185,18 +186,26 @@ a {
 	white-space: nowrap;
 }
 @media (min-width: 640px) {
+	.topbar__brand {
+		display: inline-flex;
+	}
 	.topbar__sitename {
 		display: inline;
 	}
 }
 
+/* Mobile: full-width tab bar (4 equal columns) */
 .topbar__nav {
-	display: none;
+	display: grid;
+	grid-column: 1 / -1;
+	grid-template-columns: repeat(4, 1fr);
 	min-width: 0;
 }
 @media (min-width: 640px) {
 	.topbar__nav {
 		display: flex;
+		grid-column: unset;
+		grid-template-columns: unset;
 		align-items: center;
 		gap: 8px;
 		flex-wrap: wrap;
@@ -204,7 +213,7 @@ a {
 }
 
 .topbar__burger {
-	display: flex;
+	display: none;
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
@@ -236,7 +245,7 @@ a {
 }
 @media (min-width: 640px) {
 	.topbar__burger {
-		display: none;
+		display: none; /* still hidden on desktop; nav links shown */
 	}
 }
 
@@ -268,7 +277,7 @@ a {
 	top: 0;
 	right: 0;
 	/* On mobile, stop above the fixed bottom navbar */
-	bottom: calc(68px + env(safe-area-inset-bottom));
+	bottom: calc(60px + env(safe-area-inset-bottom));
 	z-index: 20;
 	width: min(280px, 85vw);
 	max-width: 100%;
@@ -317,14 +326,37 @@ a {
 	color: white;
 }
 
+/* Mobile: tab bar item – icon on top, small label under */
 .topbar__link {
-	padding: 6px 10px;
-	border-radius: var(--radius-sm);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	min-height: 44px;
+	padding: 6px 4px;
+	border-radius: 0;
 	font-weight: 600;
-	font-size: 0.875rem;
 	text-decoration: none;
 	color: var(--muted);
 	transition: color var(--transition), background var(--transition);
+	-webkit-tap-highlight-color: transparent;
+}
+.topbar__link-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	flex-shrink: 0;
+}
+.topbar__link-icon svg {
+	width: 100%;
+	height: 100%;
+}
+.topbar__link-label {
+	font-size: 0.65rem;
+	line-height: 1.2;
 	white-space: nowrap;
 }
 .topbar__link:hover {
@@ -340,6 +372,26 @@ a {
 	background: var(--ink-hover);
 	color: white;
 }
+@media (min-width: 640px) {
+	.topbar__link {
+		flex-direction: row;
+		gap: 6px;
+		min-height: unset;
+		padding: 6px 10px;
+		border-radius: var(--radius-sm);
+	}
+	.topbar__link-icon {
+		width: 18px;
+		height: 18px;
+	}
+	.topbar__link-icon svg {
+		width: 18px;
+		height: 18px;
+	}
+	.topbar__link-label {
+		font-size: 0.875rem;
+	}
+}
 
 .main {
 	flex: 1;
@@ -349,7 +401,7 @@ a {
 	padding-left: calc(12px + env(safe-area-inset-left));
 	padding-right: calc(12px + env(safe-area-inset-right));
 	/* Space for fixed bottom navbar on mobile */
-	padding-bottom: calc(80px + env(safe-area-inset-bottom));
+	padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 @media (min-width: 640px) {
 	.main {
@@ -370,6 +422,10 @@ a {
 	height: 100dvh;
 	min-height: 100dvh;
 	overflow: hidden;
+	/* Lore tracker: prevent selection so taps count as actions, not text select */
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
 }
 @media (min-width: 640px) {
 	.main--full {
