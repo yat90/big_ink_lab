@@ -41,3 +41,12 @@ export function deckColorToInk(label: string): string {
 
 export type MatchStage = (typeof STAGE_OPTIONS)[number];
 export type DeckColor = (typeof DECK_COLOR_OPTIONS)[number];
+
+export type GameStatus = 'in_progress' | 'done';
+
+export interface Game {
+  p1Lore?: number;
+  p2Lore?: number;
+  status?: GameStatus;
+  winner?: string;
+}

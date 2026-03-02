@@ -22,14 +22,14 @@
   let p2DeckColor = $state('');
   let matchWinner = $state('');
   let notes = $state('');
-  let games = $state<Array<{ p1Score: number | ''; p2Score: number | '' }>>([{ p1Score: '', p2Score: '' }]);
+  let games = $state<object[]>([{}]);
   let loading = $state(false);
   let error = $state('');
 
   let showAddPlayer = $state(false);
 
   function addGame() {
-    games = [...games, { p1Score: '', p2Score: '' }];
+    games = [...games, {}];
   }
 
   function removeGame(i: number) {
@@ -42,6 +42,18 @@
   let addPlayerError = $state('');
 
   const apiUrl = config.apiUrl ?? '/api';
+
+  const winnerOptions = $derived(
+    [p1, p2]
+      .map((id) => players.find((pl) => pl._id === id))
+      .filter((pl): pl is Player => !!pl),
+  );
+
+  $effect(() => {
+    if (matchWinner && !winnerOptions.some((pl) => pl._id === matchWinner)) {
+      matchWinner = '';
+    }
+  });
 
   async function fetchPlayers() {
     try {
@@ -99,12 +111,7 @@
         p2DeckColor: p2DeckColor || undefined,
         matchWinner: matchWinner || undefined,
         notes: notes.trim(),
-        games: games
-          .map((g) => ({
-            p1Score: typeof g.p1Score === 'number' ? g.p1Score : Number(g.p1Score),
-            p2Score: typeof g.p2Score === 'number' ? g.p2Score : Number(g.p2Score),
-          }))
-          .filter((g) => !Number.isNaN(g.p1Score) && !Number.isNaN(g.p2Score)),
+        games: games.map(() => ({})),
       };
       if (stage === 'Tournament') {
         body.tournamentName = tournamentName.trim();
@@ -158,6 +165,49 @@
         </label>
       </div>
 
+      <div class="row" style="align-items: center; gap: 8px;">
+        <button
+          type="button"
+          class="btn"
+          onclick={() => (showAddPlayer = !showAddPlayer)}
+          aria-expanded={showAddPlayer}
+        >
+          {showAddPlayer ? 'Cancel' : '+ Add new player'}
+        </button>
+      </div>
+
+      {#if showAddPlayer}
+        <div class="card stack" style="margin-top: 8px; padding: 14px;">
+          <p class="card__sub" style="margin: 0;">Create a player and they'll be added to the list above.</p>
+          <div class="stack formgrid" style="margin-top: 10px;">
+            <label class="label" for="newPlayerName">Name *</label>
+            <input
+              id="newPlayerName"
+              type="text"
+              class="input"
+              bind:value={newPlayerName}
+              placeholder="Player name"
+            />
+            <label class="label" for="newPlayerTeam">Team</label>
+            <input
+              id="newPlayerTeam"
+              type="text"
+              class="input"
+              bind:value={newPlayerTeam}
+              placeholder="Optional"
+            />
+            {#if addPlayerError}
+              <p class="alert" style="grid-column: 1 / -1;">{addPlayerError}</p>
+            {/if}
+            <div class="row" style="grid-column: 1 / -1;">
+              <button type="button" class="btn btn--primary" disabled={addPlayerLoading} onclick={onAddPlayer}>
+                {addPlayerLoading ? 'Adding…' : 'Add player'}
+              </button>
+            </div>
+          </div>
+        </div>
+      {/if}
+
       <div class="formgrid">
         <label class="label" for="stage">
           Stage
@@ -183,8 +233,8 @@
           <label class="label" for="matchWinner">Winner</label>
           <select id="matchWinner" class="input" bind:value={matchWinner}>
             <option value="">–</option>
-            {#each players as pl}
-              <option value={pl._id}>{pl.name}</option>
+            {#each winnerOptions as pl}
+              <option value={pl._id}>{pl.name}{#if pl.team} ({pl.team}){/if}</option>
             {/each}
           </select>
         </div>
@@ -192,8 +242,8 @@
         <label class="label" for="matchWinner">Winner</label>
         <select id="matchWinner" class="input" bind:value={matchWinner}>
           <option value="">–</option>
-          {#each players as pl}
-            <option value={pl._id}>{pl.name}</option>
+          {#each winnerOptions as pl}
+            <option value={pl._id}>{pl.name}{#if pl.team} ({pl.team}){/if}</option>
           {/each}
         </select>
       {/if}
@@ -220,26 +270,9 @@
           <span class="label" style="margin: 0;">Games</span>
           <button type="button" class="btn" onclick={addGame}>+ Add game</button>
         </div>
-        {#each games as game, i}
-          <div class="row formgrid" style="align-items: flex-end; gap: 8px;">
-            <label class="label" for="game-p1-{i}">Game {i + 1} · P1 score</label>
-            <input
-              id="game-p1-{i}"
-              type="number"
-              class="input"
-              min="0"
-              bind:value={game.p1Score}
-              placeholder="0"
-            />
-            <label class="label" for="game-p2-{i}">P2 score</label>
-            <input
-              id="game-p2-{i}"
-              type="number"
-              class="input"
-              min="0"
-              bind:value={game.p2Score}
-              placeholder="0"
-            />
+        {#each games as _, i}
+          <div class="row" style="align-items: center; gap: 8px;">
+            <span class="label" style="margin: 0;">Game {i + 1}</span>
             <button
               type="button"
               class="btn"
@@ -267,49 +300,5 @@
         <a href="/matches" class="btn">Cancel</a>
       </div>
     </form>
-
-    <div class="row" style="align-items: center; gap: 8px; margin-top: 16px;">
-      <button
-        type="button"
-        class="btn"
-        onclick={() => (showAddPlayer = !showAddPlayer)}
-        aria-expanded={showAddPlayer}
-      >
-        {showAddPlayer ? 'Cancel' : '+ Add new player'}
-      </button>
-    </div>
-
-    {#if showAddPlayer}
-      <div class="card stack" style="margin-top: 8px; padding: 14px;">
-        <p class="card__sub" style="margin: 0;">Create a player and they’ll be added to the list above.</p>
-        <form onsubmit={onAddPlayer} class="stack formgrid" style="margin-top: 10px;">
-          <label class="label" for="newPlayerName">Name *</label>
-          <input
-            id="newPlayerName"
-            type="text"
-            class="input"
-            bind:value={newPlayerName}
-            placeholder="Player name"
-            required
-          />
-          <label class="label" for="newPlayerTeam">Team</label>
-          <input
-            id="newPlayerTeam"
-            type="text"
-            class="input"
-            bind:value={newPlayerTeam}
-            placeholder="Optional"
-          />
-          {#if addPlayerError}
-            <p class="alert" style="grid-column: 1 / -1;">{addPlayerError}</p>
-          {/if}
-          <div class="row" style="grid-column: 1 / -1;">
-            <button type="submit" class="btn btn--primary" disabled={addPlayerLoading}>
-              {addPlayerLoading ? 'Adding…' : 'Add player'}
-            </button>
-          </div>
-        </form>
-      </div>
-    {/if}
   </div>
 </div>

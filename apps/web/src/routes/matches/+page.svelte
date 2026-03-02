@@ -1,5 +1,6 @@
 <script lang="ts">
   import { config } from '$lib/config';
+  import { type Game } from '$lib/matches';
   import { onMount } from 'svelte';
 
   type Player = { _id: string; name: string; team: string };
@@ -11,7 +12,7 @@
     p1?: Player | string;
     p2?: Player | string;
     matchWinner?: Player | string;
-    games?: Array<{ p1Score: number; p2Score: number }>;
+    games?: Game[];
   };
 
   let matches = $state<Match[]>([]);
