@@ -41,7 +41,7 @@ export class MatchesService {
 
 	async create(dto: Partial<Match>): Promise<Match> {
 		const created = await this.matchModel.create(dto);
-		return created.populate("p1 p2 matchWinner");
+		return created.populate("p1 p2 matchWinner") as Promise<Match>;
 	}
 
 	async update(id: string, dto: Partial<Match>): Promise<Match | null> {

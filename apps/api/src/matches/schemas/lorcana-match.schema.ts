@@ -18,7 +18,7 @@ export class Match extends Document {
 	@Prop({ optional: true })
 	round?: number;
 
-	@Prop({ type: Types.ObjectId, ref: "Player", required: true })
+	@Prop({ type: Types.ObjectId, ref: "Player" })
 	p1: Types.ObjectId;
 
 	@Prop({ type: String, enum: Object.values(DeckColor) })

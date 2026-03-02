@@ -33,10 +33,23 @@
   let deletingGameIndex = $state<number | null>(null);
   let updatingDeckColor = $state(false);
   let updatingMatchWinner = $state(false);
+  let updatingPlayer = $state<'p1' | 'p2' | null>(null);
+  let updatingStage = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
+  const PREFERRED_TEAM = 'The Big Ink Theory';
+  const playersForSelect = $derived(
+    [...players].sort((a, b) => {
+      const aPreferred = (a.team?.trim() ?? '') === PREFERRED_TEAM;
+      const bPreferred = (b.team?.trim() ?? '') === PREFERRED_TEAM;
+      if (aPreferred && !bPreferred) return -1;
+      if (!aPreferred && bPreferred) return 1;
+      return 0;
+    }),
+  );
   const p1Id = $derived(match && (typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1));
   const p2Id = $derived(match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2));
+  const isQuickMatch = $derived(!p1Id && !p2Id);
   const matchWinnerId = $derived(
     match && (typeof match.matchWinner === 'object' && match.matchWinner ? match.matchWinner._id : match.matchWinner),
   );
@@ -77,14 +90,49 @@
         loading = false;
         return;
       }
-      match = await matchRes.json();
+      const loadedMatch = await matchRes.json();
+      match = loadedMatch;
       if (playersRes.ok) players = await playersRes.json();
+      if (loadedMatch) {
+        const noPlayers = !(typeof loadedMatch.p1 === 'object' && loadedMatch.p1 ? loadedMatch.p1._id : loadedMatch.p1) && !(typeof loadedMatch.p2 === 'object' && loadedMatch.p2 ? loadedMatch.p2._id : loadedMatch.p2);
+        if (noPlayers && !loadedMatch.playedAt) {
+          const res = await fetch(`${apiUrl}/matches/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playedAt: new Date().toISOString() }),
+          });
+          if (res.ok) match = await res.json();
+        }
+      }
     } catch {
       error = 'Could not load match.';
     } finally {
       loading = false;
     }
   });
+
+  async function onStageChange(stage: string) {
+    if (!match) return;
+    updatingStage = true;
+    error = '';
+    try {
+      const res = await fetch(`${apiUrl}/matches/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: stage || undefined }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        error = data.message ?? 'Update failed';
+        return;
+      }
+      match = await res.json();
+    } catch {
+      error = 'Could not reach API.';
+    } finally {
+      updatingStage = false;
+    }
+  }
 
   async function onUpdate(e: Event) {
     e.preventDefault();
@@ -166,6 +214,30 @@
       await onAddGame();
     } else {
       await goto(`/matches/${id}/lore?game=${games.length - 1}`);
+    }
+  }
+
+  async function onPlayerChange(role: 'p1' | 'p2', playerId: string) {
+    if (!match) return;
+    updatingPlayer = role;
+    error = '';
+    try {
+      const body = role === 'p1' ? { p1: playerId || undefined } : { p2: playerId || undefined };
+      const res = await fetch(`${apiUrl}/matches/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        error = data.message ?? 'Update failed';
+        return;
+      }
+      match = await res.json();
+    } catch {
+      error = 'Could not reach API.';
+    } finally {
+      updatingPlayer = null;
     }
   }
 
@@ -279,17 +351,48 @@
   {:else if match}
     <div class="card stack">
       <div class="matchcard tack" style="margin: -18px -18px 0; padding: 18px 18px 12px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
-        <div class="matchcard__top muted">
-          {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName} · {match.tournamentName}{/if}
+        <div class="matchcard__top matchcard__top--row muted">
+          <span class="matchcard__top-inner">{formatDate(match.playedAt)} ·</span>
+          {#if isQuickMatch}
+            <select
+              class="input matchcard__top-select"
+              value={match.stage ?? 'Casual'}
+              disabled={updatingStage}
+              onchange={(e) => onStageChange(e.currentTarget.value)}
+              aria-label="Stage"
+            >
+              {#each STAGE_OPTIONS as s}
+                <option value={s}>{s}</option>
+              {/each}
+            </select>
+          {:else}
+            <span class="matchcard__top-inner">{match.stage ?? '–'}</span>
+          {/if}
+          {#if match.tournamentName}<span class="matchcard__top-inner"> · {match.tournamentName}</span>{/if}
         </div>
         <div class="matchcard__row">
           <div class="matchcard__player matchcard__player--left" class:matchcard__player--winner={matchWinnerId === p1Id}>
-            <span class="matchcard__name">
-              {playerName(match.p1)}
-              {#if matchWinnerId === p1Id}
-                <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-              {/if}
-            </span>
+            {#if p1Id}
+              <span class="matchcard__name">
+                {playerName(match.p1)}
+                {#if matchWinnerId === p1Id}
+                  <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+                {/if}
+              </span>
+            {:else}
+              <select
+                class="input matchcard__player-select"
+                value=""
+                disabled={updatingPlayer === 'p1'}
+                onchange={(e) => onPlayerChange('p1', e.currentTarget.value)}
+                aria-label="Select player 1"
+              >
+                <option value="">Select player</option>
+                {#each playersForSelect as pl}
+                  <option value={pl._id} disabled={pl._id === p2Id}>{pl.name}{#if pl.team} . {pl.team}{/if}</option>
+                {/each}
+              </select>
+            {/if}
             <select
               class="input matchcard__deck-select"
               value={match.p1DeckColor ?? ''}
@@ -319,28 +422,32 @@
                 <option value={c} title={c}>{deckColorToInk(c)}</option>
               {/each}
             </select>
-            <span class="matchcard__name">
-              {playerName(match.p2)}
-              {#if matchWinnerId === p2Id}
-                <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-              {/if}
-            </span>
+            {#if p2Id}
+              <span class="matchcard__name">
+                {playerName(match.p2)}
+                {#if matchWinnerId === p2Id}
+                  <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+                {/if}
+              </span>
+            {:else}
+              <select
+                class="input matchcard__player-select"
+                value=""
+                disabled={updatingPlayer === 'p2'}
+                onchange={(e) => onPlayerChange('p2', e.currentTarget.value)}
+                aria-label="Select player 2"
+              >
+                <option value="">Select player</option>
+                {#each playersForSelect as pl}
+                  <option value={pl._id} disabled={pl._id === p1Id}>{pl.name}{#if pl.team} . {pl.team}{/if}</option>
+                {/each}
+              </select>
+            {/if}
           </div>
         </div>
       </div>
 
       <dl class="stack" style="margin-top: 12px;">
-        <div class="match-meta-row">
-          <div class="dl-row"><dt class="muted" style="font-size: 0.85rem;">Stage</dt><dd>{match.stage ?? '–'}</dd></div>
-          {#if match.stage === 'Tournament'}
-            {#if match.tournamentName}
-              <div class="dl-row"><dt class="muted" style="font-size: 0.85rem;">Tournament</dt><dd>{match.tournamentName}</dd></div>
-            {/if}
-            {#if match.round != null}
-              <div class="dl-row"><dt class="muted" style="font-size: 0.85rem;">Round</dt><dd>{match.round}</dd></div>
-            {/if}
-          {/if}
-        </div>
         <div class="dl-row">
           <dt class="muted" style="font-size: 0.85rem;">Winner</dt>
           <dd>

@@ -48,8 +48,12 @@
   }
 
   const games = $derived(match?.games ?? []);
-  const p1Name = $derived(match ? playerName(match.p1) : 'P1');
-  const p2Name = $derived(match ? playerName(match.p2) : 'P2');
+  const p1Name = $derived(
+    match ? (playerName(match.p1) === '–' ? 'Player 1' : playerName(match.p1)) : 'P1',
+  );
+  const p2Name = $derived(
+    match ? (playerName(match.p2) === '–' ? 'Player 2' : playerName(match.p2)) : 'P2',
+  );
   const p1Id = $derived(match && (typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1));
   const p2Id = $derived(match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2));
 
@@ -82,9 +86,10 @@
     }
   });
 
-  /** Show "flip coin?" prompt when current game has no starter and not dismissed. */
+  /** Show "flip coin?" prompt when current game has no starter and not dismissed. Skip in quick play (no players). */
   $effect(() => {
     if (!match || games.length === 0 || showCoinFlipUI) return;
+    if (!p1Id || !p2Id) return; /* quick play: skip coin flip */
     const cur = games[gameIndex];
     const hasStarter = cur && (typeof cur.starter === 'object' ? cur.starter != null : !!cur.starter);
     if (!hasStarter && !coinFlipPromptDismissed[gameIndex]) {
@@ -340,20 +345,20 @@
         <h2 id="coin-flip-title" class="lore-modal__title">Who goes first?</h2>
         {#if coinFlipResult === null}
           <div class="lore-coin lore-coin--flipping" aria-busy="true">
-            <span class="lore-coin__face lore-coin__face--p1">{p1Name}</span>
-            <span class="lore-coin__face lore-coin__face--p2">{p2Name}</span>
+            <span class="lore-coin__face lore-coin__face--p1">{p2Name}</span>
+            <span class="lore-coin__face lore-coin__face--p2">{p1Name}</span>
           </div>
           <p class="muted">Flipping…</p>
         {:else if coinFlipResult === 'flipping'}
           <div class="lore-coin lore-coin--flipping" aria-busy="true">
-            <span class="lore-coin__face lore-coin__face--p1">{p1Name}</span>
-            <span class="lore-coin__face lore-coin__face--p2">{p2Name}</span>
+            <span class="lore-coin__face lore-coin__face--p1">{p2Name}</span>
+            <span class="lore-coin__face lore-coin__face--p2">{p1Name}</span>
           </div>
           <p class="muted">Flipping…</p>
         {:else}
-          <div class="lore-coin lore-coin--result lore-coin--reveal" class:lore-coin--p1-wins={coinFlipResult === p1Id} class:lore-coin--p2-wins={coinFlipResult === p2Id}>
-            <span class="lore-coin__face lore-coin__face--p1">{p1Name}</span>
-            <span class="lore-coin__face lore-coin__face--p2">{p2Name}</span>
+          <div class="lore-coin lore-coin--result lore-coin--reveal" class:lore-coin--p1-wins={coinFlipResult === p2Id} class:lore-coin--p2-wins={coinFlipResult === p1Id}>
+            <span class="lore-coin__face lore-coin__face--p1">{p2Name}</span>
+            <span class="lore-coin__face lore-coin__face--p2">{p1Name}</span>
           </div>
           <p class="lore-coin-result-text lore-coin-result-text--flashy">
             {coinFlipResult === p1Id ? p1Name : p2Name} won the flip!

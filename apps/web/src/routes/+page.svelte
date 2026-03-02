@@ -1,5 +1,6 @@
 <script lang="ts">
   import { config } from '$lib/config';
+  import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { type Game, deckColorToInk } from '$lib/matches';
 
@@ -28,8 +29,30 @@
   let recentMatches = $state<Match[]>([]);
   let loading = $state(true);
   let error = $state('');
+  let loreTrackerLoading = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
+
+  async function startLoreTracker() {
+    loreTrackerLoading = true;
+    try {
+      const res = await fetch(`${apiUrl}/matches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: 'Casual', games: [{}] }),
+      });
+      if (!res.ok) {
+        error = 'Could not create match';
+        return;
+      }
+      const match = await res.json();
+      goto(`/matches/${match._id}/lore`);
+    } catch {
+      error = 'Could not reach API.';
+    } finally {
+      loreTrackerLoading = false;
+    }
+  }
 
   function playerName(p: Player | string | undefined): string {
     if (!p) return '–';
@@ -119,7 +142,17 @@
             <h2 class="card__title">Big Ink Lab</h2>
             <p class="card__sub">Track matches, players, and Lorcana stats.</p>
           </div>
-          <a href="/matches/new" class="btn btn--primary">New match</a>
+          <div class="row" style="gap: 8px; flex-wrap: wrap;">
+            <button
+              type="button"
+              class="btn"
+              disabled={loreTrackerLoading}
+              onclick={startLoreTracker}
+            >
+              {loreTrackerLoading ? 'Creating…' : 'Quick Match'}
+            </button>
+            <a href="/matches/new" class="btn btn--primary">New match</a>
+          </div>
         </div>
       </div>
 
