@@ -61,7 +61,7 @@
       </a>
     </div>
   {:else}
-    <div class="row" style="justify-content: space-between; margin-bottom: 16px;">
+    <div class="page-header">
       <h2 class="card__title" style="margin: 0;">Players</h2>
       <a href="/players/new" class="btn btn--primary">New player</a>
     </div>

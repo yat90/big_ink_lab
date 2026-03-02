@@ -37,7 +37,7 @@
 </script>
 
 <svelte:head>
-  <title>Match statistics · Big Ink Lab</title>
+  <title>Statistics · Big Ink Lab</title>
 </svelte:head>
 
 <div class="page">
@@ -53,17 +53,17 @@
   {:else if error}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
-      <a href="/matches" class="btn">Back to matches</a>
+      <a href="/" class="btn">Back to home</a>
     </div>
   {:else if stats}
     <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: var(--space-md);">
-      <h2 class="card__title" style="margin: 0;">Match statistics</h2>
-      <a href="/matches" class="btn">Back to matches</a>
+      <h2 class="card__title" style="margin: 0;">Statistics</h2>
+      <a href="/" class="btn">Back to home</a>
     </div>
 
     <div class="match-stats">
       <div class="card match-stats__card">
-        <h3 class="match-stats__title">Overview</h3>
+        <h3 class="match-stats__title">Match overview</h3>
         <div class="match-stats__grid">
           <div class="match-stats__item">
             <span class="match-stats__value">{stats.totalMatches}</span>

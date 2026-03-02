@@ -43,6 +43,17 @@
 
   const apiUrl = config.apiUrl ?? '/api';
 
+  const BIG_INK_TEAM = 'The Big Ink Theory';
+  const playersForSelect = $derived(
+    [...players].sort((a, b) => {
+      const aPreferred = (a.team?.trim() ?? '') === BIG_INK_TEAM;
+      const bPreferred = (b.team?.trim() ?? '') === BIG_INK_TEAM;
+      if (aPreferred && !bPreferred) return -1;
+      if (!aPreferred && bPreferred) return 1;
+      return 0;
+    }),
+  );
+
   const winnerOptions = $derived(
     [p1, p2]
       .map((id) => players.find((pl) => pl._id === id))
@@ -52,6 +63,12 @@
   $effect(() => {
     if (matchWinner && !winnerOptions.some((pl) => pl._id === matchWinner)) {
       matchWinner = '';
+    }
+  });
+
+  $effect(() => {
+    if (p1 && p2 === p1) {
+      p2 = '';
     }
   });
 
@@ -149,8 +166,8 @@
           Player 1
           <select id="p1" class="input" bind:value={p1} required>
             <option value="">Select player</option>
-            {#each players as pl}
-              <option value={pl._id}>{pl.name}{#if pl.team} ({pl.team}){/if}</option>
+            {#each playersForSelect as pl}
+              <option value={pl._id}>{pl.name} - {#if pl.team} {pl.team}{/if}</option>
             {/each}
           </select>
         </label>
@@ -158,8 +175,8 @@
           Player 2
           <select id="p2" class="input" bind:value={p2}>
             <option value="">Select player</option>
-            {#each players as pl}
-              <option value={pl._id}>{pl.name}{#if pl.team} ({pl.team}){/if}</option>
+            {#each playersForSelect as pl}
+              <option value={pl._id} disabled={pl._id === p1}>{pl.name} - {#if pl.team} {pl.team}{/if}</option>
             {/each}
           </select>
         </label>
@@ -234,7 +251,7 @@
           <select id="matchWinner" class="input" bind:value={matchWinner}>
             <option value="">–</option>
             {#each winnerOptions as pl}
-              <option value={pl._id}>{pl.name}{#if pl.team} ({pl.team}){/if}</option>
+              <option value={pl._id}>{pl.name} - {#if pl.team} {pl.team}{/if}</option>
             {/each}
           </select>
         </div>
@@ -243,7 +260,7 @@
         <select id="matchWinner" class="input" bind:value={matchWinner}>
           <option value="">–</option>
           {#each winnerOptions as pl}
-            <option value={pl._id}>{pl.name}{#if pl.team} ({pl.team}){/if}</option>
+            <option value={pl._id}>{pl.name} - {#if pl.team} {pl.team}{/if}</option>
           {/each}
         </select>
       {/if}

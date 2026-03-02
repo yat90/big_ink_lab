@@ -288,8 +288,6 @@
               {playerName(match.p1)}
               {#if matchWinnerId === p1Id}
                 <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-              {:else if matchWinnerId}
-                <span class="matchcard__badge matchcard__badge--loser" aria-label="Loser">L</span>
               {/if}
             </span>
             <select
@@ -325,8 +323,6 @@
               {playerName(match.p2)}
               {#if matchWinnerId === p2Id}
                 <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-              {:else if matchWinnerId}
-                <span class="matchcard__badge matchcard__badge--loser" aria-label="Loser">L</span>
               {/if}
             </span>
           </div>

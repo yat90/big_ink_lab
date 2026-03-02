@@ -118,7 +118,7 @@
     <div class="row matches-header">
       <h2 class="card__title" style="margin: 0;">Matches</h2>
       <div class="row" style="gap: var(--space-sm);">
-        <a href="/matches/stats" class="btn">Statistics</a>
+        <a href="/stats" class="btn">Statistics</a>
         <a href="/matches/new" class="btn btn--primary">New match</a>
       </div>
     </div>
@@ -176,8 +176,6 @@
                   {playerName(match.p1)}
                   {#if winnerId === p1Id}
                     <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-                  {:else if winnerId}
-                    <span class="matchcard__badge matchcard__badge--loser" aria-label="Loser">L</span>
                   {/if}
                 </span>
                 {#if match.p1DeckColor}
@@ -195,8 +193,6 @@
                   {playerName(match.p2)}
                   {#if winnerId === p2Id}
                     <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-                  {:else if winnerId}
-                    <span class="matchcard__badge matchcard__badge--loser" aria-label="Loser">L</span>
                   {/if}
                 </span>
               </div>

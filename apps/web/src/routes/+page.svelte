@@ -113,8 +113,13 @@
   {:else}
     <div class="dashboard">
       <div class="card stack dashboard__header">
-        <h2 class="card__title">Big Ink Lab</h2>
-        <p class="card__sub">Track matches, players, and Lorcana stats.</p>
+        <div class="row dashboard__header-top" style="justify-content: space-between; align-items: flex-start; gap: 12px;">
+          <div class="stack" style="gap: 4px;">
+            <h2 class="card__title">Big Ink Lab</h2>
+            <p class="card__sub">Track matches, players, and Lorcana stats.</p>
+          </div>
+          <a href="/matches/new" class="btn btn--primary">New match</a>
+        </div>
       </div>
 
       {#if stats || playerCount > 0}
@@ -167,8 +172,6 @@
                       {playerName(match.p1)}
                       {#if winnerId === p1Id}
                         <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-                      {:else if winnerId}
-                        <span class="matchcard__badge matchcard__badge--loser" aria-label="Loser">L</span>
                       {/if}
                     </span>
                     {#if match.p1DeckColor}
@@ -193,8 +196,6 @@
                       {playerName(match.p2)}
                       {#if winnerId === p2Id}
                         <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-                      {:else if winnerId}
-                        <span class="matchcard__badge matchcard__badge--loser" aria-label="Loser">L</span>
                       {/if}
                     </span>
                   </div>
@@ -217,15 +218,34 @@
   .dashboard {
     display: flex;
     flex-direction: column;
-    gap: var(--space-lg);
+    gap: var(--space-md);
+  }
+  @media (min-width: 640px) {
+    .dashboard {
+      gap: var(--space-lg);
+    }
   }
 
   .dashboard__header {
-    padding: var(--space-lg);
+    padding: 14px;
+  }
+
+  .dashboard__header-top {
+    flex-wrap: wrap;
+  }
+  @media (min-width: 640px) {
+    .dashboard__header {
+      padding: var(--space-lg);
+    }
   }
 
   .dashboard__summary {
-    padding: var(--space-lg);
+    padding: 14px;
+  }
+  @media (min-width: 640px) {
+    .dashboard__summary {
+      padding: var(--space-lg);
+    }
   }
 
   .dashboard__summary-title {
@@ -237,8 +257,14 @@
 
   .dashboard__summary-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: var(--space-lg);
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: var(--space-md);
+  }
+  @media (min-width: 640px) {
+    .dashboard__summary-grid {
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: var(--space-lg);
+    }
   }
 
   .dashboard__stat {
@@ -248,9 +274,14 @@
   }
 
   .dashboard__stat-value {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.02em;
+  }
+  @media (min-width: 640px) {
+    .dashboard__stat-value {
+      font-size: 1.75rem;
+    }
   }
 
   .dashboard__stat-label {
@@ -270,5 +301,6 @@
 
   .btn--sm {
     padding: 6px 12px;
+    min-height: 44px;
   }
 </style>
