@@ -44,7 +44,37 @@ export class MatchesService {
 		return created.populate("p1 p2 matchWinner") as Promise<Match>;
 	}
 
+	/** Compute match winner from games won (player with more wins; null if tied or no done games). */
+	private matchWinnerFromGames(
+		games: Array<{ winner?: Types.ObjectId }> | undefined,
+		p1Id: Types.ObjectId | string | undefined,
+		p2Id: Types.ObjectId | string | undefined,
+	): Types.ObjectId | null | undefined {
+		if (!games?.length || p1Id == null || p2Id == null) return undefined;
+		const p1 = p1Id?.toString?.() ?? String(p1Id);
+		const p2 = p2Id?.toString?.() ?? String(p2Id);
+		let p1Wins = 0;
+		let p2Wins = 0;
+		for (const g of games) {
+			const w = g.winner?.toString?.() ?? (g.winner as unknown as string);
+			if (w === p1) p1Wins++;
+			else if (w === p2) p2Wins++;
+		}
+		if (p1Wins > p2Wins) return p1Id as Types.ObjectId;
+		if (p2Wins > p1Wins) return p2Id as Types.ObjectId;
+		return null;
+	}
+
 	async update(id: string, dto: Partial<Match>): Promise<Match | null> {
+		if (dto.games != null) {
+			const existing = await this.matchModel.findById(id).select("p1 p2").lean().exec();
+			const p1 = dto.p1 ?? existing?.p1;
+			const p2 = dto.p2 ?? existing?.p2;
+			const autoWinner = this.matchWinnerFromGames(dto.games, p1, p2);
+			if (autoWinner !== undefined) {
+				dto.matchWinner = autoWinner as Match["matchWinner"];
+			}
+		}
 		const updated = await this.matchModel
 			.findByIdAndUpdate(id, { $set: dto }, { new: true })
 			.populate("p1 p2 matchWinner")
