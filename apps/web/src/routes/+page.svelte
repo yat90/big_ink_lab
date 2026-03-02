@@ -1,17 +1,15 @@
 <script lang="ts">
-  let message = $state('');
+  import { config } from '$lib/config';
 
-  const apiBase = typeof import.meta.env !== 'undefined' && import.meta.env?.VITE_API_URL
-    ? import.meta.env.VITE_API_URL
-    : '/api';
+  let message = $state('');
 
   async function fetchFromApi() {
     try {
-      const res = await fetch(`${apiBase}/hello`);
+      const res = await fetch(`${config.apiUrl}/hello`);
       const data = await res.json();
       message = data.message ?? JSON.stringify(data);
     } catch (e) {
-      message = 'API not reachable (start the API or set VITE_API_URL)';
+      message = 'API not reachable (start the API or set VITE_API_URL in .env)';
     }
   }
 </script>
