@@ -5,7 +5,8 @@
   let players = $state<Array<{ _id: string; name: string; team: string }>>([]);
   let loading = $state(true);
   let error = $state('');
-  let filterTeam = $state('');
+  const DEFAULT_TEAM = 'The Big Ink Theory';
+  let filterTeam = $state(DEFAULT_TEAM);
 
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -29,6 +30,12 @@
         return;
       }
       players = await res.json();
+      const teams = [...new Set(players.map((p) => (p.team ?? '').trim()).filter((t) => t !== ''))];
+      if (teams.includes(DEFAULT_TEAM)) {
+        filterTeam = DEFAULT_TEAM;
+      } else {
+        filterTeam = '';
+      }
     } catch {
       error = 'Could not reach API.';
     } finally {

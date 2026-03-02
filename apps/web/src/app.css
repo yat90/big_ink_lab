@@ -912,6 +912,9 @@ a[class*="playercard"] {
 	position: relative;
 	padding-right: 2.5rem;
 }
+a.matchcard {
+	padding-right: var(--space-md);
+}
 a.playercard::after,
 a[class*="playercard"]::after {
 	content: "";
@@ -928,6 +931,10 @@ a[class*="playercard"]::after {
 	transition:
 		opacity var(--transition),
 		border-color var(--transition);
+}
+/* Match cards: no chevron so it doesn’t overlap player info */
+a.matchcard::after {
+	display: none;
 }
 a.playercard:hover::after,
 a[class*="playercard"]:hover::after {
