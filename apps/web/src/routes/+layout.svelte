@@ -11,6 +11,8 @@
       const p = $page.url.pathname;
       if (p === '/players/new') return 'New player';
       if (p.startsWith('/players')) return 'Players';
+      if (p === '/decks/new') return 'New deck';
+      if (p.startsWith('/decks')) return 'Decks';
       if (p === '/stats') return 'Statistics';
       if (p === '/matches/new') return 'New match';
       if (p.startsWith('/matches')) return 'Matches';
@@ -23,6 +25,7 @@
   const isHome = $derived($page.url.pathname === '/');
   const isMatches = $derived($page.url.pathname.startsWith('/matches') && $page.url.pathname !== '/matches/new');
   const isPlayers = $derived($page.url.pathname === '/players' || $page.url.pathname.startsWith('/players/'));
+  const isDecks = $derived($page.url.pathname === '/decks' || $page.url.pathname.startsWith('/decks/'));
   const isStats = $derived($page.url.pathname === '/stats');
 
   let menuOpen = $state(false);
@@ -64,6 +67,10 @@
       <span class="topbar__link-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
       <span class="topbar__link-label">Players</span>
     </a>
+    <a href="/decks" class="topbar__link" class:topbar__link--active={isDecks} aria-current={isDecks ? 'page' : undefined}>
+      <span class="topbar__link-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/></svg></span>
+      <span class="topbar__link-label">Decks</span>
+    </a>
     <a href="/stats" class="topbar__link" class:topbar__link--active={isStats} aria-current={isStats ? 'page' : undefined}>
       <span class="topbar__link-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg></span>
       <span class="topbar__link-label">Statistics</span>
@@ -89,6 +96,7 @@
     <a href="/" class="topbar__drawer-link" class:topbar__drawer-link--active={isHome} aria-current={isHome ? 'page' : undefined} onclick={closeMenu}>Home</a>
     <a href="/matches" class="topbar__drawer-link" class:topbar__drawer-link--active={isMatches} aria-current={isMatches ? 'page' : undefined} onclick={closeMenu}>Matches</a>
     <a href="/players" class="topbar__drawer-link" class:topbar__drawer-link--active={isPlayers} aria-current={isPlayers ? 'page' : undefined} onclick={closeMenu}>Players</a>
+    <a href="/decks" class="topbar__drawer-link" class:topbar__drawer-link--active={isDecks} aria-current={isDecks ? 'page' : undefined} onclick={closeMenu}>Decks</a>
     <a href="/stats" class="topbar__drawer-link" class:topbar__drawer-link--active={isStats} aria-current={isStats ? 'page' : undefined} onclick={closeMenu}>Statistics</a>
   </nav>
 {/if}
