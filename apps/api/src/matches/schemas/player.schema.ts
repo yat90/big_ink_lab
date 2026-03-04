@@ -6,7 +6,7 @@ export class Player extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, default: '' })
+  @Prop({ required: false, default: '' })
   team: string;
 }
 

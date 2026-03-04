@@ -31,6 +31,9 @@
   let addingGame = $state(false);
   let updatingGameIndex = $state<number | null>(null);
   let deletingGameIndex = $state<number | null>(null);
+  /** Index of game to delete; when set, show "really delete?" modal. */
+  let gameToDeleteIndex = $state<number | null>(null);
+  let showDeleteMatchPrompt = $state(false);
   let updatingDeckColor = $state(false);
   let updatingMatchWinner = $state(false);
   let updatingPlayer = $state<'p1' | 'p2' | null>(null);
@@ -57,6 +60,12 @@
   function playerName(p: Player | string | undefined): string {
     if (!p) return '–';
     return typeof p === 'string' ? p : p.name ?? '–';
+  }
+
+  /** Display name for UI: "Player 1" / "Player 2" when no player selected. */
+  function displayPlayerName(p: Player | string | undefined, fallback: 'Player 1' | 'Player 2'): string {
+    const name = playerName(p);
+    return name === '–' ? fallback : name;
   }
 
   function formatDate(s: string | undefined): string {
@@ -301,11 +310,18 @@
     }
   }
 
-  async function onDeleteGame(gameIndex: number) {
-    if (!match?.games?.length) return;
-    const game = match.games[gameIndex];
-    if ((game?.status ?? 'in_progress') === 'done') return;
-    if (!confirm('Remove this game?')) return;
+  function openDeleteGameModal(index: number) {
+    gameToDeleteIndex = index;
+  }
+
+  function closeDeleteGameModal() {
+    gameToDeleteIndex = null;
+  }
+
+  async function confirmDeleteGame() {
+    if (gameToDeleteIndex == null || !match?.games?.length) return;
+    const gameIndex = gameToDeleteIndex;
+    closeDeleteGameModal();
     deletingGameIndex = gameIndex;
     error = '';
     try {
@@ -318,8 +334,22 @@
     }
   }
 
-  async function onDelete() {
-    if (!confirm('Delete this match?')) return;
+  async function onDeleteGame(gameIndex: number) {
+    if (!match?.games?.length) return;
+    openDeleteGameModal(gameIndex);
+  }
+
+  function openDeleteMatchModal() {
+    showDeleteMatchPrompt = true;
+  }
+
+  function closeDeleteMatchModal() {
+    showDeleteMatchPrompt = false;
+  }
+
+  async function confirmDeleteMatch() {
+    if (!match) return;
+    closeDeleteMatchModal();
     deleting = true;
     try {
       const res = await fetch(`${apiUrl}/matches/${id}`, { method: 'DELETE' });
@@ -372,27 +402,23 @@
         </div>
         <div class="matchcard__row">
           <div class="matchcard__player matchcard__player--left" class:matchcard__player--winner={matchWinnerId === p1Id}>
-            {#if p1Id}
-              <span class="matchcard__name">
-                {playerName(match.p1)}
-                {#if matchWinnerId === p1Id}
-                  <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-                {/if}
-              </span>
-            {:else}
+            <span class="matchcard__name matchcard__name--with-select">
               <select
                 class="input matchcard__player-select"
-                value=""
+                value={p1Id ?? ''}
                 disabled={updatingPlayer === 'p1'}
                 onchange={(e) => onPlayerChange('p1', e.currentTarget.value)}
-                aria-label="Select player 1"
+                aria-label="Player 1"
               >
-                <option value="">Select player</option>
+                <option value="">Player 1</option>
                 {#each playersForSelect as pl}
-                  <option value={pl._id} disabled={pl._id === p2Id}>{pl.name}{#if pl.team} . {pl.team}{/if}</option>
+                  <option value={pl._id} disabled={pl._id === p2Id}>{pl.name}</option>
                 {/each}
               </select>
-            {/if}
+              {#if matchWinnerId === p1Id}
+                <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+              {/if}
+            </span>
             <select
               class="input matchcard__deck-select"
               value={match.p1DeckColor ?? ''}
@@ -422,27 +448,23 @@
                 <option value={c} title={c}>{deckColorToInk(c)}</option>
               {/each}
             </select>
-            {#if p2Id}
-              <span class="matchcard__name">
-                {playerName(match.p2)}
-                {#if matchWinnerId === p2Id}
-                  <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-                {/if}
-              </span>
-            {:else}
+            <span class="matchcard__name matchcard__name--with-select">
               <select
                 class="input matchcard__player-select"
-                value=""
+                value={p2Id ?? ''}
                 disabled={updatingPlayer === 'p2'}
                 onchange={(e) => onPlayerChange('p2', e.currentTarget.value)}
-                aria-label="Select player 2"
+                aria-label="Player 2"
               >
-                <option value="">Select player</option>
+                <option value="">Player 2</option>
                 {#each playersForSelect as pl}
-                  <option value={pl._id} disabled={pl._id === p1Id}>{pl.name}{#if pl.team} . {pl.team}{/if}</option>
+                  <option value={pl._id} disabled={pl._id === p1Id}>{pl.name}</option>
                 {/each}
               </select>
-            {/if}
+              {#if matchWinnerId === p2Id}
+                <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+              {/if}
+            </span>
           </div>
         </div>
       </div>
@@ -461,10 +483,10 @@
             >
               <option value="">–</option>
               {#if p1Id}
-                <option value={p1Id}>{playerName(match.p1)}</option>
+                <option value={p1Id}>{displayPlayerName(match.p1, 'Player 1')}</option>
               {/if}
               {#if p2Id}
-                <option value={p2Id}>{playerName(match.p2)}</option>
+                <option value={p2Id}>{displayPlayerName(match.p2, 'Player 2')}</option>
               {/if}
             </select>
           </dd>
@@ -480,7 +502,7 @@
                 </div>
                 <div class="game-line__controls row">
                   <label class="label" style="margin: 0; align-items: center; gap: 6px;">
-                    <span class="muted" style="font-size: 0.85rem;">Starting player</span>
+                    <span class="muted" style="font-size: 0.85rem;">Starter</span>
                     <select
                       class="input"
                       style="min-width: 120px;"
@@ -491,56 +513,57 @@
                     >
                       <option value="">–</option>
                       {#if p1Id}
-                        <option value={p1Id}>{playerName(match.p1)}</option>
+                        <option value={p1Id}>{displayPlayerName(match.p1, 'Player 1')}</option>
                       {/if}
                       {#if p2Id}
-                        <option value={p2Id}>{playerName(match.p2)}</option>
+                        <option value={p2Id}>{displayPlayerName(match.p2, 'Player 2')}</option>
                       {/if}
                     </select>
                   </label>
                   <label class="label" style="margin: 0; align-items: center; gap: 6px;">
-                    <span class="muted" style="font-size: 0.85rem;">Status</span>
+                    <span class="muted" style="font-size: 0.85rem;">Winner</span>
                     <select
                       class="input"
-                      style="min-width: 120px;"
-                      value={g.status ?? 'in_progress'}
+                      style="min-width: 140px;"
+                      value={typeof g.winner === 'object' && g.winner != null ? (g.winner as { _id?: string })._id : (g.winner ?? '')}
                       disabled={updatingGameIndex === i}
-                      onchange={(e) => onGameChange(i, { status: (e.currentTarget.value as GameStatus) })}
+                      onchange={(e) => {
+                        const winnerId = e.currentTarget.value || undefined;
+                        onGameChange(i, {
+                          winner: winnerId,
+                          status: (winnerId ? 'done' : 'in_progress') as GameStatus,
+                        });
+                      }}
                     >
-                      <option value="in_progress">In progress</option>
-                      <option value="done">Done</option>
+                      <option value="">–</option>
+                      {#if p1Id}
+                        <option value={p1Id}>{displayPlayerName(match.p1, 'Player 1')}</option>
+                      {/if}
+                      {#if p2Id}
+                        <option value={p2Id}>{displayPlayerName(match.p2, 'Player 2')}</option>
+                      {/if}
                     </select>
                   </label>
-                  {#if (g.status ?? 'in_progress') === 'done'}
-                    <label class="label" style="margin: 0; align-items: center; gap: 6px;">
-                      <span class="muted" style="font-size: 0.85rem;">Winner</span>
-                      <select
-                        class="input"
-                        style="min-width: 140px;"
-                        value={g.winner ?? ''}
-                        disabled={updatingGameIndex === i}
-                        onchange={(e) => onGameChange(i, { winner: e.currentTarget.value || undefined })}
-                      >
-                        <option value="">–</option>
-                        {#if p1Id}
-                          <option value={p1Id}>{playerName(match.p1)}</option>
-                        {/if}
-                        {#if p2Id}
-                          <option value={p2Id}>{playerName(match.p2)}</option>
-                        {/if}
-                      </select>
-                    </label>
-                  {:else}
-                    <button
-                      type="button"
-                      class="btn btn--danger"
-                      disabled={deletingGameIndex === i}
-                      onclick={() => onDeleteGame(i)}
-                      aria-label="Remove game {i + 1}"
-                    >
-                      {deletingGameIndex === i ? 'Removing…' : 'Delete game'}
-                    </button>
+                  {#if !gameWinnerId(g)}
+                    <a href="/matches/{id}/lore?game={i}" class="btn btn--primary game-line__continue-btn">
+                      <svg class="icon-play" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      Continue
+                    </a>
                   {/if}
+                  <button
+                    type="button"
+                    class="btn btn--icon game-line__delete-btn"
+                    disabled={deletingGameIndex === i}
+                    onclick={() => onDeleteGame(i)}
+                    aria-label="Delete game {i + 1}"
+                    title="Delete game"
+                  >
+                    {#if deletingGameIndex === i}
+                      Removing…
+                    {:else}
+                      <svg class="icon-trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                    {/if}
+                  </button>
                 </div>
               </dd>
             {/each}
@@ -568,10 +591,154 @@
 
       <div class="row" style="margin-top: 16px; gap: 12px; flex-wrap: wrap;">
         <a href="/matches" class="btn">Back</a>
-        <button type="button" class="btn btn--danger" onclick={onDelete} disabled={deleting}>
-          {deleting ? 'Deleting…' : 'Delete'}
+        <button type="button" class="btn btn--danger btn--icon" onclick={openDeleteMatchModal} disabled={deleting} aria-label="Delete match" title="Delete match">
+          {#if deleting}
+            Deleting…
+          {:else}
+            <svg class="icon-trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+            Delete
+          {/if}
         </button>
       </div>
     </div>
+
+    <!-- Delete match confirmation -->
+    {#if showDeleteMatchPrompt}
+      <div class="delete-game-modal" role="dialog" aria-modal="true" aria-labelledby="delete-match-title">
+        <button
+          type="button"
+          class="delete-game-modal__backdrop"
+          aria-label="Cancel"
+          onclick={closeDeleteMatchModal}
+        ></button>
+        <div class="delete-game-modal__card card">
+          <h2 id="delete-match-title" class="delete-game-modal__title">Delete match?</h2>
+          <p class="delete-game-modal__text muted">Do you really want to delete this match?</p>
+          <div class="delete-game-modal__actions row">
+            <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteMatch}>
+              <svg class="icon-trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+              Delete
+            </button>
+            <button type="button" class="btn" onclick={closeDeleteMatchModal}>Cancel</button>
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Delete game confirmation -->
+    {#if gameToDeleteIndex != null}
+      <div class="delete-game-modal" role="dialog" aria-modal="true" aria-labelledby="delete-game-title">
+        <button
+          type="button"
+          class="delete-game-modal__backdrop"
+          aria-label="Cancel"
+          onclick={closeDeleteGameModal}
+        ></button>
+        <div class="delete-game-modal__card card">
+          <h2 id="delete-game-title" class="delete-game-modal__title">Delete game?</h2>
+          <p class="delete-game-modal__text muted">Do you really want to delete this game?</p>
+          <div class="delete-game-modal__actions row">
+            <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteGame}>
+              <svg class="icon-trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+              Delete
+            </button>
+            <button type="button" class="btn" onclick={closeDeleteGameModal}>Cancel</button>
+          </div>
+        </div>
+      </div>
+    {/if}
   {/if}
 </div>
+
+<style>
+  .matchcard__name--with-select {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .matchcard__name--with-select .matchcard__player-select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .delete-game-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .delete-game-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .delete-game-modal__card {
+    position: relative;
+    z-index: 1;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .delete-game-modal__title {
+    font-size: 1.25rem;
+    margin: 0 0 8px;
+  }
+
+  .delete-game-modal__text {
+    margin: 0 0 20px;
+  }
+
+  .delete-game-modal__actions {
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn--icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn--icon .icon-trash {
+    flex-shrink: 0;
+  }
+
+  .btn--icon:not(:has(.icon-trash)) {
+    gap: 0;
+  }
+
+  .game-line__delete-btn {
+    margin-left: auto;
+    background: transparent;
+    border-color: transparent;
+    color: var(--danger);
+  }
+
+  .game-line__delete-btn:hover:not(:disabled) {
+    background: rgba(220, 38, 38, 0.1);
+  }
+
+  .game-line__continue-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 46px;
+    text-decoration: none;
+  }
+
+  .game-line__continue-btn .icon-play {
+    flex-shrink: 0;
+  }
+</style>

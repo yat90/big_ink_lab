@@ -5,7 +5,13 @@
   import { onMount } from 'svelte';
 
   type Player = { _id: string; name: string; team: string };
-  type Game = { p1Lore?: number; p2Lore?: number; status?: string; winner?: string; starter?: string | { _id: string } };
+  type Game = {
+    p1Lore?: number;
+    p2Lore?: number;
+    status?: string;
+    winner?: string;
+    starter?: string | { _id: string };
+  };
   type Match = {
     _id: string;
     p1?: Player | string;
@@ -28,15 +34,18 @@
   let winCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   let debouncedSaveTimeout: ReturnType<typeof setTimeout> | null = null;
 
-  /** Game indices for which the user dismissed the "flip coin?" prompt (Skip). */
-  let coinFlipPromptDismissed = $state<Record<number, boolean>>({});
-  /** True when showing the "flip coin to choose starter?" modal. */
-  let showCoinFlipPrompt = $state(false);
-  /** True when showing the coin flip UI (two-sided coin, flip to pick starter). */
-  let showCoinFlipUI = $state(false);
-  /** After flipping: 'flipping' | winner id (p1 or p2) | null before flip. */
-  let coinFlipResult = $state<string | 'flipping' | null>(null);
-  let coinFlipSaving = $state(false);
+  /** Game indices for which the user dismissed the "choose starter" prompt (Skip). */
+  let starterPromptDismissed = $state<Record<number, boolean>>({});
+  /** True when showing the "choose starting player" modal. */
+  let showStarterPrompt = $state(false);
+  let starterSaving = $state(false);
+
+  /** When a game ends (player reached 20 Lore): winner id and show "next game?" prompt. */
+  let gameOverWinnerId = $state<string | null>(null);
+  let showGameOverPrompt = $state(false);
+
+  /** Menu button: show "close game?" confirmation modal. */
+  let showCloseGamePrompt = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
   const LORE_MAX = 25;
@@ -44,18 +53,32 @@
 
   function playerName(p: Player | string | undefined): string {
     if (!p) return '–';
-    return typeof p === 'string' ? p : p.name ?? '–';
+    return typeof p === 'string' ? p : (p.name ?? '–');
   }
 
   const games = $derived(match?.games ?? []);
   const p1Name = $derived(
-    match ? (playerName(match.p1) === '–' ? 'Player 1' : playerName(match.p1)) : 'P1',
+    match ? (playerName(match.p1) === '–' ? 'Player 1' : playerName(match.p1)) : 'P1'
   );
   const p2Name = $derived(
-    match ? (playerName(match.p2) === '–' ? 'Player 2' : playerName(match.p2)) : 'P2',
+    match ? (playerName(match.p2) === '–' ? 'Player 2' : playerName(match.p2)) : 'P2'
   );
-  const p1Id = $derived(match && (typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1));
-  const p2Id = $derived(match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2));
+  const p1Id = $derived(
+    match && (typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1)
+  );
+  const p2Id = $derived(
+    match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2)
+  );
+  function gameWinnerId(g: Game): string | undefined {
+    if (!g.winner) return undefined;
+    return typeof g.winner === 'string' ? g.winner : (g.winner as { _id?: string })?._id;
+  }
+  let p1GamesWon = $derived(
+    games.filter((g) => g.status === 'done' && gameWinnerId(g) === p1Id).length
+  );
+  let p2GamesWon = $derived(
+    games.filter((g) => g.status === 'done' && gameWinnerId(g) === p2Id).length
+  );
 
   onMount(async () => {
     try {
@@ -82,62 +105,41 @@
       const p2 = cur.p2Lore ?? 0;
       p1Lore = Math.min(LORE_MAX, Math.max(0, p1));
       p2Lore = Math.min(LORE_MAX, Math.max(0, p2));
-      starter = typeof cur.starter === 'object' && cur.starter != null ? cur.starter._id : (cur.starter ?? '');
+      starter =
+        typeof cur.starter === 'object' && cur.starter != null
+          ? cur.starter._id
+          : (cur.starter ?? '');
     }
   });
 
-  /** Show "flip coin?" prompt when current game has no starter and not dismissed. Skip in quick play (no players). */
+  /** Show "choose starter" prompt when current game has no starter and not dismissed. Skip in quick play (no players). */
   $effect(() => {
-    if (!match || games.length === 0 || showCoinFlipUI) return;
-    if (!p1Id || !p2Id) return; /* quick play: skip coin flip */
+    if (!match || games.length === 0) return;
+    if (!p1Id || !p2Id) return; /* quick play: skip */
     const cur = games[gameIndex];
-    const hasStarter = cur && (typeof cur.starter === 'object' ? cur.starter != null : !!cur.starter);
-    if (!hasStarter && !coinFlipPromptDismissed[gameIndex]) {
-      showCoinFlipPrompt = true;
+    const hasStarter =
+      cur && (typeof cur.starter === 'object' ? cur.starter != null : !!cur.starter);
+    if (!hasStarter && !starterPromptDismissed[gameIndex]) {
+      showStarterPrompt = true;
     }
   });
 
-  function dismissCoinFlipPrompt(skip: boolean) {
-    coinFlipPromptDismissed = { ...coinFlipPromptDismissed, [gameIndex]: true };
-    showCoinFlipPrompt = false;
-    if (skip) return;
-    showCoinFlipUI = true;
-    coinFlipResult = null;
+  function dismissStarterPrompt() {
+    starterPromptDismissed = { ...starterPromptDismissed, [gameIndex]: true };
+    showStarterPrompt = false;
   }
 
-  /** Runs automatically when coin modal opens: flashy flip, then show result. Does not save. */
-  async function runFlipAnimation() {
-    if (!p1Id || !p2Id) return;
-    coinFlipResult = 'flipping';
-    const winnerId = Math.random() < 0.5 ? p1Id : p2Id;
-    await new Promise((r) => setTimeout(r, 1400));
-    coinFlipResult = winnerId;
-  }
-
-  /** User chooses flip winner as starter. */
-  function chooseStarterAsFlipWinner() {
-    if (coinFlipResult === null || coinFlipResult === 'flipping') return;
-    starter = coinFlipResult;
-    showCoinFlipUI = false;
-    coinFlipResult = null;
-    scheduleDebouncedSave();
-  }
-
-  /** User gives start to the opponent (other player). */
-  function chooseOpponentStarter() {
-    if (coinFlipResult === null || coinFlipResult === 'flipping' || !p1Id || !p2Id) return;
-    starter = coinFlipResult === p1Id ? p2Id : p1Id;
-    showCoinFlipUI = false;
-    coinFlipResult = null;
-    scheduleDebouncedSave();
-  }
-
-  /** Auto-start flip when coin modal opens. */
-  $effect(() => {
-    if (showCoinFlipUI && coinFlipResult === null && match && p1Id && p2Id) {
-      runFlipAnimation();
+  async function chooseStarter(playerId: string) {
+    if (starterSaving) return;
+    starter = playerId;
+    starterSaving = true;
+    try {
+      await save();
+      dismissStarterPrompt();
+    } finally {
+      starterSaving = false;
     }
-  });
+  }
 
   function scheduleWinCheck() {
     if (winCheckTimeout) clearTimeout(winCheckTimeout);
@@ -222,6 +224,8 @@
         error = data.message ?? 'Save failed';
       } else {
         match = await res.json();
+        gameOverWinnerId = winnerId;
+        showGameOverPrompt = true;
       }
     } catch {
       error = 'Could not save.';
@@ -229,6 +233,50 @@
       saving = false;
     }
   }
+
+  async function goToNextGame() {
+    showGameOverPrompt = false;
+    gameOverWinnerId = null;
+    // save match with a new game
+    const newGame = {
+      p1Lore: 0,
+      p2Lore: 0,
+      status: 'in_progress',
+      winner: null,
+      starter: null,
+    };
+    const updatedGames = [...games, newGame];
+    const res = await fetch(`${apiUrl}/matches/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ games: updatedGames }),
+    });
+    if (!res.ok) {
+      error = 'Could not save.';
+    }
+    match = await res.json();
+    gameIndex = updatedGames.length - 1;
+    // update the game counter
+    p1GamesWon = updatedGames.filter(
+      (g) => g.status === 'done' && gameWinnerId(g as Game) === p1Id
+    ).length;
+    p2GamesWon = updatedGames.filter(
+      (g) => g.status === 'done' && gameWinnerId(g as Game) === p2Id
+    ).length;
+
+    // redirect to the new game
+    goto(`/matches/${id}/lore?game=${gameIndex}`, { replaceState: true });
+  }
+
+  function closeGameAndLeave() {
+    showCloseGamePrompt = false;
+    goto(`/matches/${id}`);
+  }
+
+  const hasNextGame = $derived(match?.games != null && gameIndex + 1 < match.games.length);
+  const gameOverWinnerName = $derived(
+    gameOverWinnerId === p1Id ? p1Name : gameOverWinnerId === p2Id ? p2Name : 'Winner'
+  );
 
   async function save() {
     if (!match?.games?.length) return;
@@ -285,25 +333,65 @@
       <a href="/matches/{id}" class="btn">Back to match</a>
     </div>
   {:else if match && games.length > 0}
-    <div class="lore-page__cards">
-      <!-- P2 top -->
-      <div class="lore-card card lore-card--p2" class:lore-card--starter={starter === p2Id} class:lore-card--second={starter === p1Id}>
-        <span class="lore-card__name">{p2Name}</span>
-        <button type="button" class="lore-card__btn lore-card__btn--inc" onclick={incP2} aria-label="Increase Lore">+</button>
-        <div class="lore-card__value">{p2Lore}</div>
-        <button type="button" class="lore-card__btn lore-card__btn--dec" onclick={decP2} aria-label="Decrease Lore">−</button>
+    <div class="lore-split">
+      <!-- Vertical game counter: half in top, half in bottom -->
+      <div class="lore-score-pill-wrap" aria-label="Games won">
+        <div class="lore-score-pill">
+          <span class="lore-score-pill__score">{p2GamesWon} – {p1GamesWon}</span>
+        </div>
       </div>
 
-      <div class="lore-page__actions">
-        <a href="/matches/{id}" class="btn btn--primary lore-page__done-btn">Done</a>
+      <!-- P2 top (purple) -->
+      <div
+        class="lore-panel lore-panel--p2"
+        class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p2Id}
+      >
+        <div class="lore-panel__center">
+          <button
+            type="button"
+            class="lore-panel__btn lore-panel__btn--dec"
+            onclick={decP2}
+            aria-label="Decrease Lore">−</button
+          >
+          <span class="lore-panel__value">{p2Lore}</span>
+          <button
+            type="button"
+            class="lore-panel__btn lore-panel__btn--inc"
+            onclick={incP2}
+            aria-label="Increase Lore">+</button
+          >
+        </div>
       </div>
 
-      <!-- P1 bottom -->
-      <div class="lore-card card lore-card--p1" class:lore-card--starter={starter === p1Id} class:lore-card--second={starter === p2Id}>
-        <span class="lore-card__name">{p1Name}</span>
-        <button type="button" class="lore-card__btn lore-card__btn--inc" onclick={incP1} aria-label="Increase Lore">+</button>
-        <div class="lore-card__value">{p1Lore}</div>
-        <button type="button" class="lore-card__btn lore-card__btn--dec" onclick={decP1} aria-label="Decrease Lore">−</button>
+      <div class="lore-divider">
+        <button
+          type="button"
+          class="lore-divider__menu"
+          aria-label="Menu"
+          onclick={() => (showCloseGamePrompt = true)}>☰</button
+        >
+      </div>
+
+      <!-- P1 bottom (grey): left = decrease, right = increase -->
+      <div
+        class="lore-panel lore-panel--p1"
+        class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p1Id}
+      >
+        <div class="lore-panel__center">
+          <button
+            type="button"
+            class="lore-panel__btn lore-panel__btn--dec"
+            onclick={decP1}
+            aria-label="Decrease Lore">−</button
+          >
+          <span class="lore-panel__value">{p1Lore}</span>
+          <button
+            type="button"
+            class="lore-panel__btn lore-panel__btn--inc"
+            onclick={incP1}
+            aria-label="Increase Lore">+</button
+          >
+        </div>
       </div>
     </div>
 
@@ -317,72 +405,76 @@
     </div>
   {/if}
 
-  <!-- Coin flip prompt: choose whether to flip for starting player -->
-  {#if showCoinFlipPrompt}
-    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="coin-flip-prompt-title">
+  <!-- Close game?: confirm before leaving lore tracker -->
+  {#if showCloseGamePrompt}
+    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="close-game-title">
       <button
         type="button"
         class="lore-modal__backdrop"
         aria-label="Close"
-        onclick={() => dismissCoinFlipPrompt(true)}
+        onclick={() => (showCloseGamePrompt = false)}
       ></button>
       <div class="lore-modal__card card">
-        <h2 id="coin-flip-prompt-title" class="lore-modal__title">Choose starting player</h2>
-        <p class="lore-modal__text muted">Flip a coin to decide who goes first?</p>
+        <h2 id="close-game-title" class="lore-modal__title">Close the game?</h2>
+        <p class="lore-modal__text muted">Do you want to leave the lore tracker?</p>
         <div class="lore-modal__actions">
-          <button type="button" class="btn btn--primary" onclick={() => dismissCoinFlipPrompt(false)}>Flip coin</button>
-          <button type="button" class="btn" onclick={() => dismissCoinFlipPrompt(true)}>Skip</button>
+          <button type="button" class="btn btn--primary" onclick={closeGameAndLeave}>Leave</button>
+          <button type="button" class="btn" onclick={() => (showCloseGamePrompt = false)}
+            >Cancel</button
+          >
         </div>
       </div>
     </div>
   {/if}
 
-  <!-- Coin flip UI: auto-flip, then choose who starts -->
-  {#if showCoinFlipUI && match}
-    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="coin-flip-title">
+  <!-- Choose starting player: two large buttons in player direction (P2 top, P1 bottom) -->
+  {#if showStarterPrompt}
+    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="starter-choice-title">
+      <button
+        type="button"
+        class="lore-modal__backdrop"
+        aria-label="Close"
+        onclick={dismissStarterPrompt}
+      ></button>
+      <div class="lore-modal__card card lore-starter-choice">
+        <h2 id="starter-choice-title" class="lore-starter-choice__title">Choose starting player</h2>
+        <div class="lore-starter-choice__buttons">
+          <button
+            type="button"
+            class="lore-starter-choice__btn lore-starter-choice__btn--p2"
+            disabled={starterSaving}
+            onclick={() => p2Id && chooseStarter(p2Id)}
+            aria-label={`${p2Name} starts`}
+          >
+            {starterSaving ? 'Saving…' : p2Name}
+          </button>
+          <button
+            type="button"
+            class="lore-starter-choice__btn lore-starter-choice__btn--p1"
+            disabled={starterSaving}
+            onclick={() => p1Id && chooseStarter(p1Id)}
+            aria-label={`${p1Name} starts`}
+          >
+            {starterSaving ? 'Saving…' : p1Name}
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Game over: winner animation + "Go to next game?" -->
+  {#if showGameOverPrompt}
+    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
       <div class="lore-modal__backdrop"></div>
-      <div class="lore-modal__card card lore-coin-wrap">
-        <h2 id="coin-flip-title" class="lore-modal__title">Who goes first?</h2>
-        {#if coinFlipResult === null}
-          <div class="lore-coin lore-coin--flipping" aria-busy="true">
-            <span class="lore-coin__face lore-coin__face--p1">{p2Name}</span>
-            <span class="lore-coin__face lore-coin__face--p2">{p1Name}</span>
-          </div>
-          <p class="muted">Flipping…</p>
-        {:else if coinFlipResult === 'flipping'}
-          <div class="lore-coin lore-coin--flipping" aria-busy="true">
-            <span class="lore-coin__face lore-coin__face--p1">{p2Name}</span>
-            <span class="lore-coin__face lore-coin__face--p2">{p1Name}</span>
-          </div>
-          <p class="muted">Flipping…</p>
-        {:else}
-          <div class="lore-coin lore-coin--result lore-coin--reveal" class:lore-coin--p1-wins={coinFlipResult === p2Id} class:lore-coin--p2-wins={coinFlipResult === p1Id}>
-            <span class="lore-coin__face lore-coin__face--p1">{p2Name}</span>
-            <span class="lore-coin__face lore-coin__face--p2">{p1Name}</span>
-          </div>
-          <p class="lore-coin-result-text lore-coin-result-text--flashy">
-            {coinFlipResult === p1Id ? p1Name : p2Name} won the flip!
-          </p>
-          <p class="lore-coin-choose muted">Who starts?</p>
-          <div class="lore-modal__actions">
-            <button
-              type="button"
-              class="btn btn--primary"
-              disabled={coinFlipSaving}
-              onclick={chooseStarterAsFlipWinner}
-            >
-              {coinFlipSaving ? 'Saving…' : 'I start'}
-            </button>
-            <button
-              type="button"
-              class="btn"
-              disabled={coinFlipSaving}
-              onclick={chooseOpponentStarter}
-            >
-              {coinFlipSaving ? 'Saving…' : 'Opponent starts'}
-            </button>
-          </div>
-        {/if}
+      <div class="lore-modal__card card">
+        <h2 id="game-over-title" class="lore-modal__title lore-game-over__title">
+          {gameOverWinnerName} wins!
+        </h2>
+        <p class="lore-modal__text muted">Go to the next game?</p>
+        <div class="lore-modal__actions">
+          <a href="/matches/{id}" class="btn btn--primary">Back to match</a>
+          <button type="button" class="btn" onclick={() => goToNextGame(true)}>Next Game</button>
+        </div>
       </div>
     </div>
   {/if}
@@ -393,129 +485,212 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    max-width: 420px;
-    margin: 0 auto;
+    /* gap: 16px; */
     width: 100%;
+    min-height: 0;
   }
 
   .lore-page__loading {
     text-align: center;
     padding: 24px;
+    max-width: 420px;
+    margin: 0 auto;
   }
 
-  .lore-page__cards {
+  /* Split layout: two full-height halves + divider */
+  .lore-split {
     display: flex;
     flex-direction: column;
-    gap: 16px;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    width: 100%;
+    position: relative;
   }
 
-  .lore-card {
+  /* Vertical game counter: straddles the divider, half in top panel and half in bottom */
+  .lore-score-pill-wrap {
+    position: absolute;
+    left: 0px;
+    top: 0;
+    bottom: 0;
+    width: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .lore-score-pill {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 24px;
+    justify-content: center;
     gap: 12px;
+    background: rgba(30, 30, 30, 0.762);
+    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    padding: 10px;
+    border-radius: 0 12px 12px 0;
+    min-height: 200px;
+  }
+
+  .lore-score-pill__score {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .lore-panel {
     flex: 1 1 0;
     min-height: 0;
-    max-height: 50%;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    position: relative;
   }
 
-  .lore-card__name {
-    flex-shrink: 0;
-    color: var(--muted);
-    font-size: 0.95rem;
-    font-weight: 600;
-    text-align: center;
+  .lore-panel--p1 {
+    background: rgba(87, 101, 124, 0.65);
+    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
   }
 
-  /* Flip P2 (top) card so both players see their card right-side up when sitting across */
-  .lore-card--p2 {
+  .lore-panel--p2 {
+    background: rgba(122, 54, 171, 0.65);
+    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
     transform: rotate(180deg);
   }
 
-  .lore-card--starter {
-    border: 3px solid var(--ok);
-    box-shadow: 0 0 0 1px var(--ok);
+  .lore-panel--winner {
+    animation: lore-winner-pulse-panel 2s ease-in-out;
+    box-shadow: inset 0 0 0 3px var(--ok);
   }
 
-  .lore-card--starter:hover {
-    border-color: var(--ok);
-    box-shadow: 0 0 0 1px var(--ok);
+  @keyframes lore-winner-pulse-panel {
+    0%,
+    100% {
+      box-shadow:
+        inset 0 0 0 3px var(--ok),
+        inset 0 0 24px rgba(34, 197, 94, 0.2);
+    }
+    50% {
+      box-shadow:
+        inset 0 0 0 4px var(--ok),
+        inset 0 0 32px rgba(34, 197, 94, 0.35);
+    }
   }
 
-  .lore-card--second {
-    border: 3px solid #b91c1c;
-    box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.5);
-  }
-
-  .lore-card--second:hover {
-    border-color: #b91c1c;
-    box-shadow: 0 0 0 1px rgba(185, 28, 28, 0.5);
-  }
-
-  .lore-card__btn {
-    width: 100%;
-    flex: 1;
-    min-height: 56px;
-    border-radius: var(--radius);
-    border: 2px solid var(--border-strong);
-    background: var(--glass-bg-strong);
-    color: var(--fg);
-    font-size: 1.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background var(--transition), transform var(--transition);
+  .lore-panel__center {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* gap: 16px; */
+  }
+
+  .lore-panel__value {
+    font-size: 5rem;
+    font-weight: 800;
     line-height: 1;
+    color: #fff;
+    min-width: 2ch;
+    z-index: 2;
+    text-align: center;
+    position: absolute;
   }
 
-  .lore-card__btn:hover {
-    background: var(--glass-bg);
-    transform: scale(1.02);
+  .lore-panel__btn {
+    width: 50vw;
+    height: 50vh;
+    border: none;
+    background: transparent;
+    color: #fff;
+    font-size: 1.5rem;
+    font-weight: 400;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background 0.15s,
+      transform 0.1s;
   }
 
-  .lore-card__btn:active {
+  .lore-panel__btn:hover {
+    /* background: rgba(255, 255, 255, 0.15); */
+    background: rgba(30, 30, 30, 0.382);
+    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    transform: scale(1.05);
+  }
+
+  .lore-panel__btn:active {
+    transform: scale(0.95);
+  }
+
+  @media (max-width: 480px) {
+    .lore-panel__btn {
+      width: 52px;
+      height: 52px;
+      font-size: 1.75rem;
+    }
+  }
+
+  .lore-divider {
+    flex-shrink: 0;
+    height: 2px;
+    background: #000;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lore-divider__menu {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 50%;
+    background: #111;
+    cursor: pointer;
+    font: inherit;
+    appearance: none;
+    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    z-index: 2;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-decoration: none;
+    line-height: 1;
+    transition:
+      background 0.15s,
+      transform 0.1s;
+    box-shadow: 0 0 0 2px #000;
+  }
+
+  .lore-divider__menu:hover {
+    background: #222;
+    transform: scale(1.05);
+  }
+
+  .lore-divider__menu:active {
     transform: scale(0.98);
   }
 
-  .lore-card__btn--inc {
+  .lore-game-over__title {
     color: var(--ok);
-    border-color: rgba(34, 197, 94, 0.4);
-  }
-
-  .lore-card__btn--dec {
-    color: var(--danger);
-    border-color: rgba(220, 38, 38, 0.4);
-  }
-
-  .lore-card__value {
-    font-size: 3.5rem;
-    font-weight: 800;
-    line-height: 1;
-    color: var(--fg);
-    min-height: 3.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .lore-page__actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
-    flex-shrink: 0;
-  }
-
-  .lore-page__done-btn {
-    min-width: 200px;
   }
 
   /* Modal overlay */
@@ -545,18 +720,19 @@
   .lore-modal__card {
     position: relative;
     z-index: 1;
-    max-width: 360px;
+    max-width: 420px;
     width: 100%;
     text-align: center;
   }
 
   .lore-modal__title {
-    font-size: 1.25rem;
-    margin: 0 0 8px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 24px;
   }
 
   .lore-modal__text {
-    margin: 0 0 20px;
+    margin: 0 0 24px;
   }
 
   .lore-modal__actions {
@@ -566,90 +742,73 @@
     flex-wrap: wrap;
   }
 
-  /* Two-sided coin */
-  .lore-coin-wrap {
-    padding: 24px;
+  @media (max-width: 480px) {
+    .lore-modal__actions .btn {
+      min-height: 52px;
+      padding: 14px 24px;
+      font-size: 1.1rem;
+    }
   }
 
-  .lore-coin {
-    position: relative;
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 16px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, var(--glass-bg-strong), var(--border-strong));
-    border: 3px solid var(--border-strong);
-    cursor: pointer;
-    transform-style: preserve-3d;
-    transition: transform 0.1s ease-out;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* Choose starting player: two large buttons in player direction (P2 top, P1 bottom) */
+  .lore-starter-choice {
+    padding: 0;
+    max-width: 420px;
+    overflow: hidden;
   }
 
-  .lore-coin:hover {
-    transform: scale(1.05);
-  }
-
-  .lore-coin__face {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    backface-visibility: hidden;
-    font-weight: 700;
-    font-size: 0.9rem;
-    padding: 8px;
+  .lore-starter-choice__title {
+    margin: 0;
+    padding: 20px 20px 12px;
+    font-size: 1.25rem;
     text-align: center;
   }
 
-  .lore-coin__face--p1 {
-    background: linear-gradient(145deg, #1e3a5f, #2d5a87);
-    color: #e0e7ff;
+  .lore-starter-choice__buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
-  .lore-coin__face--p2 {
-    background: linear-gradient(145deg, #3d2c1e, #6b5344);
-    color: #fef3c7;
-    transform: rotateY(180deg);
+  .lore-starter-choice__btn {
+    flex: 1;
+    min-height: 120px;
+    border: none;
+    padding: 24px 20px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition:
+      filter 0.15s,
+      transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
   }
 
-  .lore-coin--flipping {
-    cursor: default;
-    animation: lore-coin-flip 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  .lore-starter-choice__btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: scale(1.01);
   }
 
-  .lore-coin--result {
-    cursor: default;
+  .lore-starter-choice__btn:active:not(:disabled) {
+    transform: scale(0.99);
   }
 
-  .lore-coin--reveal {
-    animation: lore-coin-reveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  .lore-starter-choice__btn:disabled {
+    opacity: 0.8;
+    cursor: wait;
   }
 
-  .lore-coin--p1-wins {
-    transform: rotateY(0deg);
+  .lore-starter-choice__btn--p2 {
+    background: linear-gradient(145deg, #5b21b6, #7c3aed);
   }
 
-  .lore-coin--p2-wins {
-    transform: rotateY(180deg);
-  }
-
-  .lore-coin-result-text {
-    font-weight: 600;
-    margin: 0 0 8px;
-  }
-
-  .lore-coin-result-text--flashy {
-    font-size: 1.15rem;
-    animation: lore-result-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
-  }
-
-  .lore-coin-choose {
-    font-size: 0.9rem;
-    margin: 0 0 16px;
+  .lore-starter-choice__btn--p1 {
+    background: linear-gradient(145deg, #4b5563, #6b7280);
   }
 
   @keyframes lore-fade-in {
@@ -658,78 +817,6 @@
     }
     to {
       opacity: 1;
-    }
-  }
-
-  @keyframes lore-coin-flip {
-    0% {
-      transform: rotateY(0deg) scale(1);
-      filter: brightness(1);
-    }
-    15% {
-      transform: rotateY(180deg) scale(1.08);
-      filter: brightness(1.2);
-    }
-    50% {
-      transform: rotateY(900deg) scale(1.15);
-      filter: brightness(1.3);
-    }
-    85% {
-      transform: rotateY(1620deg) scale(1.05);
-      filter: brightness(1.15);
-    }
-    100% {
-      transform: rotateY(1800deg) scale(1);
-      filter: brightness(1);
-    }
-  }
-
-  @keyframes lore-coin-reveal {
-    0% {
-      transform: rotateY(0deg) scale(0.5);
-      opacity: 0;
-      filter: drop-shadow(0 0 0 transparent);
-    }
-    60% {
-      transform: rotateY(0deg) scale(1.15);
-      filter: drop-shadow(0 0 20px var(--ok-glow));
-    }
-    100% {
-      transform: rotateY(0deg) scale(1);
-      opacity: 1;
-      filter: drop-shadow(0 0 12px var(--ok-glow));
-    }
-  }
-
-  .lore-coin--p2-wins.lore-coin--reveal {
-    animation: lore-coin-reveal-p2 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  @keyframes lore-coin-reveal-p2 {
-    0% {
-      transform: rotateY(180deg) scale(0.5);
-      opacity: 0;
-      filter: drop-shadow(0 0 0 transparent);
-    }
-    60% {
-      transform: rotateY(180deg) scale(1.15);
-      filter: drop-shadow(0 0 20px var(--ok-glow));
-    }
-    100% {
-      transform: rotateY(180deg) scale(1);
-      opacity: 1;
-      filter: drop-shadow(0 0 12px var(--ok-glow));
-    }
-  }
-
-  @keyframes lore-result-pop {
-    0% {
-      opacity: 0;
-      transform: scale(0.8);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1);
     }
   }
 </style>

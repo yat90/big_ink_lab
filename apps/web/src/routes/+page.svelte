@@ -33,13 +33,22 @@
 
   const apiUrl = config.apiUrl ?? '/api';
 
+  /** Default players for Quick Match when no selection UI. */
+  const QUICK_MATCH_P1_ID = '69a8a02d97f97400baf9f7fc';
+  const QUICK_MATCH_P2_ID = '69a8a03297f97400baf9f7ff';
+
   async function startLoreTracker() {
     loreTrackerLoading = true;
     try {
       const res = await fetch(`${apiUrl}/matches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stage: 'Casual', games: [{}] }),
+        body: JSON.stringify({
+          stage: 'Casual',
+          games: [{}],
+          p1: QUICK_MATCH_P1_ID,
+          p2: QUICK_MATCH_P2_ID,
+        }),
       });
       if (!res.ok) {
         error = 'Could not create match';
