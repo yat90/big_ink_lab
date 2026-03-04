@@ -48,6 +48,7 @@
           games: [{}],
           p1: QUICK_MATCH_P1_ID,
           p2: QUICK_MATCH_P2_ID,
+          playedAt: new Date().toISOString(),
         }),
       });
       if (!res.ok) {

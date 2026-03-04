@@ -511,7 +511,7 @@
     left: 0px;
     top: 0;
     bottom: 0;
-    width: 22px;
+    width: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -626,11 +626,7 @@
   }
 
   .lore-panel__btn:hover {
-    /* background: rgba(255, 255, 255, 0.15); */
-    background: rgba(30, 30, 30, 0.382);
-    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    transform: scale(1.05);
+    background: rgba(30, 30, 30, 0.15);
   }
 
   .lore-panel__btn:active {
@@ -640,10 +636,7 @@
   @media (max-width: 480px) {
     .lore-panel__btn {
       min-width: 64px;
-      min-height: 64px;
-      width: 30vw;
-      height: 50vh;
-      font-size: 1.75rem;
+      font-size: 2rem;
     }
   }
 
