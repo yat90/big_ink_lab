@@ -273,11 +273,6 @@
     goto(`/matches/${id}`);
   }
 
-  const hasNextGame = $derived(match?.games != null && gameIndex + 1 < match.games.length);
-  const gameOverWinnerName = $derived(
-    gameOverWinnerId === p1Id ? p1Name : gameOverWinnerId === p2Id ? p2Name : 'Winner'
-  );
-
   async function save() {
     if (!match?.games?.length) return;
     const clampedP1 = Math.min(LORE_MAX, Math.max(0, p1Lore));
@@ -534,7 +529,6 @@
     color: #fff;
     padding: 10px;
     border-radius: 0 12px 12px 0;
-    min-height: 200px;
   }
 
   .lore-score-pill__score {
@@ -600,14 +594,17 @@
     line-height: 1;
     color: #fff;
     min-width: 2ch;
-    z-index: 2;
+    z-index: 1;
     text-align: center;
     position: absolute;
+    pointer-events: none;
   }
 
   .lore-panel__btn {
     width: 50vw;
     height: 50vh;
+    min-width: 48px;
+    min-height: 48px;
     border: none;
     background: transparent;
     color: #fff;
@@ -620,6 +617,9 @@
     transition:
       background 0.15s,
       transform 0.1s;
+    touch-action: manipulation;
+    position: relative;
+    z-index: 2;
   }
 
   .lore-panel__btn:hover {
@@ -636,8 +636,10 @@
 
   @media (max-width: 480px) {
     .lore-panel__btn {
-      width: 52px;
-      height: 52px;
+      min-width: 64px;
+      min-height: 64px;
+      width: 30vw;
+      height: 50vh;
       font-size: 1.75rem;
     }
   }
