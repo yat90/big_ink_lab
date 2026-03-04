@@ -486,6 +486,8 @@
     /* gap: 16px; */
     width: 100%;
     min-height: 0;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .lore-page__loading {
