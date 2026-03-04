@@ -3,7 +3,8 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { type Game, type GameStatus, STAGE_OPTIONS, DECK_COLOR_OPTIONS, deckColorToInk } from '$lib/matches';
+  import { type Game, type GameStatus, STAGE_OPTIONS, DECK_COLOR_OPTIONS } from '$lib/matches';
+  import DeckColorSelect from '$lib/DeckColorSelect.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Match = {
@@ -419,35 +420,25 @@
                 <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
               {/if}
             </span>
-            <select
-              class="input matchcard__deck-select"
+            <DeckColorSelect
+              className="matchcard__deck-select"
               value={match.p1DeckColor ?? ''}
               disabled={updatingDeckColor}
-              onchange={(e) => onDeckColorChange(e.currentTarget.value || undefined, match?.p2DeckColor)}
-              aria-label="P1 deck color"
-            >
-              <option value="">–</option>
-              {#each DECK_COLOR_OPTIONS as c}
-                <option value={c} title={c}>{deckColorToInk(c)}</option>
-              {/each}
-            </select>
+              onchange={(v) => onDeckColorChange(v || undefined, match?.p2DeckColor)}
+              ariaLabel="P1 deck color"
+            />
             <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p1Id ?? '')}</span>
           </div>
           <div class="matchcard__vs" aria-hidden="true">VS.</div>
           <div class="matchcard__player matchcard__player--right" class:matchcard__player--winner={matchWinnerId === p2Id}>
             <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p2Id ?? '')}</span>
-            <select
-              class="input matchcard__deck-select"
+            <DeckColorSelect
+              className="matchcard__deck-select"
               value={match.p2DeckColor ?? ''}
               disabled={updatingDeckColor}
-              onchange={(e) => onDeckColorChange(match?.p1DeckColor, e.currentTarget.value || undefined)}
-              aria-label="P2 deck color"
-            >
-              <option value="">–</option>
-              {#each DECK_COLOR_OPTIONS as c}
-                <option value={c} title={c}>{deckColorToInk(c)}</option>
-              {/each}
-            </select>
+              onchange={(v) => onDeckColorChange(match?.p1DeckColor, v || undefined)}
+              ariaLabel="P2 deck color"
+            />
             <span class="matchcard__name matchcard__name--with-select">
               <select
                 class="input matchcard__player-select"

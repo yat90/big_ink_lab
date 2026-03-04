@@ -20,23 +20,22 @@ export const DECK_COLOR_OPTIONS = [
   'Sapphire / Steel',
 ] as const;
 
-/** Lorcana ink emoji per color (for display in deck color selects) */
-const INK_EMOJI: Record<string, string> = {
-  Amber: '🟡',
-  Amethyst: '🟣',
-  Emerald: '🟢',
-  Ruby: '🔴',
-  Sapphire: '🔵',
-  Steel: '⚙️',
+/** Lorcana ink color image paths (under /ink/ in static) */
+export const INK_IMAGE: Record<string, string> = {
+  Amber: '/ink/amber.png',
+  Amethyst: '/ink/amethyst.png',
+  Emerald: '/ink/emerald.png',
+  Ruby: '/ink/ruby.png',
+  Sapphire: '/ink/sapphire.png',
+  Steel: '/ink/steel.png',
 };
 
-/** Return ink emoji pair for a deck color string, e.g. "Amber / Amethyst" → "🟡 🟣" */
-export function deckColorToInk(label: string): string {
-  if (!label) return '–';
+/** Return [color1, color2] for a deck color string, e.g. "Amber / Amethyst" → ["Amber", "Amethyst"] */
+export function getInkColors(label: string): [string, string] | null {
+  if (!label) return null;
   const [a, b] = label.split(' / ').map((s) => s.trim());
-  const e1 = INK_EMOJI[a] ?? '';
-  const e2 = INK_EMOJI[b] ?? '';
-  return e1 && e2 ? `${e1} ${e2}` : label;
+  if (a && b && INK_IMAGE[a] && INK_IMAGE[b]) return [a, b];
+  return null;
 }
 
 export type MatchStage = (typeof STAGE_OPTIONS)[number];

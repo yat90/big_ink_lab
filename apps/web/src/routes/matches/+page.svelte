@@ -1,6 +1,7 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { type Game, STAGE_OPTIONS, deckColorToInk } from '$lib/matches';
+  import { type Game, STAGE_OPTIONS } from '$lib/matches';
+  import InkIcons from '$lib/InkIcons.svelte';
   import { onMount } from 'svelte';
 
   type Player = { _id: string; name: string; team: string };
@@ -180,7 +181,7 @@
                   {/if}
                 </span>
                 {#if match.p1DeckColor}
-                  <span class="matchcard__ink" title={match.p1DeckColor} aria-hidden="true">{deckColorToInk(match.p1DeckColor)}</span>
+                  <span class="matchcard__ink" title={match.p1DeckColor} aria-hidden="true"><InkIcons deckColor={match.p1DeckColor} /></span>
                 {/if}
                 <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p1Id ?? '')}</span>
               </div>
@@ -188,7 +189,7 @@
               <div class="matchcard__player matchcard__player--right" class:matchcard__player--winner={winnerId === p2Id}>
                 <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p2Id ?? '')}</span>
                 {#if match.p2DeckColor}
-                  <span class="matchcard__ink" title={match.p2DeckColor} aria-hidden="true">{deckColorToInk(match.p2DeckColor)}</span>
+                  <span class="matchcard__ink" title={match.p2DeckColor} aria-hidden="true"><InkIcons deckColor={match.p2DeckColor} /></span>
                 {/if}
                 <span class="matchcard__name">
                   {playerName(match.p2)}

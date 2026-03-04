@@ -2,7 +2,8 @@
   import { config } from '$lib/config';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
-  import { DECK_COLOR_OPTIONS, deckColorToInk } from '$lib/matches';
+  import { DECK_COLOR_OPTIONS } from '$lib/matches';
+  import InkIcons from '$lib/InkIcons.svelte';
 
   type DeckColorMatrixCell = { played: number; won: number };
   type DeckColorMatrix = Record<string, Record<string, DeckColorMatrixCell>>;
@@ -161,14 +162,14 @@
                   <tr>
                     <th scope="col" class="player-stats__matrix-corner"></th>
                     {#each DECK_COLOR_OPTIONS as oppDeck}
-                      <th scope="col" class="player-stats__matrix-header" title={oppDeck}>{deckColorToInk(oppDeck)}</th>
+                      <th scope="col" class="player-stats__matrix-header" title={oppDeck}><InkIcons deckColor={oppDeck} size="sm" /></th>
                     {/each}
                   </tr>
                 </thead>
                 <tbody>
                   {#each DECK_COLOR_OPTIONS as myDeck}
                     <tr>
-                      <th scope="row" class="player-stats__matrix-row-header" title={myDeck}>{deckColorToInk(myDeck)}</th>
+                      <th scope="row" class="player-stats__matrix-row-header" title={myDeck}><InkIcons deckColor={myDeck} size="sm" /></th>
                       {#each DECK_COLOR_OPTIONS as oppDeck}
                         {@const cell = player.stats?.deckColorMatrix?.[myDeck]?.[oppDeck]}
                         {@const winPct = cell ? Math.round((cell.won / cell.played) * 100) : null}

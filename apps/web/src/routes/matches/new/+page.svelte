@@ -2,7 +2,8 @@
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { STAGE_OPTIONS, DECK_COLOR_OPTIONS, deckColorToInk } from '$lib/matches';
+  import { STAGE_OPTIONS, DECK_COLOR_OPTIONS } from '$lib/matches';
+  import DeckColorSelect from '$lib/DeckColorSelect.svelte';
 
   type Player = { _id: string; name: string; team: string };
 
@@ -267,19 +268,9 @@
 
       <div class="formgrid">
         <label class="label" for="p1DeckColor">P1 deck color</label>
-        <select id="p1DeckColor" class="input" bind:value={p1DeckColor}>
-          <option value="">–</option>
-          {#each DECK_COLOR_OPTIONS as c}
-            <option value={c} title={c}>{deckColorToInk(c)}</option>
-          {/each}
-        </select>
+        <DeckColorSelect id="p1DeckColor" bind:value={p1DeckColor} ariaLabel="P1 deck color" />
         <label class="label" for="p2DeckColor">P2 deck color</label>
-        <select id="p2DeckColor" class="input" bind:value={p2DeckColor}>
-          <option value="">–</option>
-          {#each DECK_COLOR_OPTIONS as c}
-            <option value={c} title={c}>{deckColorToInk(c)}</option>
-          {/each}
-        </select>
+        <DeckColorSelect id="p2DeckColor" bind:value={p2DeckColor} ariaLabel="P2 deck color" />
       </div>
 
       <div class="stack">

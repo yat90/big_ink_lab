@@ -5,7 +5,8 @@
   import { onMount } from 'svelte';
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerId } from '$lib/decks';
-  import { DECK_COLOR_OPTIONS, deckColorToInk } from '$lib/matches';
+  import { DECK_COLOR_OPTIONS } from '$lib/matches';
+  import DeckColorSelect from '$lib/DeckColorSelect.svelte';
 
   type Player = { _id: string; name: string; team: string };
 
@@ -150,12 +151,7 @@
         ></textarea>
 
         <label class="label" for="deckColor">Deck color</label>
-        <select id="deckColor" class="input" bind:value={deckColor} aria-label="Deck color">
-          <option value="">—</option>
-          {#each DECK_COLOR_OPTIONS as c}
-            <option value={c} title={c}>{deckColorToInk(c)} {c}</option>
-          {/each}
-        </select>
+        <DeckColorSelect id="deckColor" bind:value={deckColor} ariaLabel="Deck color" />
 
         <label class="label" for="player">Player</label>
         <select id="player" class="input" bind:value={playerId} aria-label="Player">

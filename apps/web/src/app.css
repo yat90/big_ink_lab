@@ -1139,6 +1139,24 @@ a[class*="playercard"]:active {
 	line-height: 1;
 }
 
+/* Ink color images (replacing emojis) */
+.ink-icons {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	line-height: 1;
+	vertical-align: middle;
+}
+.ink-icons img {
+	display: block;
+	object-fit: contain;
+	height: 1.6em;
+	width: auto;
+}
+.ink-icons--sm img {
+	height: 1.5em;
+}
+
 .matchcard__deck-select {
 	min-width: 6em;
 	width: 6em;

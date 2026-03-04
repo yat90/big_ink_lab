@@ -2,7 +2,8 @@
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { type Game, deckColorToInk } from '$lib/matches';
+  import { type Game } from '$lib/matches';
+  import InkIcons from '$lib/InkIcons.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Match = {
@@ -220,7 +221,7 @@
                     </span>
                     {#if match.p1DeckColor}
                       <span class="matchcard__ink" title={match.p1DeckColor} aria-hidden="true"
-                        >{deckColorToInk(match.p1DeckColor)}</span
+                        ><InkIcons deckColor={match.p1DeckColor} /></span
                       >
                     {/if}
                     <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p1Id ?? '')}</span>
@@ -233,7 +234,7 @@
                     <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p2Id ?? '')}</span>
                     {#if match.p2DeckColor}
                       <span class="matchcard__ink" title={match.p2DeckColor} aria-hidden="true"
-                        >{deckColorToInk(match.p2DeckColor)}</span
+                        ><InkIcons deckColor={match.p2DeckColor} /></span
                       >
                     {/if}
                     <span class="matchcard__name">

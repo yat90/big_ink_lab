@@ -1,6 +1,7 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { DECK_COLOR_OPTIONS, STAGE_OPTIONS, deckColorToInk } from '$lib/matches';
+  import { DECK_COLOR_OPTIONS, STAGE_OPTIONS } from '$lib/matches';
+  import InkIcons from '$lib/InkIcons.svelte';
 
   type GlobalStats = {
     totalMatches: number;
@@ -162,14 +163,14 @@
                 <tr>
                   <th scope="col" class="match-stats__matrix-corner"></th>
                   {#each DECK_COLOR_OPTIONS as oppDeck}
-                    <th scope="col" class="match-stats__matrix-header" title={oppDeck}>{deckColorToInk(oppDeck)}</th>
+                    <th scope="col" class="match-stats__matrix-header" title={oppDeck}><InkIcons deckColor={oppDeck} size="sm" /></th>
                   {/each}
                 </tr>
               </thead>
               <tbody>
                 {#each DECK_COLOR_OPTIONS as myDeck}
                   <tr>
-                    <th scope="row" class="match-stats__matrix-row-header" title={myDeck}>{deckColorToInk(myDeck)}</th>
+                    <th scope="row" class="match-stats__matrix-row-header" title={myDeck}><InkIcons deckColor={myDeck} size="sm" /></th>
                     {#each DECK_COLOR_OPTIONS as oppDeck}
                       {@const cell = stats.deckColorMatrix[myDeck]?.[oppDeck]}
                       {@const winPct = cell ? Math.round((cell.won / cell.played) * 100) : null}

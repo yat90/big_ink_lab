@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerName } from '$lib/decks';
-  import { deckColorToInk } from '$lib/matches';
+  import InkIcons from '$lib/InkIcons.svelte';
 
   let decks = $state<Deck[]>([]);
   let loading = $state(true);
@@ -66,7 +66,7 @@
           <div class="deckcard__meta row" style="gap: var(--space-md); flex-wrap: wrap;">
             {#if deck.deckColor}
               <span class="deckcard__ink" title={deck.deckColor} aria-hidden="true">
-                {deckColorToInk(deck.deckColor)}
+                <InkIcons deckColor={deck.deckColor} />
               </span>
             {/if}
             {#if getDeckPlayerName(deck) !== '–'}
