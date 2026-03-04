@@ -69,6 +69,9 @@
   const p2Id = $derived(
     match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2)
   );
+  const gameOverWinnerName = $derived(
+    gameOverWinnerId === p1Id ? p1Name : gameOverWinnerId === p2Id ? p2Name : 'Winner'
+  );
   function gameWinnerId(g: Game): string | undefined {
     if (!g.winner) return undefined;
     return typeof g.winner === 'string' ? g.winner : (g.winner as { _id?: string })?._id;
@@ -468,7 +471,7 @@
         <p class="lore-modal__text muted">Go to the next game?</p>
         <div class="lore-modal__actions">
           <a href="/matches/{id}" class="btn btn--primary">Back to match</a>
-          <button type="button" class="btn" onclick={() => goToNextGame(true)}>Next Game</button>
+          <button type="button" class="btn" onclick={() => goToNextGame()}>Next Game</button>
         </div>
       </div>
     </div>
