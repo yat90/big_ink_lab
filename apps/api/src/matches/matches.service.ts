@@ -80,13 +80,13 @@ export class MatchesService {
       }
     }
     // When a deck is set, copy its deckColor onto the match
-    if (dto.p1Deck != null && dto.p1Deck !== '') {
+    if (dto.p1Deck != null && dto.p1Deck.toString() !== '') {
       const deck = await this.deckModel.findById(dto.p1Deck).select('deckColor').lean().exec();
       if (deck?.deckColor) {
         dto.p1DeckColor = deck.deckColor as Match['p1DeckColor'];
       }
     }
-    if (dto.p2Deck != null && dto.p2Deck !== '') {
+    if (dto.p2Deck != null && dto.p2Deck.toString() !== '') {
       const deck = await this.deckModel.findById(dto.p2Deck).select('deckColor').lean().exec();
       if (deck?.deckColor) {
         dto.p2DeckColor = deck.deckColor as Match['p2DeckColor'];

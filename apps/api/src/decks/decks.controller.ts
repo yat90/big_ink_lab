@@ -9,7 +9,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Deck } from './schemas/deck.schema';
-import { DecksService } from './decks.service';
+import { DecksService, type DeckStats } from './decks.service';
 
 @Controller('decks')
 export class DecksController {
@@ -18,6 +18,13 @@ export class DecksController {
   @Get()
   async findAll(): Promise<Deck[]> {
     return this.decksService.findAll();
+  }
+
+  @Get(':id/stats')
+  async getStats(@Param('id') id: string): Promise<DeckStats> {
+    const deck = await this.decksService.findOne(id);
+    if (!deck) throw new NotFoundException('Deck not found');
+    return this.decksService.getDeckStats(id);
   }
 
   @Get(':id')

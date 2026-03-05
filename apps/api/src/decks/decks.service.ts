@@ -3,8 +3,24 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Deck } from './schemas/deck.schema';
 import { Card } from './schemas/card.schema';
+import { Match } from '../matches/schemas/lorcana-match.schema';
 import { DeckColor } from '../matches/schemas/deck-color.enum';
 import { LorcastService, type LorcastCard } from './lorcast.service';
+
+export interface DeckStatsByOpponent {
+  played: number;
+  won: number;
+}
+
+export interface DeckStats {
+  deckColor: string | null;
+  totalMatches: number;
+  wins: number;
+  losses: number;
+  winRate: number | null;
+  /** Matrix keyed by opponent deck color. */
+  byOpponentDeckColor: Record<string, DeckStatsByOpponent>;
+}
 
 const LINE_REGEX = /^(\d+)\s*x?\s*(.+)$/i;
 
@@ -97,6 +113,7 @@ export class DecksService {
   constructor(
     @InjectModel(Deck.name) private readonly deckModel: Model<Deck>,
     @InjectModel(Card.name) private readonly cardModel: Model<Card>,
+    @InjectModel(Match.name) private readonly matchModel: Model<Match>,
     private readonly lorcastService: LorcastService,
   ) {}
 
@@ -229,6 +246,91 @@ export class DecksService {
       }
     }
     return out;
+  }
+
+  /**
+   * Get statistics for a deck based on matches where this deck is linked (p1Deck or p2Deck).
+   * Includes total matches, wins, losses, win rate, and a matrix by opponent deck color.
+   */
+  async getDeckStats(deckId: string): Promise<DeckStats> {
+    const deck = await this.deckModel.findById(deckId).select('deckColor').lean().exec();
+    const deckColor = deck?.deckColor ?? null;
+
+    const matches = await this.matchModel
+      .find({
+        $or: [{ p1Deck: deckId }, { p2Deck: deckId }],
+      })
+      .select('p1 p2 matchWinner p1Deck p2Deck p1DeckColor p2DeckColor')
+      .lean()
+      .exec();
+
+      console.log(`Found ${matches.length} matches for deck ${deckId}`);
+    const allColors = Object.values(DeckColor);
+    const byOpponentDeckColor: Record<string, DeckStatsByOpponent> = {};
+    for (const c of allColors) {
+      byOpponentDeckColor[c] = { played: 0, won: 0 };
+    }
+
+    let wins = 0;
+    for (const m of matches) {
+      const result = this.interpretMatchForDeck(m, deckId);
+      if (!result) continue;
+      const { won, opponentDeckColor } = result;
+      if (opponentDeckColor) {
+        const cell = byOpponentDeckColor[opponentDeckColor] ?? { played: 0, won: 0 };
+        cell.played += 1;
+        if (won) cell.won += 1;
+        byOpponentDeckColor[opponentDeckColor] = cell;
+      }
+      if (won) wins += 1;
+    }
+
+    const totalMatches = matches.length;
+    const losses = totalMatches - wins;
+    const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 1000) / 1000 : null;
+
+    return {
+      deckColor: deckColor ?? null,
+      totalMatches,
+      wins,
+      losses,
+      winRate,
+      byOpponentDeckColor,
+    };
+  }
+
+  /**
+   * Determine whether the given deck was used in this match, and if so whether it won
+   * and what the opponent's deck color was. Returns null if the deck was not p1Deck or p2Deck.
+   */
+  private interpretMatchForDeck(
+    m: { p1?: unknown; p2?: unknown; matchWinner?: unknown; p1Deck?: unknown; p2Deck?: unknown; p1DeckColor?: string; p2DeckColor?: string },
+    deckId: string,
+  ): { won: boolean; opponentDeckColor: string | null } | null {
+    const toId = (ref: unknown): string => {
+      if (ref == null) return '';
+      const s = (ref as Types.ObjectId).toString?.();
+      if (s != null) return s;
+      return typeof ref === 'string' ? ref : '';
+    };
+
+    const player1Id = toId(m.p1);
+    const player2Id = toId(m.p2);
+    const matchWinnerId = toId(m.matchWinner);
+    const deckOnP1Side = toId(m.p1Deck);
+    const deckOnP2Side = toId(m.p2Deck);
+
+    const ourDeckWasP1 = deckOnP1Side === deckId;
+    const ourDeckWasP2 = deckOnP2Side === deckId;
+    if (!ourDeckWasP1 && !ourDeckWasP2) {
+      return null;
+    }
+
+    const opponentDeckColor = ourDeckWasP1 ? (m.p2DeckColor ?? null) : (m.p1DeckColor ?? null);
+    const ourPlayerId = ourDeckWasP1 ? player1Id : player2Id;
+    const won = matchWinnerId === ourPlayerId;
+
+    return { won, opponentDeckColor };
   }
 
   /** Infer deck color from resolved Lorcast cards (with amount). */
