@@ -160,7 +160,14 @@
     }
     return resolvedLines.map((line) => {
       const first = line.cards?.[0] as
-        | { image_uris?: ImageUris; version?: string; type?: string[]; ink?: string; inkwell?: boolean; cost?: number }
+        | {
+            image_uris?: ImageUris;
+            version?: string;
+            type?: string[];
+            ink?: string;
+            inkwell?: boolean;
+            cost?: number;
+          }
         | undefined;
       return {
         amount: line.count,
@@ -183,11 +190,18 @@
     let flatIndex = 0;
     for (const card of displayCards) {
       const primary = (card.types?.[0] ?? '').trim();
-      const key = primary ? primary.charAt(0).toUpperCase() + primary.slice(1).toLowerCase() : 'Other';
+      const key = primary
+        ? primary.charAt(0).toUpperCase() + primary.slice(1).toLowerCase()
+        : 'Other';
       if (!byType[key]) byType[key] = [];
       byType[key].push({ card, flatIndex: flatIndex++ });
     }
-    const groups: { type: string; label: string; count: number; entries: { card: DisplayCard; flatIndex: number }[] }[] = [];
+    const groups: {
+      type: string;
+      label: string;
+      count: number;
+      entries: { card: DisplayCard; flatIndex: number }[];
+    }[] = [];
     /** Sort by ink cost (ascending); null/undefined cost last. */
     const sortByCost = (entries: { card: DisplayCard; flatIndex: number }[]) =>
       [...entries].sort((a, b) => (a.card.cost ?? 99) - (b.card.cost ?? 99));
@@ -214,7 +228,14 @@
   type ResolvedLine = {
     count: number;
     name: string;
-    cards: { image_uris?: ImageUris; version?: string; type?: string[]; ink?: string; inkwell?: boolean; cost?: number }[];
+    cards: {
+      image_uris?: ImageUris;
+      version?: string;
+      type?: string[];
+      ink?: string;
+      inkwell?: boolean;
+      cost?: number;
+    }[];
   };
   let resolvedLines = $state<ResolvedLine[]>([]);
   let resolving = $state(false);
@@ -401,7 +422,10 @@
             <div class="deck-cards__groups">
               {#each groupedByType as group (group.type)}
                 <section class="deck-cards__group" aria-labelledby="deck-group-{group.type}">
-                  <h4 id="deck-group-{group.type}" class="deck-cards__group-title">{group.label} {group.count}</h4>
+                  <h4 id="deck-group-{group.type}" class="deck-cards__group-title">
+                    {group.label}
+                    {group.count}
+                  </h4>
                   {#if cardViewMode === 'icons'}
                     <div class="deck-cards__icon-grid" role="list">
                       {#each group.entries as { card, flatIndex } (card.name + '-' + flatIndex)}
@@ -430,7 +454,9 @@
                             {:else}
                               <span class="deck-cards__icon-placeholder" aria-hidden="true">?</span>
                             {/if}
-                            <span class="deck-cards__icon-count" aria-hidden="true">{card.amount}×</span>
+                            <span class="deck-cards__icon-count" aria-hidden="true"
+                              >{card.amount}×</span
+                            >
                           </button>
                         </div>
                       {/each}
@@ -440,64 +466,89 @@
                       {#each group.entries as { card, flatIndex } (card.name + '-' + flatIndex)}
                         {@const inkSrc = getInkImageSrc(card.ink)}
                         <li
-                        class="deck-cards__item"
-                        class:deck-cards__item--hover={hoveredIndex === flatIndex}
-                        onmouseenter={() => (hoveredIndex = flatIndex)}
-                        onmouseleave={() => (hoveredIndex = null)}
-                      >
-                        <span class="deck-cards__count" aria-label="Quantity">{card.amount}×</span>
-                        <span class="deck-cards__ink" title={card.ink ?? 'Unknown ink'} aria-label="Ink: {card.ink ?? 'unknown'}">
-                          {#if inkSrc}
-                            <img src={inkSrc} alt="" width="24" height="24" class="deck-cards__ink-img" />
-                          {:else}
-                            <span class="deck-cards__ink-placeholder" aria-hidden="true">—</span>
-                          {/if}
-                        </span>
-                        <span
-                          class="deck-cards__inkable deck-cards__inkable--{card.inkwell ? 'inkwell' : card.cost != null ? 'cost' : 'na'}"
-                          title={card.inkwell ? `Inkable, cost ${card.cost ?? '?'}` : card.cost != null ? `Cost ${card.cost} (not inkable)` : 'No cost'}
-                          aria-label={card.inkwell ? `Inkable, cost ${card.cost ?? '?'}` : card.cost != null ? `Cost ${card.cost}, not inkable` : 'No cost'}
+                          class="deck-cards__item"
+                          class:deck-cards__item--hover={hoveredIndex === flatIndex}
+                          onmouseenter={() => (hoveredIndex = flatIndex)}
+                          onmouseleave={() => (hoveredIndex = null)}
                         >
-                          {#if card.inkwell && card.cost != null}
-                            <span class="deck-cards__inkable-cost">{card.cost}</span>
-                          {:else if card.cost != null}
-                            <span class="deck-cards__inkable-cost deck-cards__inkable-cost--plain">{card.cost}</span>
-                          {:else}
-                            <span class="deck-cards__inkable-na" aria-hidden="true">—</span>
-                          {/if}
-                        </span>
-                        <span class="deck-cards__info">
-                          <span class="deck-cards__name">{card.name}</span>
-                          {#if card.version}
-                            <span class="deck-cards__version muted">{card.version}</span>
-                          {/if}
-                        </span>
-                        <button
-                          type="button"
-                          class="deck-cards__preview-btn"
-                          aria-label="Preview card"
-                          onclick={() => (previewIndex = flatIndex)}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            aria-hidden="true"
-                            ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle
-                              cx="12"
-                              cy="12"
-                              r="3"
-                            /></svg
+                          <span class="deck-cards__count" aria-label="Quantity">{card.amount}×</span
                           >
-                          <span class="deck-cards__preview-btn-label">Preview</span>
-                        </button>
-                      </li>
-                    {/each}
-                  </ul>
+                          <span
+                            class="deck-cards__ink"
+                            title={card.ink ?? 'Unknown ink'}
+                            aria-label="Ink: {card.ink ?? 'unknown'}"
+                          >
+                            {#if inkSrc}
+                              <img
+                                src={inkSrc}
+                                alt=""
+                                width="24"
+                                height="24"
+                                class="deck-cards__ink-img"
+                              />
+                            {:else}
+                              <span class="deck-cards__ink-placeholder" aria-hidden="true">—</span>
+                            {/if}
+                          </span>
+                          <span
+                            class="deck-cards__inkable deck-cards__inkable--{card.inkwell
+                              ? 'inkwell'
+                              : card.cost != null
+                                ? 'cost'
+                                : 'na'}"
+                            title={card.inkwell
+                              ? `Inkable, cost ${card.cost ?? '?'}`
+                              : card.cost != null
+                                ? `Cost ${card.cost} (not inkable)`
+                                : 'No cost'}
+                            aria-label={card.inkwell
+                              ? `Inkable, cost ${card.cost ?? '?'}`
+                              : card.cost != null
+                                ? `Cost ${card.cost}, not inkable`
+                                : 'No cost'}
+                          >
+                            {#if card.inkwell && card.cost != null}
+                              <span class="deck-cards__inkable-cost">{card.cost}</span>
+                            {:else if card.cost != null}
+                              <span class="deck-cards__inkable-cost deck-cards__inkable-cost--plain"
+                                >{card.cost}</span
+                              >
+                            {:else}
+                              <span class="deck-cards__inkable-na" aria-hidden="true">—</span>
+                            {/if}
+                          </span>
+                          <span class="deck-cards__info">
+                            <span class="deck-cards__name">{card.name}</span>
+                            {#if card.version}
+                              <span class="deck-cards__version muted">{card.version}</span>
+                            {/if}
+                          </span>
+                          <button
+                            type="button"
+                            class="deck-cards__preview-btn"
+                            aria-label="Preview card"
+                            onclick={() => (previewIndex = flatIndex)}
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              aria-hidden="true"
+                              ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle
+                                cx="12"
+                                cy="12"
+                                r="3"
+                              /></svg
+                            >
+                            <span class="deck-cards__preview-btn-label">Preview</span>
+                          </button>
+                        </li>
+                      {/each}
+                    </ul>
                   {/if}
                 </section>
               {/each}
@@ -670,7 +721,9 @@
     background: transparent;
     color: var(--muted);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
   }
   .deck-cards__view-btn:hover {
     color: var(--fg);
@@ -813,8 +866,8 @@
   }
   .deck-cards__inkable {
     flex-shrink: 0;
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -824,23 +877,22 @@
   }
   .deck-cards__inkable--inkwell {
     background-image: url('/ink/inkwell.svg');
+    background-size: 34px;
   }
   .deck-cards__inkable--cost {
     background-image: url('/ink/inkcost.svg');
+    background-size: 30px;
   }
   .deck-cards__inkable-cost {
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.85rem;
+    font-weight: 600;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    line-height: 1;
-    color: #d4b889;
-    text-shadow: 0 0 1px rgba(0, 0, 0, 0.8), 0 1px 2px rgba(0, 0, 0, 0.6);
+    color: #ffffff;
   }
   .deck-cards__inkable-cost--plain {
-    color: #d4b889;
-    text-shadow: 0 0 1px rgba(0, 0, 0, 0.8);
+    color: #ffffff;
   }
   .deck-cards__inkable-na {
     color: var(--muted);
