@@ -18,10 +18,25 @@
   let error = $state('');
   type StageOption = (typeof STAGE_OPTIONS)[number];
   let selectedStages = $state<StageOption[]>([...STAGE_OPTIONS]);
+  let selectedTournament = $state('');
+  let tournamentNames = $state<string[]>([]);
 
   const apiUrl = config.apiUrl ?? '/api';
+  const tournamentStageSelected = $derived(selectedStages.includes('Tournament'));
 
-  async function fetchStats(stages: StageOption[]) {
+  async function fetchTournamentNames() {
+    try {
+      const res = await fetch(`${apiUrl}/matches/tournaments`);
+      if (res.ok) {
+        const data = await res.json();
+        tournamentNames = data.tournamentNames ?? [];
+      }
+    } catch {
+      tournamentNames = [];
+    }
+  }
+
+  async function fetchStats(stages: StageOption[], tournamentName?: string) {
     loading = true;
     error = '';
     try {
@@ -29,6 +44,7 @@
       if (stages.length > 0 && stages.length < STAGE_OPTIONS.length) {
         stages.forEach((s) => params.append('stage', s));
       }
+      if (tournamentName?.trim()) params.set('tournamentName', tournamentName.trim());
       const url = `${apiUrl}/matches/stats${params.toString() ? `?${params}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
@@ -46,6 +62,7 @@
   function toggleStage(stage: StageOption) {
     if (selectedStages.includes(stage)) {
       selectedStages = selectedStages.filter((s) => s !== stage);
+      if (stage === 'Tournament') selectedTournament = '';
     } else {
       selectedStages = [...selectedStages, stage].sort(
         (a, b) => STAGE_OPTIONS.indexOf(a) - STAGE_OPTIONS.indexOf(b),
@@ -54,7 +71,11 @@
   }
 
   $effect(() => {
-    fetchStats(selectedStages);
+    if (tournamentStageSelected) fetchTournamentNames();
+  });
+
+  $effect(() => {
+    fetchStats(selectedStages, selectedTournament || undefined);
   });
 </script>
 
@@ -99,9 +120,28 @@
           </label>
         {/each}
       </div>
+      {#if tournamentStageSelected}
+        <div class="match-stats__tournament-filter">
+          <label for="filter-tournament" class="match-stats__tournament-label">Tournament</label>
+          <select
+            id="filter-tournament"
+            class="input match-stats__tournament-select"
+            bind:value={selectedTournament}
+            aria-label="Filter by tournament"
+          >
+            <option value="">All tournaments</option>
+            {#each tournamentNames as name (name)}
+              <option value={name}>{name}</option>
+            {/each}
+          </select>
+        </div>
+      {/if}
       {#if selectedStages.length < STAGE_OPTIONS.length}
         <p class="muted" style="margin: var(--space-sm) 0 0; font-size: 0.85rem;">
           Showing stats for: {selectedStages.length === 0 ? 'all stages' : selectedStages.join(', ')}
+          {#if selectedTournament}
+            · {selectedTournament}
+          {/if}
         </p>
       {/if}
     </div>
@@ -215,6 +255,23 @@
 
   .match-stats__filter {
     margin-bottom: 0;
+  }
+
+  .match-stats__tournament-filter {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+  }
+
+  .match-stats__tournament-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .match-stats__tournament-select {
+    min-width: 14rem;
   }
 
   .match-stats__stage-chips {

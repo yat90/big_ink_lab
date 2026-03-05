@@ -16,7 +16,13 @@ export class MatchesController {
   @Get('stats')
   async getStats(@Query() query: StatsQueryDto) {
     const stages = Array.isArray(query.stage) ? query.stage : query.stage ? [query.stage] : undefined;
-    return this.matchesService.getGlobalStats(stages);
+    const tournamentName = query.tournamentName?.trim() || undefined;
+    return this.matchesService.getGlobalStats(stages, tournamentName);
+  }
+
+  @Get('tournaments')
+  async getTournamentNames(): Promise<{ tournamentNames: string[] }> {
+    return this.matchesService.getDistinctTournamentNames();
   }
 
   @Get(':id')

@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   NotFoundException,
 } from '@nestjs/common';
 import { Deck } from './schemas/deck.schema';
@@ -16,8 +17,11 @@ export class DecksController {
   constructor(private readonly decksService: DecksService) {}
 
   @Get()
-  async findAll(): Promise<Deck[]> {
-    return this.decksService.findAll();
+  async findAll(
+    @Query('color') color?: string,
+    @Query('player') player?: string,
+  ): Promise<Deck[]> {
+    return this.decksService.findAll({ color, player });
   }
 
   @Get(':id/stats')

@@ -104,10 +104,13 @@ export class MatchesService {
     return !!result;
   }
 
-  async getGlobalStats(stages?: string[]): Promise<GlobalMatchStats> {
+  async getGlobalStats(stages?: string[], tournamentName?: string): Promise<GlobalMatchStats> {
     const filter: Record<string, unknown> = {};
     if (stages?.length && stages.every((s) => Object.values(Stage).includes(s as Stage))) {
       filter.stage = { $in: stages };
+    }
+    if (tournamentName) {
+      filter.tournamentName = tournamentName;
     }
     const matches = await this.matchModel
       .find(filter)
@@ -170,5 +173,16 @@ export class MatchesService {
       starterWinRate,
       deckColorMatrix,
     };
+  }
+
+  async getDistinctTournamentNames(): Promise<{ tournamentNames: string[] }> {
+    const names = await this.matchModel
+      .distinct('tournamentName', { stage: Stage.Tournament, tournamentName: { $ne: '', $exists: true } })
+      .exec();
+    const tournamentNames = (names as string[])
+      .filter((n) => typeof n === 'string' && n.trim().length > 0)
+      .map((n) => n.trim())
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    return { tournamentNames: [...new Set(tournamentNames)] };
   }
 }

@@ -25,26 +25,34 @@
     deckColorMatrix?: DeckColorMatrix;
   };
 
+  type DeckUsed = { _id: string; name: string };
   type PlayerWithStats = {
     _id: string;
     name: string;
     team: string;
     stats?: PlayerStats;
+    decksUsed?: DeckUsed[];
   };
 
   const id = $page.params.id;
   let player = $state<PlayerWithStats | null>(null);
   let loading = $state(true);
   let error = $state('');
+  let filterDeckId = $state('');
 
   const apiUrl = config.apiUrl ?? '/api';
+  const decksUsed = $derived(player?.decksUsed ?? []);
 
-  onMount(async () => {
+  async function loadPlayer(deckId?: string) {
+    loading = true;
+    error = '';
     try {
-      const res = await fetch(`${apiUrl}/players/${id}`);
+      const url = deckId?.trim()
+        ? `${apiUrl}/players/${id}?deckId=${encodeURIComponent(deckId.trim())}`
+        : `${apiUrl}/players/${id}`;
+      const res = await fetch(url);
       if (!res.ok) {
         error = 'Player not found';
-        loading = false;
         return;
       }
       player = await res.json();
@@ -53,7 +61,15 @@
     } finally {
       loading = false;
     }
+  }
+
+  onMount(() => {
+    loadPlayer(filterDeckId || undefined);
   });
+
+  async function onDeckFilterChange() {
+    await loadPlayer(filterDeckId || undefined);
+  }
 </script>
 
 <svelte:head>
@@ -90,6 +106,23 @@
             <a href="/players" class="btn">Back to players</a>
           </div>
         </div>
+        {#if decksUsed.length > 0}
+          <div class="player-overview__deck-filter">
+            <label for="filter-deck" class="player-overview__deck-filter-label">Deck</label>
+            <select
+              id="filter-deck"
+              class="input player-overview__deck-filter-select"
+              bind:value={filterDeckId}
+              onchange={onDeckFilterChange}
+              aria-label="Filter statistics by deck"
+            >
+              <option value="">All decks</option>
+              {#each decksUsed as deck (deck._id)}
+                <option value={deck._id}>{deck.name}</option>
+              {/each}
+            </select>
+          </div>
+        {/if}
       </div>
 
       {#if player.stats}
@@ -221,6 +254,25 @@
 
   .player-overview__header {
     padding: var(--space-lg);
+  }
+
+  .player-overview__deck-filter {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border);
+  }
+
+  .player-overview__deck-filter-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .player-overview__deck-filter-select {
+    min-width: 14rem;
   }
 
   .player-stats__title {

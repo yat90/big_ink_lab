@@ -151,9 +151,16 @@ export class DecksService {
     private readonly lorcastService: LorcastService
   ) {}
 
-  async findAll(): Promise<Deck[]> {
+  async findAll(filters?: { color?: string; player?: string }): Promise<Deck[]> {
+    const query: Record<string, unknown> = {};
+    if (filters?.color?.trim()) {
+      query.deckColor = filters.color.trim();
+    }
+    if (filters?.player?.trim() && Types.ObjectId.isValid(filters.player.trim())) {
+      query.player = filters.player.trim();
+    }
     return this.deckModel
-      .find()
+      .find(query)
       .sort({ updatedAt: -1 })
       .populate('player')
       .populate('cards.card')

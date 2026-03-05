@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, NotFoundException } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, NotFoundException } from '@nestjs/common';
 import { Player } from '../matches/schemas/player.schema';
 import { PlayersService } from './players.service';
 
@@ -12,11 +12,14 @@ export class PlayersController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
+  async findOne(@Param('id') id: string, @Query('deckId') deckId?: string) {
     const player = await this.playersService.findOne(id);
     if (!player) throw new NotFoundException('Player not found');
-    const stats = await this.playersService.getStats(id);
-    return { ...player.toObject(), stats };
+    const [stats, decksUsed] = await Promise.all([
+      this.playersService.getStats(id, deckId),
+      this.playersService.getDecksUsed(id),
+    ]);
+    return { ...player.toObject(), stats, decksUsed };
   }
 
   @Post()
