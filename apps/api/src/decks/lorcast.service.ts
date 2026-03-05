@@ -39,15 +39,37 @@ export class LorcastService {
 
   async searchCardsFuzzy(query: string): Promise<LorcastCard[]> {
     if (!query?.trim()) return [];
-    const q = encodeURIComponent(query.trim());
-    const url = `${LORCAST_BASE}/cards/search?q=${q}`;
+    const q = this.buildSearchQuery(query.trim());
+    const url = `${LORCAST_BASE}/cards/search?q=${q}&unique=cards`;
     try {
       const res = await this.rateLimitedFetch(url);
       if (!res.ok) return [];
       const data = await res.json();
-      return Array.isArray(data) ? data : data?.results ?? [];
+      return data?.results ?? [];
     } catch {
+      console.log(`Error searching for ${query}`);
       return [];
     }
+  }
+
+  buildSearchQuery(cardName: string): string {
+    return encodeURIComponent(cardName.replace(/"/g, '\\"').replace('-', ''));
+  }
+
+  /** Resolves deck list lines to Lorcast data + count. */
+  async fetchDeckCards(
+    entries: { count: number; name: string }[],
+  ): Promise<Array<LorcastCard & { amount: number }>> {
+    const result: Array<LorcastCard & { amount: number }> = [];
+    for (const { count, name } of entries) {
+      const hits = await this.searchCardsFuzzy(name);
+      if (hits.length > 0) {
+        const hit = hits[0];
+        result.push({ ...hit, version: hit.version ?? undefined, amount: count });
+      } else {
+        console.log(`${count} ${name} -> not found`);
+      }
+    }
+    return result;
   }
 }

@@ -2,14 +2,10 @@
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { DECK_COLOR_OPTIONS } from '$lib/matches';
-  import DeckColorSelect from '$lib/DeckColorSelect.svelte';
 
   type Player = { _id: string; name: string; team: string };
 
-  let name = $state('');
   let deckList = $state('');
-  let deckColor = $state('');
   let notes = $state('');
   let playerId = $state('');
   let players = $state<Player[]>([]);
@@ -36,9 +32,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name.trim(),
           deckList: deckList.trim(),
-          deckColor: deckColor || undefined,
           notes: notes.trim() || undefined,
           player: playerId || undefined,
         }),
@@ -66,20 +60,9 @@
 <div class="page">
   <div class="card stack">
     <h2 class="card__title">Create deck</h2>
-    <p class="card__sub">Add a new deck with name and card list (one card per line, e.g. 2 Ariel).</p>
+    <p class="card__sub">Add a new deck with a card list (one card per line, e.g. 2 Ariel). A funny name will be generated for you.</p>
 
     <form onsubmit={onSubmit} class="stack" style="margin-top: 8px;">
-      <label class="label" for="name">
-        Name <span aria-hidden="true">*</span>
-        <input
-          id="name"
-          type="text"
-          class="input"
-          bind:value={name}
-          required
-          placeholder="Deck name"
-        />
-      </label>
       <label class="label" for="deckList">
         Deck list <span class="hint">(optional)</span>
         <textarea
@@ -90,10 +73,6 @@
           placeholder="2 Ariel&#10;1 Elsa - Snow Queen"
           style="resize: vertical; font-family: ui-monospace, monospace;"
         ></textarea>
-      </label>
-      <label class="label" for="deckColor">
-        Deck color <span class="hint">(optional)</span>
-        <DeckColorSelect id="deckColor" bind:value={deckColor} ariaLabel="Deck color" />
       </label>
       <label class="label" for="player">
         Player <span class="hint">(optional)</span>

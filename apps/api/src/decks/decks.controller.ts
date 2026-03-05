@@ -20,11 +20,6 @@ export class DecksController {
     return this.decksService.findAll();
   }
 
-  @Post('check')
-  async checkDeck(@Body() body: { deckList?: string }) {
-    return this.decksService.checkDeck(body.deckList ?? '');
-  }
-
   @Get(':id')
   async findOne(@Param('id') id: string) {
     const deck = await this.decksService.findOne(id);

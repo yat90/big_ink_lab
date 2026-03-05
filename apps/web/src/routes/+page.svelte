@@ -27,6 +27,7 @@
 
   let stats = $state<GlobalStats | null>(null);
   let playerCount = $state<number>(0);
+  let deckCount = $state<number>(0);
   let recentMatches = $state<Match[]>([]);
   let loading = $state(true);
   let error = $state('');
@@ -98,9 +99,10 @@
 
   onMount(async () => {
     try {
-      const [statsRes, playersRes, matchesRes] = await Promise.all([
+      const [statsRes, playersRes, decksRes, matchesRes] = await Promise.all([
         fetch(`${apiUrl}/matches/stats`),
         fetch(`${apiUrl}/players`),
+        fetch(`${apiUrl}/decks`),
         fetch(`${apiUrl}/matches?sort=newest`),
       ]);
       if (statsRes.ok) {
@@ -110,6 +112,10 @@
       if (playersRes.ok) {
         const players = await playersRes.json();
         playerCount = Array.isArray(players) ? players.length : 0;
+      }
+      if (decksRes.ok) {
+        const decks = await decksRes.json();
+        deckCount = Array.isArray(decks) ? decks.length : 0;
       }
       if (matchesRes.ok) {
         const matches = await matchesRes.json();
@@ -167,7 +173,7 @@
         </div>
       </div>
 
-      {#if stats || playerCount > 0}
+      {#if stats || playerCount > 0 || deckCount > 0}
         <div class="dashboard__summary card">
           <h3 class="dashboard__summary-title">At a glance</h3>
           <div class="dashboard__summary-grid">
@@ -181,6 +187,10 @@
                 <span class="dashboard__stat-label muted">Games</span>
               </div>
             {/if}
+            <div class="dashboard__stat">
+              <span class="dashboard__stat-value">{deckCount}</span>
+              <span class="dashboard__stat-label muted">Decks</span>
+            </div>
             <div class="dashboard__stat">
               <span class="dashboard__stat-value">{playerCount}</span>
               <span class="dashboard__stat-label muted">Players</span>

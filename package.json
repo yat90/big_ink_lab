@@ -4,6 +4,8 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "dev": "npm run dev:web && npm run dev:api",
     "dev:web": "npm run dev --workspace=web",
     "dev:api": "npm run start:dev --workspace=api",
@@ -21,6 +23,13 @@
     "node": ">=20"
   },
   "devDependencies": {
-    "prettier": "^3.8.1"
+    "@eslint/js": "^9.39.3",
+    "eslint": "^9.39.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-svelte": "^3.15.0",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1",
+    "svelte-eslint-parser": "^1.5.1",
+    "typescript-eslint": "^8.56.1"
   }
 }
