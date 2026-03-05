@@ -298,7 +298,10 @@
                     </div>
                     <div class="deck-stats__curve-x-axis" aria-hidden="true">
                       {#each curveStacked as bar (bar.cost)}
-                        <span class="deck-stats__curve-x-tick">{bar.cost}</span>
+                        <span class="deck-stats__curve-x-tick">
+                          <span class="deck-stats__curve-x-cost">{bar.cost}</span>
+                          <span class="deck-stats__curve-x-meta">{bar.total} ({curveTotal > 0 ? (bar.total / curveTotal * 100).toFixed(0) : 0}%)</span>
+                        </span>
                       {/each}
                     </div>
                   </div>
@@ -319,6 +322,14 @@
                       role="img"
                       aria-label="Deck colors distribution"
                     ></div>
+                    <ul class="deck-stats__pie-legend" aria-hidden="true">
+                      {#each colorsChartData as d (d.ink)}
+                        <li>
+                          <span class="deck-stats__pie-legend-dot" style="background: {d.color}"></span>
+                          <span>{d.ink}: {d.pct.toFixed(1)}% ({d.count})</span>
+                        </li>
+                      {/each}
+                    </ul>
                   </div>
                 {/if}
                 {#if inkableTotal > 0}
@@ -330,6 +341,16 @@
                       role="img"
                       aria-label="Inkable vs not inkable"
                     ></div>
+                    <ul class="deck-stats__pie-legend" aria-hidden="true">
+                      <li>
+                        <span class="deck-stats__pie-legend-dot" style="background: var(--ok)"></span>
+                        <span>Inkable: {inkableChart.inkablePct.toFixed(1)}% ({stats.inkable.inkable})</span>
+                      </li>
+                      <li>
+                        <span class="deck-stats__pie-legend-dot" style="background: var(--muted)"></span>
+                        <span>Not inkable: {inkableChart.notInkablePct.toFixed(1)}% ({stats.inkable.notInkable})</span>
+                      </li>
+                    </ul>
                   </div>
                 {/if}
                 {#if typeChartData.length > 0}
@@ -341,6 +362,14 @@
                       role="img"
                       aria-label="Card types distribution"
                     ></div>
+                    <ul class="deck-stats__pie-legend" aria-hidden="true">
+                      {#each typeChartData as d (d.type)}
+                        <li>
+                          <span class="deck-stats__pie-legend-dot" style="background: {d.color}"></span>
+                          <span>{d.type}: {d.pct.toFixed(1)}% ({d.count})</span>
+                        </li>
+                      {/each}
+                    </ul>
                   </div>
                 {/if}
               </div>
@@ -657,6 +686,17 @@
   .deck-stats__curve-x-tick {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+  .deck-stats__curve-x-cost {
+    font-weight: 600;
+    color: var(--fg);
+  }
+  .deck-stats__curve-x-meta {
+    font-size: 0.7rem;
+    color: var(--muted);
   }
 
   .deck-stats__pies-section {
@@ -690,6 +730,26 @@
   .deck-stats__pie--bordered {
     border: 2px solid rgba(255, 255, 255, 0.25);
     box-sizing: border-box;
+  }
+  .deck-stats__pie-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .deck-stats__pie-legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .deck-stats__pie-legend-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
   /* Mulligan table: card info like deck details */
