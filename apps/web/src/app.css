@@ -121,7 +121,7 @@ a {
 }
 
 .topbar {
-	--topbar-height: calc(64px + env(safe-area-inset-bottom));
+	--topbar-height: calc(80px + env(safe-area-inset-bottom));
 	position: fixed;
 	bottom: 0;
 	left: 0;
@@ -157,6 +157,7 @@ a {
 		padding-bottom: 12px;
 		border-top: none;
 		border-radius: 0;
+		min-height: 88px;
 	}
 }
 
@@ -165,7 +166,7 @@ a {
 	align-items: center;
 	justify-content: center;
 	gap: 8px;
-	height: 44px;
+	height: 64px;
 	min-width: 44px;
 	border-radius: var(--radius-sm);
 	overflow: hidden;
@@ -200,7 +201,7 @@ a {
 	grid-column: 1 / -1;
 	grid-template-columns: repeat(5, 1fr);
 	min-width: 0;
-	gap: 2px;
+	gap: 8px;
 }
 @media (min-width: 640px) {
 	.topbar__nav {
@@ -387,15 +388,23 @@ a {
 		border-radius: var(--radius-sm);
 	}
 	.topbar__link-icon {
-		width: 18px;
-		height: 18px;
+		width: 24px;
+		height: 24px;
 	}
 	.topbar__link-icon svg {
-		width: 18px;
-		height: 18px;
+		width: 24px;
+		height: 24px;
 	}
 	.topbar__link-label {
-		font-size: 0.875rem;
+		font-size: 1.3rem;
+		line-height: 1.2;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
+		font-weight: 400;
+		letter-spacing: -0.02em;
+
 	}
 }
 
@@ -428,14 +437,14 @@ a {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 46px;
+	min-height: 64px;
 	border-radius: var(--radius-full);
 	text-decoration: none;
 	background: transparent;
 	border: 1px solid transparent;
 	color: var(--muted);
 	font-weight: 600;
-	font-size: 13px;
+	font-size: 1.2rem;
 	transition:
 		color var(--transition),
 		background var(--transition),
