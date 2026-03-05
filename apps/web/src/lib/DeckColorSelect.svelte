@@ -10,7 +10,8 @@
     ariaLabel = 'Deck color',
     disabled = false,
     onchange = undefined,
-    className = ''
+    className = '',
+    hideLabel = false
   }: {
     value?: string;
     id?: string;
@@ -18,6 +19,8 @@
     disabled?: boolean;
     onchange?: (value: string) => void;
     className?: string;
+    /** When true, only show ink icons in the trigger (no deck color name text). */
+    hideLabel?: boolean;
   } = $props();
 
   let open = $state(false);
@@ -78,7 +81,9 @@
     {#if value}
       <span class="deck-color-select__value">
         <InkIcons deckColor={value} size="sm" />
-        <span class="deck-color-select__label">{value}</span>
+        {#if !hideLabel}
+          <span class="deck-color-select__label">{value}</span>
+        {/if}
       </span>
     {:else}
       <span class="deck-color-select__placeholder">—</span>

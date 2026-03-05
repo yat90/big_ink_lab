@@ -30,11 +30,19 @@ export class Match extends Document {
 	@Prop({ default: "" })
 	p1DeckLink: string;
 
+	/** Optional deck reference (e.g. when player is from The Big Ink Theory). */
+	@Prop({ type: Types.ObjectId, ref: "Deck", required: false })
+	p1Deck?: Types.ObjectId;
+
 	@Prop({ type: Types.ObjectId, ref: "Player" })
 	p2: Types.ObjectId;
 
 	@Prop({ type: String, enum: Object.values(DeckColor) })
 	p2DeckColor: DeckColor;
+
+	/** Optional deck reference (e.g. when player is from The Big Ink Theory). */
+	@Prop({ type: Types.ObjectId, ref: "Deck", required: false })
+	p2Deck?: Types.ObjectId;
 
 	@Prop({ type: [GameSchema], default: [] })
 	games: Game[];

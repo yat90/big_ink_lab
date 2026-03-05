@@ -3,10 +3,13 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { type Game, type GameStatus, STAGE_OPTIONS, DECK_COLOR_OPTIONS } from '$lib/matches';
-  import DeckColorSelect from '$lib/DeckColorSelect.svelte';
+  import { type Game, type GameStatus, STAGE_OPTIONS } from '$lib/matches';
+  import GameLine from '$lib/GameLine.svelte';
+  import InkIcons from '$lib/InkIcons.svelte';
+  import MatchCardEdit from '$lib/MatchCardEdit.svelte';
 
   type Player = { _id: string; name: string; team: string };
+  type DeckRef = { _id: string; name: string };
   type Match = {
     _id: string;
     stage?: string;
@@ -17,6 +20,8 @@
     p2?: Player | string;
     p1DeckColor?: string;
     p2DeckColor?: string;
+    p1Deck?: DeckRef | string;
+    p2Deck?: DeckRef | string;
     matchWinner?: Player | string;
     games?: Game[];
     notes?: string;
@@ -25,6 +30,7 @@
   const id = $page.params.id;
   let match = $state<Match | null>(null);
   let players = $state<Player[]>([]);
+  let decks = $state<{ _id: string; name: string }[]>([]);
   let loading = $state(true);
   let saving = $state(false);
   let error = $state('');
@@ -34,14 +40,39 @@
   let deletingGameIndex = $state<number | null>(null);
   /** Index of game to delete; when set, show "really delete?" modal. */
   let gameToDeleteIndex = $state<number | null>(null);
+  /** Index of game line in edit mode (show Starter/Winner dropdowns). */
+  let editingGameIndex = $state<number | null>(null);
+  /** Match card (players, deck colors, decks) in edit mode. */
+  let editingMatchCard = $state(false);
   let showDeleteMatchPrompt = $state(false);
   let updatingDeckColor = $state(false);
+  let updatingDeck = $state<'p1' | 'p2' | null>(null);
   let updatingMatchWinner = $state(false);
   let updatingPlayer = $state<'p1' | 'p2' | null>(null);
   let updatingStage = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
   const PREFERRED_TEAM = 'The Big Ink Theory';
+
+  const p1Id = $derived(
+    match && (typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1)
+  );
+  const p2Id = $derived(
+    match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2)
+  );
+  function getPlayerTeam(p: Player | string | undefined): string {
+    if (!p || typeof p === 'string') return '';
+    return (p.team ?? '').trim();
+  }
+  const showP1DeckSelect = $derived(!!p1Id && getPlayerTeam(match?.p1) === PREFERRED_TEAM);
+  const showP2DeckSelect = $derived(!!p2Id && getPlayerTeam(match?.p2) === PREFERRED_TEAM);
+  function getDeckId(d: DeckRef | string | undefined): string {
+    if (!d) return '';
+    return typeof d === 'string' ? d : d._id;
+  }
+  const p1DeckId = $derived(getDeckId(match?.p1Deck));
+  const p2DeckId = $derived(getDeckId(match?.p2Deck));
+
   const playersForSelect = $derived(
     [...players].sort((a, b) => {
       const aPreferred = (a.team?.trim() ?? '') === PREFERRED_TEAM;
@@ -49,22 +80,26 @@
       if (aPreferred && !bPreferred) return -1;
       if (!aPreferred && bPreferred) return 1;
       return 0;
-    }),
+    })
   );
-  const p1Id = $derived(match && (typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1));
-  const p2Id = $derived(match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2));
   const isQuickMatch = $derived(!p1Id && !p2Id);
   const matchWinnerId = $derived(
-    match && (typeof match.matchWinner === 'object' && match.matchWinner ? match.matchWinner._id : match.matchWinner),
+    match &&
+      (typeof match.matchWinner === 'object' && match.matchWinner
+        ? match.matchWinner._id
+        : match.matchWinner)
   );
 
   function playerName(p: Player | string | undefined): string {
     if (!p) return '–';
-    return typeof p === 'string' ? p : p.name ?? '–';
+    return typeof p === 'string' ? p : (p.name ?? '–');
   }
 
   /** Display name for UI: "Player 1" / "Player 2" when no player selected. */
-  function displayPlayerName(p: Player | string | undefined, fallback: 'Player 1' | 'Player 2'): string {
+  function displayPlayerName(
+    p: Player | string | undefined,
+    fallback: 'Player 1' | 'Player 2'
+  ): string {
     const name = playerName(p);
     return name === '–' ? fallback : name;
   }
@@ -78,10 +113,17 @@
     }
   }
 
+  function getDeckDisplayName(deck: DeckRef | string | undefined): string {
+    if (!deck || typeof deck === 'string') return '—';
+    return deck.name ?? '—';
+  }
+
   function gameWinnerId(g: Game): string | undefined {
     const w = g.winner;
     if (w == null) return undefined;
-    return typeof w === 'object' && w !== null && '_id' in w ? (w as { _id: string })._id : String(w);
+    return typeof w === 'object' && w !== null && '_id' in w
+      ? (w as { _id: string })._id
+      : String(w);
   }
 
   function gamesWon(m: Match, playerId: string): number {
@@ -91,9 +133,10 @@
 
   onMount(async () => {
     try {
-      const [matchRes, playersRes] = await Promise.all([
+      const [matchRes, playersRes, decksRes] = await Promise.all([
         fetch(`${apiUrl}/matches/${id}`),
         fetch(`${apiUrl}/players`),
+        fetch(`${apiUrl}/decks`),
       ]);
       if (!matchRes.ok) {
         error = 'Match not found';
@@ -103,8 +146,20 @@
       const loadedMatch = await matchRes.json();
       match = loadedMatch;
       if (playersRes.ok) players = await playersRes.json();
+      if (decksRes.ok) {
+        const list = await decksRes.json();
+        decks = Array.isArray(list)
+          ? list.map((d: { _id: string; name: string }) => ({ _id: d._id, name: d.name }))
+          : [];
+      }
       if (loadedMatch) {
-        const noPlayers = !(typeof loadedMatch.p1 === 'object' && loadedMatch.p1 ? loadedMatch.p1._id : loadedMatch.p1) && !(typeof loadedMatch.p2 === 'object' && loadedMatch.p2 ? loadedMatch.p2._id : loadedMatch.p2);
+        const noPlayers =
+          !(typeof loadedMatch.p1 === 'object' && loadedMatch.p1
+            ? loadedMatch.p1._id
+            : loadedMatch.p1) &&
+          !(typeof loadedMatch.p2 === 'object' && loadedMatch.p2
+            ? loadedMatch.p2._id
+            : loadedMatch.p2);
         if (noPlayers && !loadedMatch.playedAt) {
           const res = await fetch(`${apiUrl}/matches/${id}`, {
             method: 'PATCH',
@@ -143,44 +198,12 @@
       updatingStage = false;
     }
   }
-
-  async function onUpdate(e: Event) {
-    e.preventDefault();
-    if (!match) return;
-    saving = true;
-    error = '';
-    try {
-      const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
-      const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
-      const winnerId = typeof match.matchWinner === 'object' && match.matchWinner ? match.matchWinner._id : match.matchWinner;
-      const body = {
-        ...match,
-        p1: p1Id,
-        p2: p2Id,
-        matchWinner: winnerId,
-      };
-      const res = await fetch(`${apiUrl}/matches/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Update failed';
-        saving = false;
-        return;
-      }
-      match = await res.json();
-    } catch {
-      error = 'Could not reach API.';
-    } finally {
-      saving = false;
-    }
-  }
-
   async function patchGames(games: Game[]) {
     if (!match || p1Id == null || p2Id == null) return false;
-    const winnerId = typeof match.matchWinner === 'object' && match.matchWinner ? match.matchWinner._id : match.matchWinner;
+    const winnerId =
+      typeof match.matchWinner === 'object' && match.matchWinner
+        ? match.matchWinner._id
+        : match.matchWinner;
     const res = await fetch(`${apiUrl}/matches/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -203,7 +226,9 @@
       const existing = match.games ?? [];
       const withPreviousDone =
         existing.length > 0
-          ? existing.map((g, i) => (i === existing.length - 1 ? { ...g, status: 'done' as GameStatus } : g))
+          ? existing.map((g, i) =>
+              i === existing.length - 1 ? { ...g, status: 'done' as GameStatus } : g
+            )
           : existing;
       const games: Game[] = [...withPreviousDone, { status: 'in_progress' as GameStatus }];
       const ok = await patchGames(games);
@@ -219,7 +244,8 @@
     if (!match) return;
     const games = match.games ?? [];
     const lastGame = games[games.length - 1];
-    const lastHasWinner = lastGame && (lastGame.status ?? 'in_progress') === 'done' && lastGame.winner;
+    const lastHasWinner =
+      lastGame && (lastGame.status ?? 'in_progress') === 'done' && lastGame.winner;
     if (games.length === 0 || lastHasWinner) {
       await onAddGame();
     } else {
@@ -251,7 +277,10 @@
     }
   }
 
-  async function onDeckColorChange(p1DeckColor: string | undefined, p2DeckColor: string | undefined) {
+  async function onDeckColorChange(
+    p1DeckColor: string | undefined,
+    p2DeckColor: string | undefined
+  ) {
     if (!match) return;
     updatingDeckColor = true;
     error = '';
@@ -259,7 +288,10 @@
       const res = await fetch(`${apiUrl}/matches/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p1DeckColor: p1DeckColor || undefined, p2DeckColor: p2DeckColor || undefined }),
+        body: JSON.stringify({
+          p1DeckColor: p1DeckColor || undefined,
+          p2DeckColor: p2DeckColor || undefined,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -271,6 +303,30 @@
       error = 'Could not reach API.';
     } finally {
       updatingDeckColor = false;
+    }
+  }
+
+  async function onDeckChange(role: 'p1' | 'p2', deckId: string) {
+    if (!match) return;
+    updatingDeck = role;
+    error = '';
+    try {
+      const body = role === 'p1' ? { p1Deck: deckId || null } : { p2Deck: deckId || null };
+      const res = await fetch(`${apiUrl}/matches/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        error = data.message ?? 'Update failed';
+        return;
+      }
+      match = await res.json();
+    } catch {
+      error = 'Could not reach API.';
+    } finally {
+      updatingDeck = null;
     }
   }
 
@@ -381,10 +437,13 @@
     </div>
   {:else if match}
     <div class="card stack">
-      <div class="matchcard tack" style="margin: -18px -18px 0; padding: 18px 18px 12px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;">
+      <div
+        class="matchcard tack"
+        style="margin: -18px -18px 0; padding: 18px 18px 12px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;"
+      >
         <div class="matchcard__top matchcard__top--row muted">
           <span class="matchcard__top-inner">{formatDate(match.playedAt)} ·</span>
-          {#if isQuickMatch}
+          {#if editingMatchCard && isQuickMatch}
             <select
               class="input matchcard__top-select"
               value={match.stage ?? 'Casual'}
@@ -399,65 +458,145 @@
           {:else}
             <span class="matchcard__top-inner">{match.stage ?? '–'}</span>
           {/if}
-          {#if match.tournamentName}<span class="matchcard__top-inner"> · {match.tournamentName}</span>{/if}
-        </div>
-        <div class="matchcard__row">
-          <div class="matchcard__player matchcard__player--left" class:matchcard__player--winner={matchWinnerId === p1Id}>
-            <span class="matchcard__name matchcard__name--with-select">
-              <select
-                class="input matchcard__player-select"
-                value={p1Id ?? ''}
-                disabled={updatingPlayer === 'p1'}
-                onchange={(e) => onPlayerChange('p1', e.currentTarget.value)}
-                aria-label="Player 1"
+          {#if match.tournamentName}<span class="matchcard__top-inner">
+              · {match.tournamentName}</span
+            >{/if}
+          {#if editingMatchCard}
+            <button
+              type="button"
+              class="matchcard__edit-done btn btn--sm"
+              onclick={() => (editingMatchCard = false)}
+              aria-label="Done editing"
+            >
+              Done
+            </button>
+          {:else}
+            <button
+              type="button"
+              class="matchcard__edit-done btn btn--sm"
+              onclick={() => (editingMatchCard = true)}
+              aria-label="Edit match"
+            >
+              <svg
+                class="matchcard__edit-icon"
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                ><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path
+                  d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                /></svg
               >
-                <option value="">Player 1</option>
-                {#each playersForSelect as pl}
-                  <option value={pl._id} disabled={pl._id === p2Id}>{pl.name}</option>
-                {/each}
-              </select>
-              {#if matchWinnerId === p1Id}
-                <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-              {/if}
-            </span>
-            <DeckColorSelect
-              className="matchcard__deck-select"
-              value={match.p1DeckColor ?? ''}
-              disabled={updatingDeckColor}
-              onchange={(v) => onDeckColorChange(v || undefined, match?.p2DeckColor)}
-              ariaLabel="P1 deck color"
-            />
-            <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p1Id ?? '')}</span>
-          </div>
-          <div class="matchcard__vs" aria-hidden="true">VS.</div>
-          <div class="matchcard__player matchcard__player--right" class:matchcard__player--winner={matchWinnerId === p2Id}>
-            <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p2Id ?? '')}</span>
-            <DeckColorSelect
-              className="matchcard__deck-select"
-              value={match.p2DeckColor ?? ''}
-              disabled={updatingDeckColor}
-              onchange={(v) => onDeckColorChange(match?.p1DeckColor, v || undefined)}
-              ariaLabel="P2 deck color"
-            />
-            <span class="matchcard__name matchcard__name--with-select">
-              <select
-                class="input matchcard__player-select"
-                value={p2Id ?? ''}
-                disabled={updatingPlayer === 'p2'}
-                onchange={(e) => onPlayerChange('p2', e.currentTarget.value)}
-                aria-label="Player 2"
-              >
-                <option value="">Player 2</option>
-                {#each playersForSelect as pl}
-                  <option value={pl._id} disabled={pl._id === p1Id}>{pl.name}</option>
-                {/each}
-              </select>
-              {#if matchWinnerId === p2Id}
-                <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
-              {/if}
-            </span>
-          </div>
+              Edit
+            </button>
+          {/if}
         </div>
+        {#if editingMatchCard}
+          <MatchCardEdit
+            p1Id={p1Id ?? undefined}
+            p2Id={p2Id ?? undefined}
+            p1DeckColor={match.p1DeckColor ?? ''}
+            p2DeckColor={match.p2DeckColor ?? ''}
+            {p1DeckId}
+            {p2DeckId}
+            players={playersForSelect}
+            {decks}
+            {showP1DeckSelect}
+            {showP2DeckSelect}
+            {updatingPlayer}
+            {updatingDeckColor}
+            {updatingDeck}
+            {onPlayerChange}
+            {onDeckColorChange}
+            {onDeckChange}
+          />
+        {:else}
+          <!-- Read-only match card -->
+          <div class="matchcard__row">
+            <div
+              class="matchcard__player matchcard__player--left"
+              class:matchcard__player--winner={matchWinnerId === p1Id}
+            >
+              <span class="matchcard__name">
+                <span class="matchcard__name_text">
+                  {displayPlayerName(match.p1, 'Player 1')}
+                  {#if matchWinnerId === p1Id}
+                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">
+                      👑
+                    </span>
+                  {/if}
+                </span>
+                <span class="matchcard__deck-readonly" aria-label="P1 deck color">
+                  <InkIcons deckColor={match.p1DeckColor} size="sm" />
+                  {#if getDeckDisplayName(match.p1Deck) !== '—'}
+                    {#if p1DeckId}
+                      <a
+                        href="/decks/{p1DeckId}"
+                        class="matchcard__deck-name matchcard__deck-link muted"
+                        >- {getDeckDisplayName(match.p1Deck)}</a
+                      >
+                    {:else}
+                      <span class="matchcard__deck-name muted"
+                        >- {getDeckDisplayName(match.p1Deck)}</span
+                      >
+                    {/if}
+                  {/if}
+                </span>
+              </span>
+              <span class="matchcard__wins muted" title="Games won">
+                {gamesWon(match, p1Id ?? '')}</span
+              >
+            </div>
+            <div class="matchcard__vs" aria-hidden="true">VS.</div>
+            <div
+              class="matchcard__player matchcard__player--right"
+              class:matchcard__player--winner={matchWinnerId === p2Id}
+            >
+              <span class="matchcard__wins muted" title="Games won"
+                >{gamesWon(match, p2Id ?? '')}</span
+              >
+              <span class="matchcard__name">
+                <span class="matchcard__name_text">
+                  {displayPlayerName(match.p2, 'Player 2')}
+                  {#if matchWinnerId === p2Id}
+                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"
+                      >👑</span
+                    >
+                  {/if}
+                </span>
+                <span class="matchcard__deck-readonly" aria-label="P2 deck color">
+                  <InkIcons deckColor={match.p2DeckColor} size="sm" />
+                  {#if getDeckDisplayName(match.p2Deck) !== '—'}
+                    {#if p2DeckId}
+                      <a
+                        href="/decks/{p2DeckId}"
+                        class="matchcard__deck-name matchcard__deck-link muted"
+                        >- {getDeckDisplayName(match.p2Deck)}</a
+                      >
+                    {:else}
+                      <span class="matchcard__deck-name muted"
+                        >- {getDeckDisplayName(match.p2Deck)}</span
+                      >
+                    {/if}
+                  {/if}
+                </span>
+              </span>
+            </div>
+
+            {#if match.notes}
+              <div>
+                <dt class="muted" style="font-size: 0.85rem;">Notes</dt>
+                <dd>{match.notes}</dd>
+              </div>
+            {/if}
+          </div>
+        {/if}
       </div>
 
       <dl class="stack" style="margin-top: 12px;">
@@ -484,84 +623,30 @@
         </div>
         {#if match.games?.length}
           <div class="stack" style="gap: 12px;">
-            <dt class="muted" style="font-size: 0.85rem;">Games</dt>
-            {#each match.games as g, i}
-              <dd class="game-line">
-                <div class="game-line__row">
-                  <span class="game-line__label">Game {i + 1}</span>
-                  <span class="game-line__scores">{#if g.p1Lore != null || g.p2Lore != null}Lore: {g.p1Lore ?? '–'}–{g.p2Lore ?? '–'}{:else}–{/if}</span>
-                </div>
-                <div class="game-line__controls row">
-                  <label class="label" style="margin: 0; align-items: center; gap: 6px;">
-                    <span class="muted" style="font-size: 0.85rem;">Starter</span>
-                    <select
-                      class="input"
-                      style="min-width: 120px;"
-                      value={typeof g.starter === 'object' && g.starter != null ? (g.starter as { _id?: string })._id : (g.starter ?? '')}
-                      disabled={updatingGameIndex === i}
-                      onchange={(e) => onGameChange(i, { starter: e.currentTarget.value || undefined })}
-                      aria-label="Who started this game"
-                    >
-                      <option value="">–</option>
-                      {#if p1Id}
-                        <option value={p1Id}>{displayPlayerName(match.p1, 'Player 1')}</option>
-                      {/if}
-                      {#if p2Id}
-                        <option value={p2Id}>{displayPlayerName(match.p2, 'Player 2')}</option>
-                      {/if}
-                    </select>
-                  </label>
-                  <label class="label" style="margin: 0; align-items: center; gap: 6px;">
-                    <span class="muted" style="font-size: 0.85rem;">Winner</span>
-                    <select
-                      class="input"
-                      style="min-width: 140px;"
-                      value={typeof g.winner === 'object' && g.winner != null ? (g.winner as { _id?: string })._id : (g.winner ?? '')}
-                      disabled={updatingGameIndex === i}
-                      onchange={(e) => {
-                        const winnerId = e.currentTarget.value || undefined;
-                        onGameChange(i, {
-                          winner: winnerId,
-                          status: (winnerId ? 'done' : 'in_progress') as GameStatus,
-                        });
-                      }}
-                    >
-                      <option value="">–</option>
-                      {#if p1Id}
-                        <option value={p1Id}>{displayPlayerName(match.p1, 'Player 1')}</option>
-                      {/if}
-                      {#if p2Id}
-                        <option value={p2Id}>{displayPlayerName(match.p2, 'Player 2')}</option>
-                      {/if}
-                    </select>
-                  </label>
-                  {#if !gameWinnerId(g)}
-                    <a href="/matches/{id}/lore?game={i}" class="btn btn--primary game-line__continue-btn">
-                      <svg class="icon-play" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                      Continue
-                    </a>
-                  {/if}
-                  <button
-                    type="button"
-                    class="btn btn--icon game-line__delete-btn"
-                    disabled={deletingGameIndex === i}
-                    onclick={() => onDeleteGame(i)}
-                    aria-label="Delete game {i + 1}"
-                    title="Delete game"
-                  >
-                    {#if deletingGameIndex === i}
-                      Removing…
-                    {:else}
-                      <svg class="icon-trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                    {/if}
-                  </button>
-                </div>
-              </dd>
+            <h3>Games</h3>
+            <div class="player_header">
+              <h4>{displayPlayerName(match.p1, 'Player 1')}</h4>
+              <h4>{displayPlayerName(match.p2, 'Player 2')}</h4>
+            </div>
+            {#each match.games as g, i (i)}
+              <GameLine
+                game={g}
+                index={i}
+                matchId={id ?? ''}
+                p1DisplayName={displayPlayerName(match.p1, 'Player 1')}
+                p2DisplayName={displayPlayerName(match.p2, 'Player 2')}
+                p1Id={p1Id ?? undefined}
+                p2Id={p2Id ?? undefined}
+                isEditing={editingGameIndex === i}
+                isUpdating={updatingGameIndex === i}
+                isDeleting={deletingGameIndex === i}
+                {onGameChange}
+                {onDeleteGame}
+                onEditStart={() => (editingGameIndex = i)}
+                onEditDone={() => (editingGameIndex = null)}
+              />
             {/each}
           </div>
-        {/if}
-        {#if match.notes}
-          <div><dt class="muted" style="font-size: 0.85rem;">Notes</dt><dd>{match.notes}</dd></div>
         {/if}
       </dl>
 
@@ -582,11 +667,38 @@
 
       <div class="row" style="margin-top: 16px; gap: 12px; flex-wrap: wrap;">
         <a href="/matches" class="btn">Back</a>
-        <button type="button" class="btn btn--danger btn--icon" onclick={openDeleteMatchModal} disabled={deleting} aria-label="Delete match" title="Delete match">
+        <button
+          type="button"
+          class="btn btn--danger btn--icon"
+          onclick={openDeleteMatchModal}
+          disabled={deleting}
+          aria-label="Delete match"
+          title="Delete match"
+        >
           {#if deleting}
             Deleting…
           {:else}
-            <svg class="icon-trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+            <svg
+              class="icon-trash"
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              ><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path
+                d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+              /><line x1="10" x2="10" y1="11" y2="17" /><line
+                x1="14"
+                x2="14"
+                y1="11"
+                y2="17"
+              /></svg
+            >
             Delete
           {/if}
         </button>
@@ -595,7 +707,12 @@
 
     <!-- Delete match confirmation -->
     {#if showDeleteMatchPrompt}
-      <div class="delete-game-modal" role="dialog" aria-modal="true" aria-labelledby="delete-match-title">
+      <div
+        class="delete-game-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-match-title"
+      >
         <button
           type="button"
           class="delete-game-modal__backdrop"
@@ -607,7 +724,27 @@
           <p class="delete-game-modal__text muted">Do you really want to delete this match?</p>
           <div class="delete-game-modal__actions row">
             <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteMatch}>
-              <svg class="icon-trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+              <svg
+                class="icon-trash"
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                ><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path
+                  d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+                /><line x1="10" x2="10" y1="11" y2="17" /><line
+                  x1="14"
+                  x2="14"
+                  y1="11"
+                  y2="17"
+                /></svg
+              >
               Delete
             </button>
             <button type="button" class="btn" onclick={closeDeleteMatchModal}>Cancel</button>
@@ -618,7 +755,12 @@
 
     <!-- Delete game confirmation -->
     {#if gameToDeleteIndex != null}
-      <div class="delete-game-modal" role="dialog" aria-modal="true" aria-labelledby="delete-game-title">
+      <div
+        class="delete-game-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-game-title"
+      >
         <button
           type="button"
           class="delete-game-modal__backdrop"
@@ -630,7 +772,27 @@
           <p class="delete-game-modal__text muted">Do you really want to delete this game?</p>
           <div class="delete-game-modal__actions row">
             <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteGame}>
-              <svg class="icon-trash" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+              <svg
+                class="icon-trash"
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                ><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path
+                  d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+                /><line x1="10" x2="10" y1="11" y2="17" /><line
+                  x1="14"
+                  x2="14"
+                  y1="11"
+                  y2="17"
+                /></svg
+              >
               Delete
             </button>
             <button type="button" class="btn" onclick={closeDeleteGameModal}>Cancel</button>
@@ -642,17 +804,67 @@
 </div>
 
 <style>
-  .matchcard__name--with-select {
-    display: flex;
+  .matchcard__edit-done {
+    margin-left: auto;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
   }
-
-  .matchcard__name--with-select .matchcard__player-select {
-    flex: 1;
-    min-width: 0;
+  .matchcard__edit-icon {
+    flex-shrink: 0;
+  }
+  .matchcard__deck-readonly {
+    display: inline-flex;
+    align-items: center;
+  }
+  .matchcard__deck-name {
+    font-size: 0.9rem;
+  }
+  .matchcard__deck-link {
+    text-decoration: none;
+  }
+  .matchcard__deck-link:hover {
+    text-decoration: underline;
+  }
+  .matchcard__name {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-direction: column;
+  }
+  .matchcard__name_text {
+    font-size: 1.5rem;
   }
 
+  .matchcard__wins,
+  .matchcard__vs {
+    font-size: 3rem;
+  }
+  .matchcard__vs {
+    font-size: 2rem;
+  }
+
+  .player_header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 1.5rem;
+    padding-bottom: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .player_header h4 {
+    margin: 0;
+  }
+  /* on mobile move the vs to the right */
+  @media (max-width: 640px) {
+    .matchcard__vs {
+      flex-grow: 1;
+      text-align: right;
+    }
+  }
   .delete-game-modal {
     position: fixed;
     inset: 0;
@@ -708,28 +920,5 @@
 
   .btn--icon:not(:has(.icon-trash)) {
     gap: 0;
-  }
-
-  .game-line__delete-btn {
-    margin-left: auto;
-    background: transparent;
-    border-color: transparent;
-    color: var(--danger);
-  }
-
-  .game-line__delete-btn:hover:not(:disabled) {
-    background: rgba(220, 38, 38, 0.1);
-  }
-
-  .game-line__continue-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 46px;
-    text-decoration: none;
-  }
-
-  .game-line__continue-btn .icon-play {
-    flex-shrink: 0;
   }
 </style>

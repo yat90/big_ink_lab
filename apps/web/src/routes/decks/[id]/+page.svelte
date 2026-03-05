@@ -756,7 +756,7 @@
     position: absolute;
     bottom: 4px;
     right: 4px;
-    font-size: 0.8rem;
+    font-size: 1rem;
     font-weight: 700;
     background: rgba(0, 0, 0, 0.75);
     color: white;
@@ -787,8 +787,8 @@
   }
   .deck-cards__count {
     font-weight: 700;
-    min-width: 2.25em;
-    font-size: 0.95rem;
+    min-width: 1.5em;
+    font-size: 1.5rem;
   }
   .deck-cards__ink {
     flex-shrink: 0;
