@@ -453,7 +453,11 @@
                             <span class="deck-cards__ink-placeholder" aria-hidden="true">—</span>
                           {/if}
                         </span>
-                        <span class="deck-cards__inkable" title={card.inkwell ? `Inkable, cost ${card.cost ?? '?'}` : card.cost != null ? `Cost ${card.cost} (not inkable)` : 'No cost'} aria-label={card.inkwell ? `Inkable, cost ${card.cost ?? '?'}` : card.cost != null ? `Cost ${card.cost}, not inkable` : 'No cost'}>
+                        <span
+                          class="deck-cards__inkable deck-cards__inkable--{card.inkwell ? 'inkwell' : card.cost != null ? 'cost' : 'na'}"
+                          title={card.inkwell ? `Inkable, cost ${card.cost ?? '?'}` : card.cost != null ? `Cost ${card.cost} (not inkable)` : 'No cost'}
+                          aria-label={card.inkwell ? `Inkable, cost ${card.cost ?? '?'}` : card.cost != null ? `Cost ${card.cost}, not inkable` : 'No cost'}
+                        >
                           {#if card.inkwell && card.cost != null}
                             <span class="deck-cards__inkable-cost">{card.cost}</span>
                           {:else if card.cost != null}
@@ -810,29 +814,33 @@
   .deck-cards__inkable {
     flex-shrink: 0;
     width: 28px;
+    height: 28px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  .deck-cards__inkable--inkwell {
+    background-image: url('/ink/inkwell.svg');
+  }
+  .deck-cards__inkable--cost {
+    background-image: url('/ink/inkcost.svg');
   }
   .deck-cards__inkable-cost {
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    border: 2px solid var(--fg);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
+    color: #d4b889;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.8), 0 1px 2px rgba(0, 0, 0, 0.6);
   }
   .deck-cards__inkable-cost--plain {
-    width: auto;
-    height: auto;
-    min-width: 1.25em;
-    border-radius: 0;
-    border: none;
-    color: var(--muted);
+    color: #d4b889;
+    text-shadow: 0 0 1px rgba(0, 0, 0, 0.8);
   }
   .deck-cards__inkable-na {
     color: var(--muted);

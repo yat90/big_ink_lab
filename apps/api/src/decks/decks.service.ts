@@ -12,6 +12,21 @@ export interface DeckStatsByOpponent {
   won: number;
 }
 
+/** Card curve: count of cards at each ink cost (0–8, 8+ for cost >= 8). */
+export interface DeckStatsCurve {
+  [cost: string]: number; // "0".."8", "8+"
+}
+
+/** Per-cost breakdown by ink for stacked curve chart. */
+export interface DeckStatsCurveByInk {
+  [cost: string]: Record<string, number>; // cost -> { ink -> count }
+}
+
+/** Count per card type (Character, Action, etc.). */
+export interface DeckStatsByType {
+  [type: string]: number;
+}
+
 export interface DeckStats {
   deckColor: string | null;
   totalMatches: number;
@@ -20,6 +35,25 @@ export interface DeckStats {
   winRate: number | null;
   /** Matrix keyed by opponent deck color. */
   byOpponentDeckColor: Record<string, DeckStatsByOpponent>;
+  /** Deck composition: curve (count per cost). */
+  curve: DeckStatsCurve;
+  /** Curve broken down by ink per cost (for stacked chart). */
+  curveByInk: DeckStatsCurveByInk;
+  /** Deck composition: count per card type. */
+  byType: DeckStatsByType;
+  /** Deck composition: inkable (inkwell) vs not inkable. */
+  inkable: { inkable: number; notInkable: number };
+  /** Deck composition: count of cards per ink color. */
+  byInk: Record<string, number>;
+  /** List of cards in deck for mulligan (name, amount, ink, cost, inkwell, version). */
+  cardList: {
+    name: string;
+    amount: number;
+    ink?: string;
+    cost?: number;
+    inkwell?: boolean;
+    version?: string;
+  }[];
 }
 
 const LINE_REGEX = /^(\d+)\s*x?\s*(.+)$/i;
@@ -114,7 +148,7 @@ export class DecksService {
     @InjectModel(Deck.name) private readonly deckModel: Model<Deck>,
     @InjectModel(Card.name) private readonly cardModel: Model<Card>,
     @InjectModel(Match.name) private readonly matchModel: Model<Match>,
-    private readonly lorcastService: LorcastService,
+    private readonly lorcastService: LorcastService
   ) {}
 
   async findAll(): Promise<Deck[]> {
@@ -127,11 +161,7 @@ export class DecksService {
   }
 
   async findOne(id: string): Promise<Deck | null> {
-    return this.deckModel
-      .findById(id)
-      .populate('player')
-      .populate('cards.card')
-      .exec();
+    return this.deckModel.findById(id).populate('player').populate('cards.card').exec();
   }
 
   /** Find or create a Card document from Lorcast data. */
@@ -176,7 +206,7 @@ export class DecksService {
     const deckColor = this.inferDeckColorFromResolved(resolved);
 
     const name =
-      (typeof dto.name === 'string' && dto.name.trim().length > 0)
+      typeof dto.name === 'string' && dto.name.trim().length > 0
         ? dto.name.trim()
         : generateLorcanaDeckName();
 
@@ -250,11 +280,80 @@ export class DecksService {
 
   /**
    * Get statistics for a deck based on matches where this deck is linked (p1Deck or p2Deck).
-   * Includes total matches, wins, losses, win rate, and a matrix by opponent deck color.
+   * Includes total matches, wins, losses, win rate, a matrix by opponent deck color,
+   * and deck composition (curve, byType, inkable).
    */
   async getDeckStats(deckId: string): Promise<DeckStats> {
-    const deck = await this.deckModel.findById(deckId).select('deckColor').lean().exec();
+    const deck = await this.deckModel
+      .findById(deckId)
+      .select('deckColor cards')
+      .populate('cards.card')
+      .lean()
+      .exec();
     const deckColor = deck?.deckColor ?? null;
+
+    const curve: DeckStatsCurve = {};
+    const curveByInk: DeckStatsCurveByInk = {};
+    const byType: DeckStatsByType = {};
+    const byInk: Record<string, number> = {};
+    let inkableCount = 0;
+    let notInkableCount = 0;
+
+    const cardEntries = (deck?.cards ?? []) as {
+      card: {
+        name?: string;
+        cost?: number;
+        type?: string[];
+        inkwell?: boolean;
+        ink?: string;
+        version?: string;
+      } | null;
+      amount: number;
+    }[];
+    const cardList: {
+      name: string;
+      amount: number;
+      ink?: string;
+      cost?: number;
+      inkwell?: boolean;
+      version?: string;
+    }[] = [];
+    for (const entry of cardEntries) {
+      const card = entry?.card;
+      const amount = entry?.amount ?? 0;
+      if (!card || amount <= 0) continue;
+
+      cardList.push({
+        name: card.name ?? 'Unknown',
+        amount,
+        ink: card.ink,
+        cost: card.cost,
+        inkwell: card.inkwell,
+        version: card.version,
+      });
+
+      const cost = card.cost;
+      const costKey = cost == null ? '?' : cost >= 8 ? '8+' : String(cost);
+      curve[costKey] = (curve[costKey] ?? 0) + amount;
+
+      const primaryType = (card.type?.[0] ?? 'Other').trim() || 'Other';
+      const typeKey = primaryType.charAt(0).toUpperCase() + primaryType.slice(1).toLowerCase();
+      byType[typeKey] = (byType[typeKey] ?? 0) + amount;
+
+      const ink = card.ink;
+      if (ink && INKS.includes(ink)) {
+        byInk[ink] = (byInk[ink] ?? 0) + amount;
+      }
+      const inkKey = ink && INKS.includes(ink) ? ink : 'Other';
+      if (!curveByInk[costKey]) curveByInk[costKey] = {};
+      curveByInk[costKey][inkKey] = (curveByInk[costKey][inkKey] ?? 0) + amount;
+
+      if (card.inkwell === true) {
+        inkableCount += amount;
+      } else {
+        notInkableCount += amount;
+      }
+    }
 
     const matches = await this.matchModel
       .find({
@@ -264,7 +363,7 @@ export class DecksService {
       .lean()
       .exec();
 
-      console.log(`Found ${matches.length} matches for deck ${deckId}`);
+    console.log(`Found ${matches.length} matches for deck ${deckId}`);
     const allColors = Object.values(DeckColor);
     const byOpponentDeckColor: Record<string, DeckStatsByOpponent> = {};
     for (const c of allColors) {
@@ -296,6 +395,12 @@ export class DecksService {
       losses,
       winRate,
       byOpponentDeckColor,
+      curve,
+      curveByInk,
+      byType,
+      inkable: { inkable: inkableCount, notInkable: notInkableCount },
+      byInk,
+      cardList,
     };
   }
 
@@ -304,8 +409,16 @@ export class DecksService {
    * and what the opponent's deck color was. Returns null if the deck was not p1Deck or p2Deck.
    */
   private interpretMatchForDeck(
-    m: { p1?: unknown; p2?: unknown; matchWinner?: unknown; p1Deck?: unknown; p2Deck?: unknown; p1DeckColor?: string; p2DeckColor?: string },
-    deckId: string,
+    m: {
+      p1?: unknown;
+      p2?: unknown;
+      matchWinner?: unknown;
+      p1Deck?: unknown;
+      p2Deck?: unknown;
+      p1DeckColor?: string;
+      p2DeckColor?: string;
+    },
+    deckId: string
   ): { won: boolean; opponentDeckColor: string | null } | null {
     const toId = (ref: unknown): string => {
       if (ref == null) return '';
@@ -334,9 +447,7 @@ export class DecksService {
   }
 
   /** Infer deck color from resolved Lorcast cards (with amount). */
-  private inferDeckColorFromResolved(
-    resolved: LorcastCardWithAmount[],
-  ): DeckColor | null {
+  private inferDeckColorFromResolved(resolved: LorcastCardWithAmount[]): DeckColor | null {
     const counts: Record<string, number> = {};
     for (const item of resolved) {
       const ink = item.ink;
@@ -350,11 +461,8 @@ export class DecksService {
     if (sorted.length === 0) return null;
     const first = sorted[0];
     const second = sorted.length >= 2 ? sorted[1] : first;
-    const [a, b] = [first, second].sort(
-      (x, y) => (INK_ORDER[x] ?? 99) - (INK_ORDER[y] ?? 99),
-    );
+    const [a, b] = [first, second].sort((x, y) => (INK_ORDER[x] ?? 99) - (INK_ORDER[y] ?? 99));
     const pair = `${a} / ${b}`;
     return (Object.values(DeckColor).find((v) => v === pair) as DeckColor) ?? null;
   }
- 
 }

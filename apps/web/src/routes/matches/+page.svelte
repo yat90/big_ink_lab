@@ -120,7 +120,6 @@
     <div class="row matches-header">
       <h2 class="card__title" style="margin: 0;">Matches</h2>
       <div class="row" style="gap: var(--space-sm);">
-        <a href="/stats" class="btn">Statistics</a>
         <a href="/matches/new" class="btn btn--primary">New match</a>
       </div>
     </div>
