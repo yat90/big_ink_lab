@@ -24,6 +24,8 @@
   let deckColor = $state('');
   let notes = $state('');
   let playerId = $state('');
+  let showDeckListEdit = $state(false);
+  let deckListTextarea = $state<HTMLTextAreaElement | null>(null);
 
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -45,8 +47,7 @@
         deckList = deck.deckList ?? '';
         deckColor = deck.deckColor ?? '';
         notes = deck.notes ?? '';
-        playerId = getDeckPlayerId(deck) ?? '';
-        await loadResolved();
+        playerId = getDeckPlayerId(deck) ?? ''; 
       }
     } catch {
       error = 'Could not load deck.';
@@ -55,8 +56,8 @@
     }
   });
 
-  async function save() {
-    if (!deck) return;
+  async function save(): Promise<boolean> {
+    if (!deck) return false;
     error = '';
     saving = true;
     try {
@@ -75,7 +76,7 @@
         const data = await res.json().catch(() => ({}));
         error = data.message ?? 'Update failed';
         saving = false;
-        return;
+        return false;
       }
       const updated = await res.json();
       deck = updated;
@@ -83,10 +84,11 @@
       deckList = updated.deckList ?? '';
       deckColor = updated.deckColor ?? '';
       notes = updated.notes ?? '';
-      playerId = getDeckPlayerId(updated) ?? '';
-      await loadResolved();
+      playerId = getDeckPlayerId(updated) ?? ''; 
+      return true;
     } catch {
       error = 'Could not reach API.';
+      return false;
     } finally {
       saving = false;
     }
@@ -183,6 +185,8 @@
     });
   });
 
+  const totalCards = $derived(displayCards.reduce((sum, c) => sum + c.amount, 0));
+
   /** Group cards by type: Characters, Actions, Songs, Items, Location, Other. Each entry has flatIndex for preview/hover. */
   const TYPE_ORDER = ['Character', 'Action', 'Song', 'Item', 'Location'] as const;
   const groupedByType = $derived.by(() => {
@@ -251,32 +255,6 @@
     if (!ink) return undefined;
     const key = ink.charAt(0).toUpperCase() + ink.slice(1).toLowerCase();
     return INK_IMAGE[key];
-  }
-
-  async function loadResolved() {
-    const list = (deck?.deckList ?? deckList).trim();
-    if (!list) {
-      resolvedLines = [];
-      return;
-    }
-    resolving = true;
-    try {
-      const res = await fetch(`${apiUrl}/decks/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ deckList: list }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        resolvedLines = data.resolved ?? [];
-      } else {
-        resolvedLines = [];
-      }
-    } catch {
-      resolvedLines = [];
-    } finally {
-      resolving = false;
-    }
   }
 
   async function confirmDelete() {
@@ -386,8 +364,24 @@
 
       <div class="deck-cards">
         <div class="deck-cards__head">
-          <h3 class="label" style="margin: 0;">Cards</h3>
+          <h2 class="deck-cards__title" style="margin: 0;">Cards <span class="deck-cards__total muted">({totalCards})</span></h2>
           <div class="deck-cards__head-actions">
+            <button
+              type="button"
+              class="deck-cards__edit-btn btn"
+              aria-pressed={showDeckListEdit}
+              aria-label={showDeckListEdit ? 'Save and close deck list editor' : 'Edit deck list'}
+              onclick={async () => {
+                if (showDeckListEdit) {
+                  if (await save()) showDeckListEdit = false;
+                } else {
+                  showDeckListEdit = true;
+                  setTimeout(() => deckListTextarea?.focus(), 0);
+                }
+              }}
+            >
+              {showDeckListEdit ? 'Done' : 'Edit list'}
+            </button>
             <div class="deck-cards__view-toggle" role="tablist" aria-label="Card view mode">
               <button
                 type="button"
@@ -413,6 +407,24 @@
             <a href="/decks/{id}/stats" class="deck-cards__stats-link">View deck stats</a>
           </div>
         </div>
+        {#if showDeckListEdit}
+          <div class="deck-cards__list-edit">
+            <label class="label deck-cards__list-edit-label" for="deck-list-edit">
+              Deck list
+              <span class="muted" style="font-weight: 400; font-size: 0.85em;">(one card per line, e.g. 4 Card Name)</span>
+            </label>
+            <textarea
+              id="deck-list-edit"
+              class="input input--grow deck-cards__list-edit-textarea"
+              bind:value={deckList}
+              bind:this={deckListTextarea}
+              rows="12"
+              placeholder="4 Basil&#10;2 Elsa - Snow Queen&#10;..."
+              spellcheck="false"
+            ></textarea>
+            <p class="muted deck-cards__list-edit-hint">Click Done to save the deck list.</p>
+          </div>
+        {/if}
         {#if resolving && displayCards.length === 0}
           <p class="muted">Loading cards…</p>
         {:else if displayCards.length === 0}
@@ -691,6 +703,9 @@
     font-weight: 800;
     letter-spacing: -0.02em;
   }
+  .deck-cards__total {
+    font-weight: 500;
+  }
   .deck-cards__head {
     display: flex;
     align-items: center;
@@ -704,6 +719,36 @@
     display: flex;
     align-items: center;
     gap: var(--space-md);
+    flex-wrap: wrap;
+  }
+  .deck-cards__edit-btn {
+    font-size: 0.875rem;
+    padding: 6px 12px;
+  }
+  .deck-cards__list-edit {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+    padding: var(--space-lg);
+    background: var(--glass-bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+  .deck-cards__list-edit-label {
+    display: block;
+    font-size: 0.95rem;
+  }
+  .deck-cards__list-edit-textarea {
+    font-family: ui-monospace, monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 8rem;
+  }
+  .deck-cards__list-edit-hint {
+    margin: 0;
+    font-size: 0.85rem;
   }
   .deck-cards__view-toggle {
     display: inline-flex;
@@ -832,6 +877,7 @@
   }
   .deck-cards__item {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-sm);
     padding: 8px 10px;
@@ -914,6 +960,17 @@
   }
   .deck-cards__version {
     font-size: 0.8rem;
+  }
+  /* Mobile: wrap item content so info (name + version) gets its own line and can wrap */
+  @media (max-width: 640px) {
+    .deck-cards__info {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+    .deck-cards__name {
+      white-space: normal;
+      word-break: break-word;
+    }
   }
   .deck-cards__preview-btn {
     display: inline-flex;
