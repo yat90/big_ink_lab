@@ -7,6 +7,7 @@
   import { getDeckPlayerId } from '$lib/decks';
   import { INK_IMAGE } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
+  import IconEye from '$lib/icons/IconEye.svelte';
 
   type Player = { _id: string; name: string; team: string };
 
@@ -541,21 +542,7 @@
                             aria-label="Preview card"
                             onclick={() => (previewIndex = flatIndex)}
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              aria-hidden="true"
-                              ><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle
-                                cx="12"
-                                cy="12"
-                                r="3"
-                              /></svg
-                            >
+                            <IconEye size={20} />
                             <span class="deck-cards__preview-btn-label">Preview</span>
                           </button>
                         </li>

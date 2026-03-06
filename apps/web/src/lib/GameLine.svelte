@@ -1,5 +1,9 @@
 <script lang="ts">
   import { type Game, type GameStatus } from '$lib/matches';
+  import IconPlay from '$lib/icons/IconPlay.svelte';
+  import IconEdit from '$lib/icons/IconEdit.svelte';
+  import IconTrash from '$lib/icons/IconTrash.svelte';
+  import IconCrown from '$lib/icons/IconCrown.svelte';
 
   type Props = {
     game: Game;
@@ -66,21 +70,14 @@
       <span class="game-line__score-icons" aria-hidden="true">
         {#if gameStarterId(game) === p1Id}
           <span class="game-line__score-icon game-line__score-icon--starter" title="Started">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"><polygon points="5 3 19 12 5 21 5 3" /></svg
-            >
+            <IconPlay size={14} />
             <span class="game-line__score-icon-label">Starter</span>
           </span>
         {/if}
         {#if gameWinnerId(game) === p1Id}
-          <span class="game-line__score-icon game-line__score-icon--winner" title="Winner"
-            >👑<span class="game-line__score-icon-label">Winner</span></span
+          <span class="game-line__score-icon game-line__score-icon--winner" title="Winner">
+            <IconCrown size={18} />
+            <span class="game-line__score-icon-label">Winner</span></span
           >
         {/if}
       </span>
@@ -91,21 +88,14 @@
       <span class="game-line__score-icons" aria-hidden="true">
         {#if gameStarterId(game) === p2Id}
           <span class="game-line__score-icon game-line__score-icon--starter" title="Started">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"><polygon points="5 3 19 12 5 21 5 3" /></svg
-            >
+            <IconPlay size={14} />
             <span class="game-line__score-icon-label">Starter</span>
           </span>
         {/if}
         {#if gameWinnerId(game) === p2Id}
-          <span class="game-line__score-icon game-line__score-icon--winner" title="Winner"
-            >👑<span class="game-line__score-icon-label">Winner</span></span
+          <span class="game-line__score-icon game-line__score-icon--winner" title="Winner">
+            <IconCrown size={18} />
+            <span class="game-line__score-icon-label">Winner</span></span
           >
         {/if}
       </span>
@@ -126,22 +116,8 @@
         aria-label="Edit starter and winner"
         title="Edit starter and winner"
       >
-        <svg
-          class="game-line__edit-icon"
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-          ><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path
-            d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-          /></svg
-        > Edit
+        <IconEdit size={16} className="game-line__icon game-line__edit-icon" /> 
+        <span class="game-line__icon-label">Edit</span>
       </button>
     {/if}
     {#if !gameWinnerId(game)}
@@ -149,20 +125,8 @@
         href="/matches/{matchId}/lore?game={index}"
         class="btn btn--primary game-line__continue-btn"
       >
-        <svg
-          class="icon-play"
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3" /></svg
-        >
-        Continue
+        <IconPlay size={18} className="game-line__icon icon-play" />
+        <span class="game-line__icon-label">Continue</span>
       </a>
     {/if}
     <button
@@ -176,22 +140,8 @@
       {#if isDeleting}
         Removing…
       {:else}
-        <svg
-          class="icon-trash"
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-          ><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path
-            d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
-          /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg
-        >
+        <IconTrash size={18} className="game-line__icon icon-trash" />
+        <span class="game-line__icon-label">Delete</span>
       {/if}
     </button>
   </div>
@@ -270,15 +220,13 @@
     font-weight: 700;
     color: var(--fg);
     position: absolute;
-    top: 0;
-    left: 0;
-    transform: translate(-50%, -50%);
+    transform: translate(-45%, -25%);
     border-radius: var(--radius);
     border: 1px solid var(--glass-border);
     background: var(--primary);
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    padding: 2px 4px;
+    padding: 2px 14px;
   }
   .game-line__actions {
     display: flex;
@@ -290,7 +238,7 @@
   .game-line__actions .btn,
   .game-line__actions a.btn {
     font-size: 0.85rem;
-    padding: 2px 8px;
+    padding: 2px 20px;
     color: var(--fg);
     background: var(--glass-bg);
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
@@ -308,13 +256,25 @@
   }
   .game-line__edit-btn,
   .game-line__actions .game-line__edit-btn {
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease;
   }
   .game-line__edit-btn:hover,
   .game-line__actions .game-line__edit-btn:hover {
     background: var(--glass-bg-strong);
     border-color: var(--border-strong);
   }
+  
+  .game-line__icon-label {
+    font-size: 0.9rem;
+    padding-left: 6px;
+  }
+  
+  .game-line__icon-label:hover {
+    text-decoration: underline;
+  }
+  
   .game-line__body {
     display: flex;
     flex-direction: row;
@@ -343,6 +303,7 @@
     justify-content: center;
     align-items: center;
     font-size: 3rem;
+    line-height: 2rem;
     font-weight: bolder;
     color: var(--muted);
   }
@@ -359,6 +320,8 @@
 
   .game-line__score-icons {
     font-size: 1.5rem;
+    line-height: 0.2;
+    padding: 0 18px;
   }
   .game-line__score-icon {
     display: inline-flex;

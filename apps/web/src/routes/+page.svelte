@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import { type Game } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
+  import IconCrown from '$lib/icons/IconCrown.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Match = {
@@ -226,7 +227,7 @@
                     <span class="matchcard__name">
                       {playerName(match.p1)}
                       {#if winnerId === p1Id}
-                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"><IconCrown size={16} /></span>
                       {/if}
                     </span>
                     {#if match.p1DeckColor}
@@ -250,7 +251,7 @@
                     <span class="matchcard__name">
                       {playerName(match.p2)}
                       {#if winnerId === p2Id}
-                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"><IconCrown size={16} /></span>
                       {/if}
                     </span>
                   </div>

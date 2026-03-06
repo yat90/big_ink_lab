@@ -2,7 +2,7 @@
   import { config } from '$lib/config';
   import { type Game, STAGE_OPTIONS } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
-  import { onMount } from 'svelte';
+  import IconCrown from '$lib/icons/IconCrown.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Match = {
@@ -30,13 +30,10 @@
 
   function playerName(p: Player | string | undefined): string {
     if (!p) return '–';
-    return typeof p === 'string' ? p : p.name ?? '–';
+    return typeof p === 'string' ? p : (p.name ?? '–');
   }
 
-  function playerTeam(p: Player | string | undefined): string {
-    if (!p || typeof p === 'string') return '';
-    return p.team?.trim() ?? '';
-  }
+ 
 
   function formatDate(s: string | undefined): string {
     if (!s) return '–';
@@ -56,7 +53,9 @@
   function gameWinnerId(g: Game): string | undefined {
     const w = g.winner;
     if (w == null) return undefined;
-    return typeof w === 'object' && w !== null && '_id' in w ? (w as { _id: string })._id : String(w);
+    return typeof w === 'object' && w !== null && '_id' in w
+      ? (w as { _id: string })._id
+      : String(w);
   }
 
   function gamesWon(match: Match, playerId: string): number {
@@ -68,6 +67,7 @@
     loading = true;
     error = '';
     try {
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity
       const params = new URLSearchParams();
       if (filterStage) params.set('stage', filterStage);
       params.set('sort', sortOrder);
@@ -112,7 +112,11 @@
     <div class="card stack">
       <h2 class="card__title">No matches yet</h2>
       <p class="card__sub">Create your first match.</p>
-      <a href="/matches/new" class="btn btn--primary" style="align-self: flex-start; margin-top: var(--space-sm);">
+      <a
+        href="/matches/new"
+        class="btn btn--primary"
+        style="align-self: flex-start; margin-top: var(--space-sm);"
+      >
         New match
       </a>
     </div>
@@ -128,7 +132,12 @@
       <div class="filters__row">
         <label class="filters__label" for="filter-stage">
           <span class="muted" style="font-size: 0.85rem;">Stage</span>
-          <select id="filter-stage" class="input filters__select" bind:value={filterStage} aria-label="Filter by stage">
+          <select
+            id="filter-stage"
+            class="input filters__select"
+            bind:value={filterStage}
+            aria-label="Filter by stage"
+          >
             <option value="">All stages</option>
             {#each STAGE_OPTIONS as s}
               <option value={s}>{s}</option>
@@ -137,7 +146,12 @@
         </label>
         <label class="filters__label" for="filter-sort">
           <span class="muted" style="font-size: 0.85rem;">Sort</span>
-          <select id="filter-sort" class="input filters__select" bind:value={sortOrder} aria-label="Sort order">
+          <select
+            id="filter-sort"
+            class="input filters__select"
+            bind:value={sortOrder}
+            aria-label="Sort order"
+          >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
           </select>
@@ -153,11 +167,7 @@
     {#if matches.length === 0}
       <div class="card stack">
         <p class="card__sub">No matches match your filters.</p>
-        <button
-          type="button"
-          class="btn"
-          onclick={() => (filterStage = '')}
-        >
+        <button type="button" class="btn" onclick={() => (filterStage = '')}>
           Clear filters
         </button>
       </div>
@@ -167,33 +177,57 @@
           {@const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1}
           {@const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2}
           {@const winnerId = matchWinnerId(match)}
-          <a href="/matches/{match._id}" class="card playercard matchcard" style="text-decoration: none; color: inherit;">
+          <a
+            href="/matches/{match._id}"
+            class="card playercard matchcard"
+            style="text-decoration: none; color: inherit;"
+          >
             <div class="matchcard__top muted">
-              {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName} · {match.tournamentName}{/if}{#if (match.stage === 'Tournament' || match.tournamentName) && match.round != null} · R{match.round}{/if}
+              {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName}
+                · {match.tournamentName}{/if}{#if (match.stage === 'Tournament' || match.tournamentName) && match.round != null}
+                · R{match.round}{/if}
             </div>
             <div class="matchcard__row">
-              <div class="matchcard__player matchcard__player--left" class:matchcard__player--winner={winnerId === p1Id}>
+              <div
+                class="matchcard__player matchcard__player--left"
+                class:matchcard__player--winner={winnerId === p1Id}
+              >
                 <span class="matchcard__name">
                   {playerName(match.p1)}
                   {#if winnerId === p1Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"
+                      ><IconCrown size={16} /></span
+                    >
                   {/if}
                 </span>
                 {#if match.p1DeckColor}
-                  <span class="matchcard__ink" title={match.p1DeckColor} aria-hidden="true"><InkIcons deckColor={match.p1DeckColor} /></span>
+                  <span class="matchcard__ink" title={match.p1DeckColoØr} aria-hidden="true"
+                    ><InkIcons deckColor={match.p1DeckColor} /></span
+                  >
                 {/if}
-                <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p1Id ?? '')}</span>
+                <span class="matchcard__wins muted" title="Games won"
+                  >{gamesWon(match, p1Id ?? '')}</span
+                >
               </div>
               <div class="matchcard__vs" aria-hidden="true">VS.</div>
-              <div class="matchcard__player matchcard__player--right" class:matchcard__player--winner={winnerId === p2Id}>
-                <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p2Id ?? '')}</span>
+              <div
+                class="matchcard__player matchcard__player--right"
+                class:matchcard__player--winner={winnerId === p2Id}
+              >
+                <span class="matchcard__wins muted" title="Games won"
+                  >{gamesWon(match, p2Id ?? '')}</span
+                >
                 {#if match.p2DeckColor}
-                  <span class="matchcard__ink" title={match.p2DeckColor} aria-hidden="true"><InkIcons deckColor={match.p2DeckColor} /></span>
+                  <span class="matchcard__ink" title={match.p2DeckColor} aria-hidden="true"
+                    ><InkIcons deckColor={match.p2DeckColor} /></span
+                  >
                 {/if}
                 <span class="matchcard__name">
                   {playerName(match.p2)}
                   {#if winnerId === p2Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">👑</span>
+                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"
+                      ><IconCrown size={16} /></span
+                    >
                   {/if}
                 </span>
               </div>
