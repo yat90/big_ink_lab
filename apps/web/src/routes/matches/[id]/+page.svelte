@@ -53,6 +53,8 @@
   let updatingMatchWinner = $state(false);
   let updatingPlayer = $state<'p1' | 'p2' | null>(null);
   let updatingStage = $state(false);
+  let updatingTournamentName = $state(false);
+  let updatingRound = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
   const PREFERRED_TEAM = 'The Big Ink Theory';
@@ -110,7 +112,7 @@
   function formatDate(s: string | undefined): string {
     if (!s) return '–';
     try {
-      return new Date(s).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+      return new Date(s).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
     } catch {
       return s;
     }
@@ -201,6 +203,53 @@
       updatingStage = false;
     }
   }
+
+  async function onTournamentNameChange(tournamentName: string) {
+    if (!match) return;
+    updatingTournamentName = true;
+    error = '';
+    try {
+      const res = await fetch(`${apiUrl}/matches/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentName: tournamentName.trim() || undefined }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        error = data.message ?? 'Update failed';
+        return;
+      }
+      match = await res.json();
+    } catch {
+      error = 'Could not reach API.';
+    } finally {
+      updatingTournamentName = false;
+    }
+  }
+
+  async function onRoundChange(round: number | '') {
+    if (!match) return;
+    updatingRound = true;
+    error = '';
+    try {
+      const value = round === '' ? undefined : Number(round);
+      const res = await fetch(`${apiUrl}/matches/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ round: value }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        error = data.message ?? 'Update failed';
+        return;
+      }
+      match = await res.json();
+    } catch {
+      error = 'Could not reach API.';
+    } finally {
+      updatingRound = false;
+    }
+  }
   async function patchGames(games: Game[]) {
     if (!match || p1Id == null || p2Id == null) return false;
     const winnerId =
@@ -240,19 +289,6 @@
       error = 'Could not reach API.';
     } finally {
       addingGame = false;
-    }
-  }
-
-  async function onTrackLore() {
-    if (!match) return;
-    const games = match.games ?? [];
-    const lastGame = games[games.length - 1];
-    const lastHasWinner =
-      lastGame && (lastGame.status ?? 'in_progress') === 'done' && lastGame.winner;
-    if (games.length === 0 || lastHasWinner) {
-      await onAddGame();
-    } else {
-      await goto(`/matches/${id}/lore?game=${games.length - 1}`);
     }
   }
 
@@ -446,24 +482,14 @@
       >
         <div class="matchcard__top matchcard__top--row muted">
           <span class="matchcard__top-inner">{formatDate(match.playedAt)} ·</span>
-          {#if editingMatchCard && isQuickMatch}
-            <select
-              class="input matchcard__top-select"
-              value={match.stage ?? 'Casual'}
-              disabled={updatingStage}
-              onchange={(e) => onStageChange(e.currentTarget.value)}
-              aria-label="Stage"
-            >
-              {#each STAGE_OPTIONS as s}
-                <option value={s}>{s}</option>
-              {/each}
-            </select>
-          {:else}
-            <span class="matchcard__top-inner">{match.stage ?? '–'}</span>
+          <span class="matchcard__top-inner">{match.stage ?? '–'}</span>
+          {#if match.tournamentName}
+            <span class="matchcard__top-inner">· {match.tournamentName}</span>
+            {#if match.round != null}
+              <span class="matchcard__top-inner">· R{match.round}</span>
+            {/if}
           {/if}
-          {#if match.tournamentName}<span class="matchcard__top-inner">
-              · {match.tournamentName}</span
-            >{/if}
+
           {#if editingMatchCard}
             <button
               type="button"
@@ -484,6 +510,22 @@
               Edit
             </button>
           {/if}
+
+          <button
+          type="button"
+          class="btn btn--danger btn--icon"
+          onclick={openDeleteMatchModal}
+          disabled={deleting}
+          aria-label="Delete match"
+          title="Delete match"
+        >
+          {#if deleting}
+            Deleting…
+          {:else}
+            <IconTrash size={18} className="icon-trash" />
+            Delete
+          {/if}
+        </button>
         </div>
         {#if editingMatchCard}
           <MatchCardEdit
@@ -588,27 +630,82 @@
       </div>
 
       <dl class="stack" style="margin-top: 12px;">
-        <div class="dl-row">
-          <dt class="muted" style="font-size: 0.85rem;">Winner</dt>
-          <dd>
-            <select
-              class="input"
-              style="min-width: 160px;"
-              value={matchWinnerId ?? ''}
-              disabled={updatingMatchWinner}
-              onchange={(e) => onMatchWinnerChange(e.currentTarget.value || undefined)}
-              aria-label="Match winner"
-            >
-              <option value="">–</option>
-              {#if p1Id}
-                <option value={p1Id}>{displayPlayerName(match.p1, 'Player 1')}</option>
-              {/if}
-              {#if p2Id}
-                <option value={p2Id}>{displayPlayerName(match.p2, 'Player 2')}</option>
-              {/if}
-            </select>
-          </dd>
-        </div>
+        {#if editingMatchCard}
+          <div class="dl-row">
+            <dt class="muted" style="font-size: 0.85rem;">Stage</dt>
+            <dd>
+              <select
+                class="input"
+                style="min-width: 140px;"
+                value={match.stage ?? 'Casual'}
+                disabled={updatingStage}
+                onchange={(e) => onStageChange(e.currentTarget.value)}
+                aria-label="Stage"
+              >
+                {#each STAGE_OPTIONS as s}
+                  <option value={s}>{s}</option>
+                {/each}
+              </select>
+            </dd>
+          </div>
+          {#if match.stage === 'Tournament'}
+            <div class="dl-row">
+              <dt class="muted" style="font-size: 0.85rem;">Tournament</dt>
+              <dd>
+                <input
+                  type="text"
+                  class="input"
+                  style="min-width: 160px;"
+                  value={match.tournamentName ?? ''}
+                  disabled={updatingTournamentName}
+                  onchange={(e) => onTournamentNameChange(e.currentTarget.value)}
+                  placeholder="Name"
+                  aria-label="Tournament name"
+                />
+              </dd>
+            </div>
+            <div class="dl-row">
+              <dt class="muted" style="font-size: 0.85rem;">Round</dt>
+              <dd>
+                <input
+                  type="number"
+                  class="input"
+                  style="width: 4rem;"
+                  min="1"
+                  value={match.round ?? ''}
+                  disabled={updatingRound}
+                  onchange={(e) => {
+                    const v = e.currentTarget.value;
+                    onRoundChange(v === '' ? '' : Number(v));
+                  }}
+                  placeholder="–"
+                  aria-label="Round"
+                />
+              </dd>
+            </div>
+          {/if}
+          <div class="dl-row">
+            <dt class="muted" style="font-size: 0.85rem;">Winner</dt>
+            <dd>
+              <select
+                class="input"
+                style="min-width: 160px;"
+                value={matchWinnerId ?? ''}
+                disabled={updatingMatchWinner}
+                onchange={(e) => onMatchWinnerChange(e.currentTarget.value || undefined)}
+                aria-label="Match winner"
+              >
+                <option value="">–</option>
+                {#if p1Id}
+                  <option value={p1Id}>{displayPlayerName(match.p1, 'Player 1')}</option>
+                {/if}
+                {#if p2Id}
+                  <option value={p2Id}>{displayPlayerName(match.p2, 'Player 2')}</option>
+                {/if}
+              </select>
+            </dd>
+          </div>
+        {/if}
         {#if match.games?.length}
           <div class="stack" style="gap: 12px;">
             <h3>Games</h3>
@@ -640,9 +737,6 @@
 
       {#if match.games != null}
         <div class="row" style="margin-top: 12px; gap: 12px; flex-wrap: wrap;">
-          <button type="button" class="btn" disabled={addingGame} onclick={onTrackLore}>
-            {addingGame ? 'Opening…' : 'Track Lore'}
-          </button>
           <button type="button" class="btn" disabled={addingGame} onclick={onAddGame}>
             {addingGame ? 'Adding…' : 'Add next game'}
           </button>
@@ -652,25 +746,6 @@
       {#if error}
         <p class="alert" role="alert" aria-live="assertive">{error}</p>
       {/if}
-
-      <div class="row" style="margin-top: 16px; gap: 12px; flex-wrap: wrap;">
-        <a href="/matches" class="btn">Back</a>
-        <button
-          type="button"
-          class="btn btn--danger btn--icon"
-          onclick={openDeleteMatchModal}
-          disabled={deleting}
-          aria-label="Delete match"
-          title="Delete match"
-        >
-          {#if deleting}
-            Deleting…
-          {:else}
-            <IconTrash size={18} className="icon-trash" />
-            Delete
-          {/if}
-        </button>
-      </div>
     </div>
 
     <!-- Delete match confirmation -->
@@ -771,6 +846,10 @@
   .matchcard__vs {
     font-size: 2rem;
   }
+  h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.5rem;
+  }
 
   .player_header {
     display: flex;
@@ -778,7 +857,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     padding-bottom: 12px;
     font-weight: 600;
     color: var(--muted);

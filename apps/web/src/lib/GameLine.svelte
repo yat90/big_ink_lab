@@ -67,39 +67,35 @@
   </div>
   <div class="game-line__body">
     <span class="game-line__score-side game-line__score-side--p1">
-      <span class="game-line__score-icons" aria-hidden="true">
-        {#if gameStarterId(game) === p1Id}
-          <span class="game-line__score-icon game-line__score-icon--starter" title="Started">
+      <span class="game-line__score-value game-line__score-value_p1"
+        >{game.p1Lore ?? '–'}
+        <span class="game-line__score-icons" aria-hidden="true">
+          {#if gameStarterId(game) === p1Id}
             <IconPlay size={14} />
-            <span class="game-line__score-icon-label">Starter</span>
-          </span>
-        {/if}
-        {#if gameWinnerId(game) === p1Id}
-          <span class="game-line__score-icon game-line__score-icon--winner" title="Winner">
+            <span class="game-line__score-icon-label"> Starter </span>
+          {/if}
+          {#if gameWinnerId(game) === p1Id}
             <IconCrown size={18} />
-            <span class="game-line__score-icon-label">Winner</span></span
-          >
-        {/if}
+            <span class="game-line__score-icon-label">Winner</span>
+          {/if}
+        </span>
       </span>
-      <span class="game-line__score-value game-line__score-value_p1">{game.p1Lore ?? '–'}</span>
     </span>
     <div class="game-line__score-vs-row">VS.</div>
     <span class="game-line__score-side game-line__score-side--p2">
-      <span class="game-line__score-icons" aria-hidden="true">
-        {#if gameStarterId(game) === p2Id}
-          <span class="game-line__score-icon game-line__score-icon--starter" title="Started">
+      <span class="game-line__score-value game-line__score-value_p2">
+        <span class="game-line__score-icons" aria-hidden="true">
+          {#if gameStarterId(game) === p2Id}
             <IconPlay size={14} />
             <span class="game-line__score-icon-label">Starter</span>
-          </span>
-        {/if}
-        {#if gameWinnerId(game) === p2Id}
-          <span class="game-line__score-icon game-line__score-icon--winner" title="Winner">
+          {/if}
+          {#if gameWinnerId(game) === p2Id}
             <IconCrown size={18} />
-            <span class="game-line__score-icon-label">Winner</span></span
-          >
-        {/if}
+            <span class="game-line__score-icon-label">Winner</span>
+          {/if}
+        </span>
+        {game.p2Lore ?? '–'}
       </span>
-      <span class="game-line__score-value game-line__score-value_p2">{game.p2Lore ?? '–'}</span>
     </span>
   </div>
 
@@ -116,7 +112,7 @@
         aria-label="Edit starter and winner"
         title="Edit starter and winner"
       >
-        <IconEdit size={16} className="game-line__icon game-line__edit-icon" /> 
+        <IconEdit size={16} className="game-line__icon game-line__edit-icon" />
         <span class="game-line__icon-label">Edit</span>
       </button>
     {/if}
@@ -223,7 +219,8 @@
     transform: translate(-45%, -25%);
     border-radius: var(--radius);
     border: 1px solid var(--glass-border);
-    background: var(--primary);
+    background: rgba(168, 85, 247, 0.7);
+
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     padding: 2px 14px;
@@ -265,51 +262,58 @@
     background: var(--glass-bg-strong);
     border-color: var(--border-strong);
   }
-  
+
   .game-line__icon-label {
     font-size: 0.9rem;
     padding-left: 6px;
   }
-  
+
   .game-line__icon-label:hover {
     text-decoration: underline;
   }
-  
+
   .game-line__body {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    align-items: flex-end;
+    align-items: stretch;
     gap: 14px;
     width: 100%;
+    min-height: 4rem;
   }
   .game-line__score-side {
     display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 0px;
     flex: 1 1 0;
     min-width: 0;
+    min-height: 100%;
   }
   .game-line__score-side--p1 {
     align-items: flex-start;
+    justify-content: flex-start;
   }
   .game-line__score-side--p2 {
     align-items: flex-end;
+    justify-content: flex-end;
   }
   .game-line__score-vs-row {
     flex: 0 0 auto;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: flex-end;
+    align-items: flex-end;
+    align-self: stretch;
     font-size: 3rem;
-    line-height: 2rem;
+    line-height: 3rem;
     font-weight: bolder;
     color: var(--muted);
   }
   .game-line__score-value {
     font-size: 3rem;
     font-weight: bolder;
+    margin-top: 8px;
   }
   .game-line__score-value_p1 {
     text-align: left;
@@ -319,15 +323,10 @@
   }
 
   .game-line__score-icons {
-    font-size: 1.5rem;
-    line-height: 0.2;
-    padding: 0 18px;
-  }
-  .game-line__score-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 1.5rem;
+    line-height: 0;
+    padding: 0 8px;
+    /* display: flex; */
+    /* flex-direction: column; */
   }
   .game-line__score-icon-label {
     display: none;
