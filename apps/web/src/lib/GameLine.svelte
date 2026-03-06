@@ -275,7 +275,7 @@
   .game-line__body {
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: stretch;
     gap: 14px;
     width: 100%;
@@ -314,6 +314,10 @@
     font-size: 3rem;
     font-weight: bolder;
     margin-top: 8px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
   .game-line__score-value_p1 {
     text-align: left;
@@ -325,6 +329,7 @@
   .game-line__score-icons {
     line-height: 0;
     padding: 0 8px;
+    white-space: nowrap;
     /* display: flex; */
     /* flex-direction: column; */
   }

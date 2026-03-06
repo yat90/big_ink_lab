@@ -490,6 +490,7 @@
             {/if}
           {/if}
 
+          <div class="matchcard__top-actions">
           {#if editingMatchCard}
             <button
               type="button"
@@ -512,20 +513,21 @@
           {/if}
 
           <button
-          type="button"
-          class="btn btn--danger btn--icon"
-          onclick={openDeleteMatchModal}
-          disabled={deleting}
-          aria-label="Delete match"
-          title="Delete match"
-        >
-          {#if deleting}
-            Deleting…
-          {:else}
-            <IconTrash size={18} className="icon-trash" />
-            Delete
-          {/if}
-        </button>
+            type="button"
+            class="btn btn--danger btn--icon"
+            onclick={openDeleteMatchModal}
+            disabled={deleting}
+            aria-label="Delete match"
+            title="Delete match"
+          >
+            {#if deleting}
+              Deleting…
+            {:else}
+              <IconTrash size={18} className="icon-trash" />
+              Delete
+            {/if}
+          </button>
+          </div>
         </div>
         {#if editingMatchCard}
           <MatchCardEdit
