@@ -21,7 +21,7 @@
       payload: { starter?: string; winner?: string; status?: GameStatus }
     ) => void;
     onDeleteGame: (index: number) => void;
-    onEditStart: () => void;
+    onEditStart?: () => void;
     onEditDone: () => void;
   };
 
@@ -104,7 +104,7 @@
       <button type="button" class="btn btn--sm" onclick={onEditDone} aria-label="Done editing">
         Done
       </button>
-    {:else}
+    {:else if onEditStart}
       <button
         type="button"
         class="btn btn--sm game-line__edit-btn"
@@ -137,7 +137,6 @@
         Removing…
       {:else}
         <IconTrash size={18} className="game-line__icon icon-trash" />
-        <span class="game-line__icon-label">Delete</span>
       {/if}
     </button>
   </div>
@@ -202,7 +201,8 @@
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     border-radius: var(--radius);
-    padding: 8px;
+    padding: 8px 8px 24px 8px;
+    margin-top: 14px;
   }
   .game-line__counter {
     display: flex;
@@ -223,9 +223,12 @@
 
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    padding: 2px 14px;
+    padding: 4px 14px;
   }
   .game-line__actions {
+    position: absolute;
+   right: 8px;
+    bottom: -24px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -244,7 +247,11 @@
   }
   .game-line__delete-btn,
   .game-line__actions .game-line__delete-btn {
+    height:24px;
+    padding-top: 0;
+    padding-bottom: 0;
     color: var(--danger);
+  
   }
   .game-line__delete-btn:hover,
   .game-line__actions .game-line__delete-btn:hover {

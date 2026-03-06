@@ -151,7 +151,7 @@
       if (p1Lore >= LORE_WIN || p2Lore >= LORE_WIN) {
         saveAsDone();
       }
-    }, 1000);
+    }, 500);
   }
 
   /** Schedule save 1s after last change; resets on each call. */
@@ -160,7 +160,7 @@
     debouncedSaveTimeout = setTimeout(async () => {
       debouncedSaveTimeout = null;
       if (!saving) await save();
-    }, 1000);
+    }, 500);
   }
 
   function incP1() {

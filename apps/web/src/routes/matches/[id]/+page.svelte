@@ -43,8 +43,8 @@
   let deletingGameIndex = $state<number | null>(null);
   /** Index of game to delete; when set, show "really delete?" modal. */
   let gameToDeleteIndex = $state<number | null>(null);
-  /** Index of game line in edit mode (show Starter/Winner dropdowns). */
-  let editingGameIndex = $state<number | null>(null);
+  /** When true, all game lines show edit UI (Starter/Winner). */
+  let editingGames = $state(false);
   /** Match card (players, deck colors, decks) in edit mode. */
   let editingMatchCard = $state(false);
   let showDeleteMatchPrompt = $state(false);
@@ -55,6 +55,8 @@
   let updatingStage = $state(false);
   let updatingTournamentName = $state(false);
   let updatingRound = $state(false);
+  /** True when the player header is stuck at the top (sticky). */
+  let playerHeaderStuck = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
   const PREFERRED_TEAM = 'The Big Ink Theory';
@@ -134,6 +136,23 @@
   function gamesWon(m: Match, playerId: string): number {
     const games = m.games ?? [];
     return games.filter((g) => gameWinnerId(g) === playerId).length;
+  }
+
+  /** Svelte action: observes a sentinel element; when it leaves the viewport (scrolled past), sets playerHeaderStuck. */
+  function playerHeaderSentinel(node: HTMLElement) {
+    const observer = new window.IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        if (e) playerHeaderStuck = !e.isIntersecting;
+      },
+      { threshold: 0 }
+    );
+    observer.observe(node);
+    return {
+      destroy() {
+        observer.disconnect();
+      },
+    };
   }
 
   onMount(async () => {
@@ -491,42 +510,42 @@
           {/if}
 
           <div class="matchcard__top-actions">
-          {#if editingMatchCard}
-            <button
-              type="button"
-              class="matchcard__edit-done btn btn--sm"
-              onclick={() => (editingMatchCard = false)}
-              aria-label="Done editing"
-            >
-              Done
-            </button>
-          {:else}
-            <button
-              type="button"
-              class="matchcard__edit-done btn btn--sm"
-              onclick={() => (editingMatchCard = true)}
-              aria-label="Edit match"
-            >
-              <IconEdit size={18} className="matchcard__edit-icon" />
-              Edit
-            </button>
-          {/if}
-
-          <button
-            type="button"
-            class="btn btn--danger btn--icon"
-            onclick={openDeleteMatchModal}
-            disabled={deleting}
-            aria-label="Delete match"
-            title="Delete match"
-          >
-            {#if deleting}
-              Deleting…
+            {#if editingMatchCard}
+              <button
+                type="button"
+                class="matchcard__edit-done btn btn--sm"
+                onclick={() => (editingMatchCard = false)}
+                aria-label="Done editing"
+              >
+                Done
+              </button>
             {:else}
-              <IconTrash size={18} className="icon-trash" />
-              Delete
+              <button
+                type="button"
+                class="matchcard__edit-done btn btn--sm"
+                onclick={() => (editingMatchCard = true)}
+                aria-label="Edit match"
+              >
+                <IconEdit size={18} className="matchcard__edit-icon" />
+                Edit
+              </button>
             {/if}
-          </button>
+
+            <button
+              type="button"
+              class="btn btn--danger btn--icon"
+              onclick={openDeleteMatchModal}
+              disabled={deleting}
+              aria-label="Delete match"
+              title="Delete match"
+            >
+              {#if deleting}
+                Deleting…
+              {:else}
+                <IconTrash size={18} className="icon-trash" />
+                Delete
+              {/if}
+            </button>
           </div>
         </div>
         {#if editingMatchCard}
@@ -710,8 +729,35 @@
         {/if}
         {#if match.games?.length}
           <div class="stack" style="gap: 12px;">
-            <h3>Games</h3>
-            <div class="player_header">
+            <div
+              class="row"
+              style="align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;"
+            >
+              <h3 style="margin: 0;">Games</h3>
+              {#if editingGames}
+                <button
+                  type="button"
+                  class="btn btn--sm"
+                  onclick={() => (editingGames = false)}
+                  aria-label="Done editing"
+                >
+                  Done
+                </button>
+              {:else}
+                <button
+                  type="button"
+                  class="btn btn--sm"
+                  onclick={() => (editingGames = true)}
+                  aria-label="Edit starter and winner for all games"
+                  title="Edit starter and winner"
+                >
+                  <IconEdit size={16} className="icon-inline" />
+                  <span style="margin-left: 4px;">Edit</span>
+                </button>
+              {/if}
+            </div>
+            <div class="player_header-sentinel" aria-hidden="true" use:playerHeaderSentinel></div>
+            <div class="player_header" class:player_header--stuck={playerHeaderStuck}>
               <h4>{displayPlayerName(match.p1, 'Player 1')}</h4>
               <h4>{displayPlayerName(match.p2, 'Player 2')}</h4>
             </div>
@@ -724,13 +770,12 @@
                 p2DisplayName={displayPlayerName(match.p2, 'Player 2')}
                 p1Id={p1Id ?? undefined}
                 p2Id={p2Id ?? undefined}
-                isEditing={editingGameIndex === i}
+                isEditing={editingGames}
                 isUpdating={updatingGameIndex === i}
                 isDeleting={deletingGameIndex === i}
                 {onGameChange}
                 {onDeleteGame}
-                onEditStart={() => (editingGameIndex = i)}
-                onEditDone={() => (editingGameIndex = null)}
+                onEditDone={() => (editingGames = false)}
               />
             {/each}
           </div>
@@ -853,7 +898,16 @@
     font-size: 1.5rem;
   }
 
+  .player_header-sentinel {
+    height: 1px;
+    margin-bottom: -1px;
+    overflow: hidden;
+    pointer-events: none;
+  }
   .player_header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -863,6 +917,18 @@
     padding-bottom: 12px;
     font-weight: 600;
     color: var(--muted);
+  }
+  .player_header.player_header--stuck {
+    background: color-mix(in srgb, var(--glass-bg-strong) 40%, var(--bg) 100%);
+    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 0 0 var(--radius) var(--radius);
+    box-shadow: var(--shadow-card);
+    padding: 8px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+    min-height: 54px;
+    z-index: 10;
   }
   .player_header h4 {
     margin: 0;
