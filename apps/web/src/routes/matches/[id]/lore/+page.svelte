@@ -34,6 +34,13 @@
   let winCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   let debouncedSaveTimeout: ReturnType<typeof setTimeout> | null = null;
 
+  /** Mobile: avoid single tap firing both inc and dec (touch + ghost click or wrong target). */
+  const LORE_BUTTON_COOLDOWN_MS = 400;
+  let lastP1ChangeAt = 0;
+  let lastP2ChangeAt = 0;
+  let lastP1WasInc = false;
+  let lastP2WasInc = false;
+
   /** Game indices for which the user dismissed the "choose starter" prompt (Skip). */
   let starterPromptDismissed = $state<Record<number, boolean>>({});
   /** True when showing the "choose starting player" modal. */
@@ -164,20 +171,36 @@
   }
 
   function incP1() {
+    const now = Date.now();
+    if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP1WasInc) return;
+    lastP1ChangeAt = now;
+    lastP1WasInc = true;
     p1Lore = Math.min(LORE_MAX, p1Lore + 1);
     scheduleWinCheck();
     scheduleDebouncedSave();
   }
   function decP1() {
+    const now = Date.now();
+    if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP1WasInc) return;
+    lastP1ChangeAt = now;
+    lastP1WasInc = false;
     p1Lore = Math.max(0, p1Lore - 1);
     scheduleDebouncedSave();
   }
   function incP2() {
+    const now = Date.now();
+    if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP2WasInc) return;
+    lastP2ChangeAt = now;
+    lastP2WasInc = true;
     p2Lore = Math.min(LORE_MAX, p2Lore + 1);
     scheduleWinCheck();
     scheduleDebouncedSave();
   }
   function decP2() {
+    const now = Date.now();
+    if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP2WasInc) return;
+    lastP2ChangeAt = now;
+    lastP2WasInc = false;
     p2Lore = Math.max(0, p2Lore - 1);
     scheduleDebouncedSave();
   }

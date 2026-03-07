@@ -219,8 +219,8 @@
     transform: translate(-45%, -25%);
     border-radius: var(--radius);
     border: 1px solid var(--glass-border);
-    background: rgba(168, 85, 247, 0.7);
-
+    background: rgba(168, 85, 247, 0.95);
+    opacity: 1;
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     padding: 4px 14px;
@@ -240,10 +240,11 @@
     font-size: 0.85rem;
     padding: 2px 20px;
     color: var(--fg);
-    background: var(--glass-bg);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     border-radius: var(--radius);
+    opacity: 1;
   }
   .game-line__delete-btn,
   .game-line__actions .game-line__delete-btn {
@@ -251,7 +252,7 @@
     padding-top: 0;
     padding-bottom: 0;
     color: var(--danger);
-  
+    opacity: 1;
   }
   .game-line__delete-btn:hover,
   .game-line__actions .game-line__delete-btn:hover {
