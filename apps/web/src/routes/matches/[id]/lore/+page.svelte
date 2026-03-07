@@ -594,9 +594,9 @@
   }
 
   .lore-panel__value {
-    font-size: 5rem;
-    font-weight: 800;
-    line-height: 1;
+    font-size: 15rem;
+    font-weight: 500;
+    line-height: 15rem;
     color: #fff;
     min-width: 2ch;
     z-index: 1;
@@ -613,7 +613,7 @@
     border: none;
     background: transparent;
     color: #fff;
-    font-size: 1.5rem;
+    font-size: 10rem;
     font-weight: 400;
     cursor: pointer;
     display: flex;
