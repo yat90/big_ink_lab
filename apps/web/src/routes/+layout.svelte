@@ -10,6 +10,35 @@
 
   injectAnalytics();
 
+  // Keep screen awake when PWA is in use (e.g. lore page on mobile)
+  $effect(() => {
+    if (typeof document === 'undefined' || !('wakeLock' in navigator)) return;
+    let wakeLock: WakeLockSentinel | null = null;
+
+    const requestWakeLock = async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => {
+          wakeLock = null;
+        });
+      } catch {
+        // Ignore (e.g. low battery, not supported in context)
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') requestWakeLock();
+    };
+
+    requestWakeLock();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      wakeLock?.release().catch(() => {});
+    };
+  });
+
   const title = $derived(
     (() => {
       const p = $page.url.pathname;
