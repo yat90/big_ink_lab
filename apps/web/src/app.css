@@ -199,7 +199,7 @@ a {
 .topbar__nav {
 	display: grid;
 	grid-column: 1 / -1;
-	grid-template-columns: repeat(5, 1fr);
+	grid-template-columns: repeat(6, 1fr);
 	min-width: 0;
 	gap: 8px;
 }
@@ -314,6 +314,14 @@ a {
 	color: var(--muted);
 	transition: color var(--transition), background var(--transition);
 }
+.topbar__drawer-link--button {
+	width: 100%;
+	border: none;
+	background: transparent;
+	text-align: left;
+	font-family: inherit;
+	cursor: pointer;
+}
 .topbar__drawer-link:hover {
 	color: var(--fg);
 	background: var(--glass-bg-strong);
@@ -345,6 +353,9 @@ a {
 	transition: color var(--transition), background var(--transition);
 	-webkit-tap-highlight-color: transparent;
 	touch-action: manipulation;
+	border: none;
+	background: transparent;
+	font-family: inherit;
 }
 .topbar__link-icon {
 	display: flex;
