@@ -91,10 +91,13 @@ export class AuthService {
     const { email, password } = this.ensureCredentials(dto);
     const user = await this.userModel
       .findOne({ email })
-      .select('_id email name passwordHash')
+      .select('_id email name passwordHash enabled')
       .exec();
     if (!user) {
       throw new UnauthorizedException('Invalid email or password.');
+    }
+    if (!user.enabled) {
+      throw new UnauthorizedException('User is disabled.');
     }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);

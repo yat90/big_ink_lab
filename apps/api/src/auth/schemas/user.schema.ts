@@ -11,6 +11,9 @@ export class User extends Document {
 
   @Prop({ trim: true, default: '' })
   name!: string;
+
+  @Prop({ required: true, default: true })
+  enabled!: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
