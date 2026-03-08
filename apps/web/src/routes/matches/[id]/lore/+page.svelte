@@ -1,5 +1,6 @@
 <script lang="ts">
   import { config } from '$lib/config';
+  import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -19,6 +20,18 @@
     matchWinner?: Player | string;
     games?: Game[];
   };
+  type LoreDraft = {
+    p1Lore: number;
+    p2Lore: number;
+    starter?: string;
+    updatedAt: number;
+  };
+  type LoreDraftMap = Record<string, LoreDraft>;
+  type WakeLockNavigator = Navigator & {
+    wakeLock?: {
+      request: (type: 'screen') => Promise<WakeLockSentinel>;
+    };
+  };
 
   const id = $page.params.id;
   const gameParam = $page.url.searchParams.get('game');
@@ -32,7 +45,10 @@
   let saving = $state(false);
   let error = $state('');
   let winCheckTimeout: ReturnType<typeof setTimeout> | null = null;
-  let debouncedSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+  let syncInterval: ReturnType<typeof setInterval> | null = null;
+  let syncInFlight = false;
+  let hasPendingLocalSync = $state(false);
+  let wakeLockSentinel: WakeLockSentinel | null = null;
 
   /** Mobile: avoid single tap firing both inc and dec (touch + ghost click or wrong target). */
   const LORE_BUTTON_COOLDOWN_MS = 400;
@@ -57,6 +73,8 @@
   const apiUrl = config.apiUrl ?? '/api';
   const LORE_MAX = 25;
   const LORE_WIN = 20;
+  const SCORE_SYNC_INTERVAL_MS = 60_000;
+  const LOCAL_DRAFT_STORAGE_KEY = `lore-tracker:${id}:drafts`;
 
   function playerName(p: Player | string | undefined): string {
     if (!p) return '–';
@@ -90,22 +108,204 @@
     games.filter((g) => g.status === 'done' && gameWinnerId(g) === p2Id).length
   );
 
-  onMount(async () => {
+  function readLocalDrafts(): LoreDraftMap {
+    if (!browser) return {};
     try {
-      const res = await fetch(`${apiUrl}/matches/${id}`);
+      const raw = localStorage.getItem(LOCAL_DRAFT_STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? (parsed as LoreDraftMap) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeLocalDrafts(drafts: LoreDraftMap) {
+    if (!browser) return;
+    try {
+      if (Object.keys(drafts).length === 0) {
+        localStorage.removeItem(LOCAL_DRAFT_STORAGE_KEY);
+      } else {
+        localStorage.setItem(LOCAL_DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+      }
+    } catch {
+      // ignore storage quota / privacy mode errors
+    }
+  }
+
+  function refreshPendingLocalSyncFlag() {
+    hasPendingLocalSync = Object.keys(readLocalDrafts()).length > 0;
+  }
+
+  function clearLocalDraftForGame(index: number) {
+    const drafts = readLocalDrafts();
+    if (!(String(index) in drafts)) return;
+    delete drafts[String(index)];
+    writeLocalDrafts(drafts);
+    refreshPendingLocalSyncFlag();
+  }
+
+  function persistCurrentGameLocally() {
+    const drafts = readLocalDrafts();
+    drafts[String(gameIndex)] = {
+      p1Lore: Math.min(LORE_MAX, Math.max(0, p1Lore)),
+      p2Lore: Math.min(LORE_MAX, Math.max(0, p2Lore)),
+      ...(starter ? { starter } : {}),
+      updatedAt: Date.now(),
+    };
+    writeLocalDrafts(drafts);
+    hasPendingLocalSync = true;
+  }
+
+  function applyLocalDraftForCurrentGame() {
+    if (!browser) return;
+    const draft = readLocalDrafts()[String(gameIndex)];
+    if (!draft) return;
+    p1Lore = Math.min(LORE_MAX, Math.max(0, draft.p1Lore));
+    p2Lore = Math.min(LORE_MAX, Math.max(0, draft.p2Lore));
+    if (draft.starter) starter = draft.starter;
+    hasPendingLocalSync = true;
+  }
+
+  function applyDraftsToGames(sourceGames: Game[], drafts: LoreDraftMap): Game[] {
+    const updatedGames = [...sourceGames];
+    for (const [rawIndex, draft] of Object.entries(drafts)) {
+      const idx = Number(rawIndex);
+      if (!Number.isInteger(idx) || idx < 0) continue;
+      const current = updatedGames[idx];
+      if (current?.status === 'done') continue;
+      updatedGames[idx] = {
+        ...(current ?? {}),
+        p1Lore: Math.min(LORE_MAX, Math.max(0, draft.p1Lore)),
+        p2Lore: Math.min(LORE_MAX, Math.max(0, draft.p2Lore)),
+        ...(draft.starter ? { starter: draft.starter } : {}),
+      };
+    }
+    return updatedGames;
+  }
+
+  async function syncLocalDrafts() {
+    if (syncInFlight || saving || !match?.games?.length) return;
+    const draftsToSync = readLocalDrafts();
+    if (Object.keys(draftsToSync).length === 0) {
+      hasPendingLocalSync = false;
+      return;
+    }
+
+    syncInFlight = true;
+    saving = true;
+    error = '';
+    try {
+      const updatedGames = applyDraftsToGames(match.games, draftsToSync);
+      const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
+      const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
+      const mw = match.matchWinner;
+      const winnerId = typeof mw === 'object' && mw ? mw._id : mw;
+      const res = await fetch(`${apiUrl}/matches/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          p1: p1Id,
+          p2: p2Id,
+          matchWinner: winnerId,
+          games: updatedGames,
+        }),
+      });
       if (!res.ok) {
-        error = 'Match not found';
-        loading = false;
+        const data = await res.json().catch(() => ({}));
+        error = data.message ?? 'Offline: score saved locally, retrying every minute.';
         return;
       }
       match = await res.json();
-      const maxIndex = (match?.games?.length ?? 1) - 1;
-      if (gameIndex > maxIndex) gameIndex = maxIndex;
+      const latestDrafts = readLocalDrafts();
+      for (const [gameKey, syncedDraft] of Object.entries(draftsToSync)) {
+        const latest = latestDrafts[gameKey];
+        if (latest && latest.updatedAt === syncedDraft.updatedAt) {
+          delete latestDrafts[gameKey];
+        }
+      }
+      writeLocalDrafts(latestDrafts);
+      hasPendingLocalSync = Object.keys(latestDrafts).length > 0;
     } catch {
-      error = 'Could not load match.';
+      error = 'Offline: score saved locally, retrying every minute.';
     } finally {
-      loading = false;
+      saving = false;
+      syncInFlight = false;
     }
+  }
+
+  async function requestWakeLock() {
+    if (!browser) return;
+    const nav = navigator as WakeLockNavigator;
+    if (!nav.wakeLock) return;
+    try {
+      wakeLockSentinel = await nav.wakeLock.request('screen');
+      wakeLockSentinel.addEventListener('release', () => {
+        wakeLockSentinel = null;
+      });
+    } catch {
+      // ignore if browser blocks wake lock
+    }
+  }
+
+  async function releaseWakeLock() {
+    try {
+      await wakeLockSentinel?.release();
+    } catch {
+      // ignore release errors
+    } finally {
+      wakeLockSentinel = null;
+    }
+  }
+
+  onMount(() => {
+    let disposed = false;
+    const loadMatch = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/matches/${id}`);
+        if (!res.ok) {
+          error = 'Match not found';
+          loading = false;
+          return;
+        }
+        match = await res.json();
+        const maxIndex = (match?.games?.length ?? 1) - 1;
+        if (gameIndex > maxIndex) gameIndex = maxIndex;
+      } catch {
+        error = 'Could not load match.';
+      } finally {
+        if (!disposed) loading = false;
+      }
+    };
+    const handleOnline = () => {
+      void syncLocalDrafts();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void requestWakeLock();
+        void syncLocalDrafts();
+      } else {
+        void releaseWakeLock();
+      }
+    };
+
+    refreshPendingLocalSyncFlag();
+    syncInterval = setInterval(() => {
+      void syncLocalDrafts();
+    }, SCORE_SYNC_INTERVAL_MS);
+    void requestWakeLock();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+    void loadMatch();
+
+    return () => {
+      disposed = true;
+      if (winCheckTimeout) clearTimeout(winCheckTimeout);
+      if (syncInterval) clearInterval(syncInterval);
+      void releaseWakeLock();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+    };
   });
 
   $effect(() => {
@@ -119,6 +319,7 @@
         typeof cur.starter === 'object' && cur.starter != null
           ? cur.starter._id
           : (cur.starter ?? '');
+      applyLocalDraftForCurrentGame();
     }
   });
 
@@ -161,15 +362,6 @@
     }, 500);
   }
 
-  /** Schedule save 1s after last change; resets on each call. */
-  function scheduleDebouncedSave() {
-    if (debouncedSaveTimeout) clearTimeout(debouncedSaveTimeout);
-    debouncedSaveTimeout = setTimeout(async () => {
-      debouncedSaveTimeout = null;
-      if (!saving) await save();
-    }, 500);
-  }
-
   function incP1() {
     const now = Date.now();
     if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP1WasInc) return;
@@ -177,7 +369,7 @@
     lastP1WasInc = true;
     p1Lore = Math.min(LORE_MAX, p1Lore + 1);
     scheduleWinCheck();
-    scheduleDebouncedSave();
+    persistCurrentGameLocally();
   }
   function decP1() {
     const now = Date.now();
@@ -185,7 +377,7 @@
     lastP1ChangeAt = now;
     lastP1WasInc = false;
     p1Lore = Math.max(0, p1Lore - 1);
-    scheduleDebouncedSave();
+    persistCurrentGameLocally();
   }
   function incP2() {
     const now = Date.now();
@@ -194,7 +386,7 @@
     lastP2WasInc = true;
     p2Lore = Math.min(LORE_MAX, p2Lore + 1);
     scheduleWinCheck();
-    scheduleDebouncedSave();
+    persistCurrentGameLocally();
   }
   function decP2() {
     const now = Date.now();
@@ -202,7 +394,7 @@
     lastP2ChangeAt = now;
     lastP2WasInc = false;
     p2Lore = Math.max(0, p2Lore - 1);
-    scheduleDebouncedSave();
+    persistCurrentGameLocally();
   }
 
   async function saveAsDone() {
@@ -220,6 +412,7 @@
       winnerId = p2Id;
     }
     if (winnerId == null) return;
+    persistCurrentGameLocally();
     saving = true;
     error = '';
     try {
@@ -250,6 +443,7 @@
         error = data.message ?? 'Save failed';
       } else {
         match = await res.json();
+        clearLocalDraftForGame(gameIndex);
         gameOverWinnerId = winnerId;
         showGameOverPrompt = true;
       }
@@ -335,6 +529,7 @@
         return;
       }
       match = await res.json();
+      clearLocalDraftForGame(gameIndex);
     } catch {
       error = 'Could not save.';
     } finally {
@@ -418,6 +613,11 @@
 
     {#if error}
       <p class="alert" role="alert" aria-live="assertive">{error}</p>
+    {/if}
+    {#if hasPendingLocalSync}
+      <p class="muted lore-sync-status" aria-live="polite">
+        Offline-safe mode active: score is saved locally and synced every minute.
+      </p>
     {/if}
   {:else}
     <div class="card">
@@ -518,6 +718,11 @@
     padding: 24px;
     max-width: 420px;
     margin: 0 auto;
+  }
+
+  .lore-sync-status {
+    margin: 8px 16px;
+    text-align: center;
   }
 
   /* Split layout: two full-height halves + divider */
