@@ -3,4 +3,6 @@ export class StatsQueryDto {
   stage?: string | string[];
   /** Optional: when filtering by stage Tournament, filter to this tournament name. */
   tournamentName?: string;
+  /** Optional: how to compute deck color matchup matrix. */
+  matrixMode?: 'matches' | 'games';
 }

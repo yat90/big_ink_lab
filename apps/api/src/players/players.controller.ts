@@ -12,11 +12,15 @@ export class PlayersController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Query('deckId') deckId?: string) {
+  async findOne(
+    @Param('id') id: string,
+    @Query('deckId') deckId?: string,
+    @Query('matrixMode') matrixMode?: 'matches' | 'games'
+  ) {
     const player = await this.playersService.findOne(id);
     if (!player) throw new NotFoundException('Player not found');
     const [stats, decksUsed] = await Promise.all([
-      this.playersService.getStats(id, deckId),
+      this.playersService.getStats(id, deckId, matrixMode === 'games' ? 'games' : 'matches'),
       this.playersService.getDecksUsed(id),
     ]);
     return { ...player.toObject(), stats, decksUsed };

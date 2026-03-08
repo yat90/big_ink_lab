@@ -2,8 +2,7 @@
   import { config } from '$lib/config';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
-  import { DECK_COLOR_OPTIONS } from '$lib/matches';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import MatchupStatistics from '$lib/MatchupStatistics.svelte';
 
   type DeckColorMatrixCell = { played: number; won: number };
   type DeckColorMatrix = Record<string, Record<string, DeckColorMatrixCell>>;
@@ -39,17 +38,20 @@
   let loading = $state(true);
   let error = $state('');
   let filterDeckId = $state('');
+  type MatrixMode = 'matches' | 'games';
+  let selectedMatrixMode = $state<MatrixMode>('matches');
 
   const apiUrl = config.apiUrl ?? '/api';
   const decksUsed = $derived(player?.decksUsed ?? []);
 
-  async function loadPlayer(deckId?: string) {
+  async function loadPlayer(deckId?: string, matrixMode: MatrixMode = 'matches') {
     loading = true;
     error = '';
     try {
-      const url = deckId?.trim()
-        ? `${apiUrl}/players/${id}?deckId=${encodeURIComponent(deckId.trim())}`
-        : `${apiUrl}/players/${id}`;
+      const params = new URLSearchParams();
+      if (deckId?.trim()) params.set('deckId', deckId.trim());
+      params.set('matrixMode', matrixMode);
+      const url = `${apiUrl}/players/${id}${params.toString() ? `?${params.toString()}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
         error = 'Player not found';
@@ -64,11 +66,16 @@
   }
 
   onMount(() => {
-    loadPlayer(filterDeckId || undefined);
+    loadPlayer(filterDeckId || undefined, selectedMatrixMode);
   });
 
   async function onDeckFilterChange() {
-    await loadPlayer(filterDeckId || undefined);
+    await loadPlayer(filterDeckId || undefined, selectedMatrixMode);
+  }
+
+  async function onMatrixModeChange(mode: MatrixMode) {
+    selectedMatrixMode = mode;
+    await loadPlayer(filterDeckId || undefined, selectedMatrixMode);
   }
 </script>
 
@@ -189,45 +196,13 @@
 
           {#if player.stats.deckColorMatrix}
             <h3 class="player-stats__subtitle">By deck colors</h3>
-            <div class="player-stats__matrix-wrap">
-              <table class="player-stats__matrix" aria-label="Match record by your deck color vs opponent deck color">
-                <thead>
-                  <tr>
-                    <th scope="col" class="player-stats__matrix-corner"></th>
-                    {#each DECK_COLOR_OPTIONS as oppDeck}
-                      <th scope="col" class="player-stats__matrix-header" title={oppDeck}><InkIcons deckColor={oppDeck} size="sm" /></th>
-                    {/each}
-                  </tr>
-                </thead>
-                <tbody>
-                  {#each DECK_COLOR_OPTIONS as myDeck}
-                    <tr>
-                      <th scope="row" class="player-stats__matrix-row-header" title={myDeck}><InkIcons deckColor={myDeck} size="sm" /></th>
-                      {#each DECK_COLOR_OPTIONS as oppDeck}
-                        {@const cell = player.stats?.deckColorMatrix?.[myDeck]?.[oppDeck]}
-                        {@const winPct = cell ? Math.round((cell.won / cell.played) * 100) : null}
-                        <td
-                          class="player-stats__matrix-cell"
-                          class:player-stats__matrix-cell--win={winPct != null && winPct > 50}
-                          class:player-stats__matrix-cell--loss={winPct != null && winPct < 50}
-                        >
-                          {#if cell}
-                            <span
-                              class="player-stats__matrix-cell-inner"
-                              title="{myDeck} vs {oppDeck}: {cell.won} wins, {cell.played - cell.won} losses"
-                            >
-                              {winPct}%
-                            </span>
-                          {:else}
-                            <span class="muted" aria-hidden="true">–</span>
-                          {/if}
-                        </td>
-                      {/each}
-                    </tr>
-                  {/each}
-                </tbody>
-              </table>
-            </div>
+            <MatchupStatistics
+              matrix={player.stats.deckColorMatrix}
+              bind:analysisMode={selectedMatrixMode}
+              onchange={onMatrixModeChange}
+              title="Deck color matchups"
+              emptyText="No matchup data found for this player and filter combination."
+            />
           {/if}
         </div>
       {:else}
@@ -314,56 +289,4 @@
     font-weight: 500;
   }
 
-  .player-stats__matrix-wrap {
-    overflow-x: auto;
-    margin-bottom: var(--space-md);
-  }
-
-  .player-stats__matrix {
-    width: 100%;
-    min-width: 280px;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-  }
-
-  .player-stats__matrix th,
-  .player-stats__matrix td {
-    border: 1px solid var(--border);
-    padding: var(--space-xs) var(--space-sm);
-    text-align: center;
-  }
-
-  .player-stats__matrix-corner {
-    background: unset;
-    min-width: 2.5rem;
-  }
-
-  .player-stats__matrix-header {
-    font-weight: 600;
-    background-color: rgba(71, 71, 71, 0.5);
-    white-space: nowrap;
-  }
-
-  .player-stats__matrix-row-header {
-    font-weight: 600;
-    background-color: rgba(138, 138, 138, 0.77);
-    white-space: nowrap;
-  }
-
-  .player-stats__matrix-cell {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .player-stats__matrix-cell--win {
-    background-color: rgba(34, 197, 94, 0.2);
-  }
-
-  .player-stats__matrix-cell--loss {
-    background-color: rgba(220, 38, 38, 0.2);
-  }
-
-  .player-stats__matrix-cell-inner {
-    display: block;
-    text-align: center;
-  }
 </style>

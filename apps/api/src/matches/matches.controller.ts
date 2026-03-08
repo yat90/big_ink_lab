@@ -17,7 +17,8 @@ export class MatchesController {
   async getStats(@Query() query: StatsQueryDto) {
     const stages = Array.isArray(query.stage) ? query.stage : query.stage ? [query.stage] : undefined;
     const tournamentName = query.tournamentName?.trim() || undefined;
-    return this.matchesService.getGlobalStats(stages, tournamentName);
+    const matrixMode = query.matrixMode === 'games' ? 'games' : 'matches';
+    return this.matchesService.getGlobalStats(stages, tournamentName, matrixMode);
   }
 
   @Get('tournaments')

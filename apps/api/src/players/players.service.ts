@@ -11,6 +11,7 @@ export interface DeckColorMatrixCell {
 }
 
 export type DeckColorMatrix = Record<string, Record<string, DeckColorMatrixCell>>;
+type MatrixMode = 'matches' | 'games';
 
 export interface PlayerStats {
   matchesPlayed: number;
@@ -38,6 +39,20 @@ export class PlayersService {
     @InjectModel(Deck.name) private readonly deckModel: Model<Deck>
   ) {}
 
+  private addMatrixResult(
+    matrix: DeckColorMatrix,
+    myDeck: string,
+    oppDeck: string,
+    won: number
+  ) {
+    if (!matrix[myDeck]) matrix[myDeck] = {};
+    if (!matrix[myDeck][oppDeck]) {
+      matrix[myDeck][oppDeck] = { played: 0, won: 0 };
+    }
+    matrix[myDeck][oppDeck].played += 1;
+    matrix[myDeck][oppDeck].won += won;
+  }
+
   async findAll(): Promise<Player[]> {
     return this.playerModel.find().sort({ name: 1 }).exec();
   }
@@ -46,7 +61,11 @@ export class PlayersService {
     return this.playerModel.findById(id).exec();
   }
 
-  async getStats(playerId: string, deckId?: string): Promise<PlayerStats> {
+  async getStats(
+    playerId: string,
+    deckId?: string,
+    matrixMode: MatrixMode = 'matches'
+  ): Promise<PlayerStats> {
     const matchFilter: Record<string, unknown> = {
       $or: [{ p1: playerId }, { p2: playerId }],
     };
@@ -118,12 +137,18 @@ export class PlayersService {
         match.p1?.toString() === playerId ? match.p2DeckColor : match.p1DeckColor
       ) as string | undefined;
       if (!myDeck || !oppDeck) continue;
-      const won = (match.matchWinner?.toString?.() ?? match.matchWinner) === playerId ? 1 : 0;
-      if (!deckColorMatrix[myDeck]) deckColorMatrix[myDeck] = {};
-      if (!deckColorMatrix[myDeck][oppDeck])
-        deckColorMatrix[myDeck][oppDeck] = { played: 0, won: 0 };
-      deckColorMatrix[myDeck][oppDeck].played += 1;
-      deckColorMatrix[myDeck][oppDeck].won += won;
+      if (matrixMode === 'games') {
+        for (const game of match.games ?? []) {
+          if (game.status !== 'done') continue;
+          const winnerId = game.winner?.toString?.() ?? game.winner;
+          if (!winnerId) continue;
+          const won = winnerId === playerId ? 1 : 0;
+          this.addMatrixResult(deckColorMatrix, myDeck, oppDeck, won);
+        }
+      } else {
+        const won = (match.matchWinner?.toString?.() ?? match.matchWinner) === playerId ? 1 : 0;
+        this.addMatrixResult(deckColorMatrix, myDeck, oppDeck, won);
+      }
     }
 
     return {
