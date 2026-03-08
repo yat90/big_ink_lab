@@ -15,6 +15,7 @@ export interface GlobalMatchStats {
   starterWinRate: number;
   deckColorMatrix: Record<string, Record<string, { played: number; won: number }>>;
 }
+type MatrixMode = 'matches' | 'games';
 
 @Injectable()
 export class MatchesService {
@@ -22,6 +23,18 @@ export class MatchesService {
     @InjectModel(Match.name) private readonly matchModel: Model<Match>,
     @InjectModel(Deck.name) private readonly deckModel: Model<Deck>
   ) {}
+
+  private addMatrixResult(
+    matrix: Record<string, Record<string, { played: number; won: number }>>,
+    myDeck: string,
+    oppDeck: string,
+    won: number
+  ) {
+    if (!matrix[myDeck]) matrix[myDeck] = {};
+    if (!matrix[myDeck][oppDeck]) matrix[myDeck][oppDeck] = { played: 0, won: 0 };
+    matrix[myDeck][oppDeck].played += 1;
+    matrix[myDeck][oppDeck].won += won;
+  }
 
   async findAll(query: FindMatchesQueryDto = {}): Promise<Match[]> {
     const { stage, sort = 'newest' } = query;
@@ -104,7 +117,11 @@ export class MatchesService {
     return !!result;
   }
 
-  async getGlobalStats(stages?: string[], tournamentName?: string): Promise<GlobalMatchStats> {
+  async getGlobalStats(
+    stages?: string[],
+    tournamentName?: string,
+    matrixMode: MatrixMode = 'matches'
+  ): Promise<GlobalMatchStats> {
     const filter: Record<string, unknown> = {};
     if (stages?.length && stages.every((s) => Object.values(Stage).includes(s as Stage))) {
       filter.stage = { $in: stages };
@@ -144,20 +161,26 @@ export class MatchesService {
       }
       const p1Id = match.p1?.toString?.();
       const p2Id = match.p2?.toString?.();
-      const winnerId = match.matchWinner?.toString?.() ?? match.matchWinner;
       const p1Deck = match.p1DeckColor as string | undefined;
       const p2Deck = match.p2DeckColor as string | undefined;
       if (!p1Deck || !p2Deck) continue;
-      const p1Won = winnerId === p1Id ? 1 : 0;
-      const p2Won = winnerId === p2Id ? 1 : 0;
-      if (!deckColorMatrix[p1Deck]) deckColorMatrix[p1Deck] = {};
-      if (!deckColorMatrix[p1Deck][p2Deck]) deckColorMatrix[p1Deck][p2Deck] = { played: 0, won: 0 };
-      deckColorMatrix[p1Deck][p2Deck].played += 1;
-      deckColorMatrix[p1Deck][p2Deck].won += p1Won;
-      if (!deckColorMatrix[p2Deck]) deckColorMatrix[p2Deck] = {};
-      if (!deckColorMatrix[p2Deck][p1Deck]) deckColorMatrix[p2Deck][p1Deck] = { played: 0, won: 0 };
-      deckColorMatrix[p2Deck][p1Deck].played += 1;
-      deckColorMatrix[p2Deck][p1Deck].won += p2Won;
+      if (matrixMode === 'games') {
+        for (const game of match.games ?? []) {
+          if (game.status !== 'done') continue;
+          const gameWinnerId = game.winner?.toString?.() ?? game.winner;
+          if (!gameWinnerId || !p1Id || !p2Id) continue;
+          const p1Won = gameWinnerId === p1Id ? 1 : 0;
+          const p2Won = gameWinnerId === p2Id ? 1 : 0;
+          this.addMatrixResult(deckColorMatrix, p1Deck, p2Deck, p1Won);
+          this.addMatrixResult(deckColorMatrix, p2Deck, p1Deck, p2Won);
+        }
+      } else {
+        const winnerId = match.matchWinner?.toString?.() ?? match.matchWinner;
+        const p1Won = winnerId === p1Id ? 1 : 0;
+        const p2Won = winnerId === p2Id ? 1 : 0;
+        this.addMatrixResult(deckColorMatrix, p1Deck, p2Deck, p1Won);
+        this.addMatrixResult(deckColorMatrix, p2Deck, p1Deck, p2Won);
+      }
     }
 
     const starterGames = gamesWonByStarter + gamesWonByNonStarter;

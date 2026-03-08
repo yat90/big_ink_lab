@@ -1,7 +1,7 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { DECK_COLOR_OPTIONS, STAGE_OPTIONS } from '$lib/matches';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import { STAGE_OPTIONS } from '$lib/matches';
+  import MatchupStatistics from '$lib/MatchupStatistics.svelte';
 
   type GlobalStats = {
     totalMatches: number;
@@ -17,8 +17,10 @@
   let loading = $state(true);
   let error = $state('');
   type StageOption = (typeof STAGE_OPTIONS)[number];
+  type MatrixMode = 'matches' | 'games';
   let selectedStages = $state<StageOption[]>([...STAGE_OPTIONS]);
   let selectedTournament = $state('');
+  let selectedMatrixMode = $state<MatrixMode>('matches');
   let tournamentNames = $state<string[]>([]);
 
   const apiUrl = config.apiUrl ?? '/api';
@@ -36,7 +38,7 @@
     }
   }
 
-  async function fetchStats(stages: StageOption[], tournamentName?: string) {
+  async function fetchStats(stages: StageOption[], tournamentName?: string, matrixMode: MatrixMode = 'matches') {
     loading = true;
     error = '';
     try {
@@ -45,6 +47,7 @@
         stages.forEach((s) => params.append('stage', s));
       }
       if (tournamentName?.trim()) params.set('tournamentName', tournamentName.trim());
+      params.set('matrixMode', matrixMode);
       const url = `${apiUrl}/matches/stats${params.toString() ? `?${params}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
@@ -75,7 +78,7 @@
   });
 
   $effect(() => {
-    fetchStats(selectedStages, selectedTournament || undefined);
+    fetchStats(selectedStages, selectedTournament || undefined, selectedMatrixMode);
   });
 </script>
 
@@ -191,53 +194,14 @@
         </div>
       </div>
 
-      {#if stats.deckColorMatrix && Object.keys(stats.deckColorMatrix).length > 0}
-        <div class="card match-stats__card match-stats__card--wide">
-          <h3 class="match-stats__title">Deck color matchups</h3>
-          <p class="match-stats__sub muted" style="margin: 0 0 var(--space-md); font-size: 0.9rem;">
-            Rows: deck color. Columns: opponent deck color. Cell: win rate when that matchup was played.
-          </p>
-          <div class="match-stats__matrix-wrap">
-            <table class="match-stats__matrix" aria-label="Win rate by deck color vs opponent deck color">
-              <thead>
-                <tr>
-                  <th scope="col" class="match-stats__matrix-corner"></th>
-                  {#each DECK_COLOR_OPTIONS as oppDeck}
-                    <th scope="col" class="match-stats__matrix-header" title={oppDeck}><InkIcons deckColor={oppDeck} size="sm" /></th>
-                  {/each}
-                </tr>
-              </thead>
-              <tbody>
-                {#each DECK_COLOR_OPTIONS as myDeck}
-                  <tr>
-                    <th scope="row" class="match-stats__matrix-row-header" title={myDeck}><InkIcons deckColor={myDeck} size="sm" /></th>
-                    {#each DECK_COLOR_OPTIONS as oppDeck}
-                      {@const cell = stats.deckColorMatrix[myDeck]?.[oppDeck]}
-                      {@const winPct = cell ? Math.round((cell.won / cell.played) * 100) : null}
-                      <td
-                        class="match-stats__matrix-cell"
-                        class:match-stats__matrix-cell--win={winPct != null && winPct > 50}
-                        class:match-stats__matrix-cell--loss={winPct != null && winPct < 50}
-                      >
-                        {#if cell}
-                          <span
-                            class="match-stats__matrix-cell-inner"
-                            title="{myDeck} vs {oppDeck}: {cell.won} wins, {cell.played - cell.won} losses"
-                          >
-                            {winPct}%
-                          </span>
-                        {:else}
-                          <span class="muted" aria-hidden="true">–</span>
-                        {/if}
-                      </td>
-                    {/each}
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      {/if}
+      <div class="card match-stats__card match-stats__card--wide">
+        <MatchupStatistics
+          matrix={stats.deckColorMatrix}
+          bind:analysisMode={selectedMatrixMode}
+          title="Deck color matchups"
+          emptyText="No matchup data available for the selected filters."
+        />
+      </div>
     </div>
   {/if}
 </div>
@@ -360,66 +324,4 @@
     font-weight: 500;
   }
 
-  .match-stats__matrix-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .match-stats__matrix {
-    width: 100%;
-    min-width: 280px;
-    border-collapse: collapse;
-    font-size: 0.9rem;
-  }
-
-  .match-stats__matrix th,
-  .match-stats__matrix td {
-    border: 1px solid var(--border);
-    padding: var(--space-xs) var(--space-sm);
-    text-align: center;
-  }
-
-  /* Sticky first column so row labels stay visible when scrolling horizontally */
-  .match-stats__matrix-corner {
-    position: sticky;
-    left: 0;
-    z-index: 2;
-    min-width: 2.5rem;
-    width: 2.5rem;
-    background: var(--card);
-    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.15);
-  }
-
-  .match-stats__matrix-header {
-    font-weight: 600;
-    background-color: rgba(71, 71, 71, 0.5);
-    white-space: nowrap;
-  }
-
-  .match-stats__matrix-row-header {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    font-weight: 600;
-    background-color: rgba(138, 138, 138, 0.77);
-    white-space: nowrap;
-    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.15);
-  }
-
-  .match-stats__matrix-cell {
-    font-variant-numeric: tabular-nums;
-  }
-
-  .match-stats__matrix-cell--win {
-    background-color: rgba(34, 197, 94, 0.2);
-  }
-
-  .match-stats__matrix-cell--loss {
-    background-color: rgba(220, 38, 38, 0.2);
-  }
-
-  .match-stats__matrix-cell-inner {
-    display: block;
-    text-align: center;
-  }
 </style>
