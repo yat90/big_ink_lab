@@ -1,17 +1,21 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { onMount } from 'svelte';
+  import Pagination from '$lib/Pagination.svelte';
 
   let players = $state<Array<{ _id: string; name: string; team: string }>>([]);
+  let allPlayers = $state<Array<{ _id: string; name: string; team: string }>>([]);
   let loading = $state(true);
   let error = $state('');
   const DEFAULT_TEAM = 'The Big Ink Theory';
-  let filterTeam = $state(DEFAULT_TEAM);
+  let filterTeam = $state('');
+  let currentPage = $state(1);
+  let totalPages = $state(1);
+  let total = $state(0);
 
   const apiUrl = config.apiUrl ?? '/api';
 
   const teamNames = $derived(
-    [...new Set(players.map((p) => (p.team ?? '').trim()).filter((t) => t !== ''))].sort((a, b) =>
+    [...new Set(allPlayers.map((p) => (p.team ?? '').trim()).filter((t) => t !== ''))].sort((a, b) =>
       a.localeCompare(b),
     ),
   );
@@ -22,25 +26,57 @@
       : players,
   );
 
-  onMount(async () => {
+  async function fetchPlayers() {
+    loading = true;
+    error = '';
     try {
-      const res = await fetch(`${apiUrl}/players`);
+      const params = new URLSearchParams();
+      params.set('page', String(currentPage));
+      params.set('limit', '20');
+      const url = `${apiUrl}/players?${params}`;
+      const res = await fetch(url);
       if (!res.ok) {
         error = 'Failed to load players';
         return;
       }
-      players = await res.json();
-      const teams = [...new Set(players.map((p) => (p.team ?? '').trim()).filter((t) => t !== ''))];
-      if (teams.includes(DEFAULT_TEAM)) {
-        filterTeam = DEFAULT_TEAM;
-      } else {
-        filterTeam = '';
-      }
+      const response = await res.json();
+      players = response.data || [];
+      totalPages = response.meta?.totalPages || 1;
+      total = response.meta?.total || 0;
     } catch {
       error = 'Could not reach API.';
     } finally {
       loading = false;
     }
+  }
+
+  async function fetchAllPlayersForTeams() {
+    try {
+      const res = await fetch(`${apiUrl}/players?limit=1000`);
+      if (res.ok) {
+        const response = await res.json();
+        allPlayers = response.data || [];
+        const teams = [...new Set(allPlayers.map((p) => (p.team ?? '').trim()).filter((t) => t !== ''))];
+        if (teams.includes(DEFAULT_TEAM)) {
+          filterTeam = DEFAULT_TEAM;
+        }
+      }
+    } catch {
+      // non-blocking
+    }
+  }
+
+  function handlePageChange(page: number) {
+    currentPage = page;
+  }
+
+  $effect(() => {
+    currentPage;
+    fetchPlayers();
+  });
+
+  $effect(() => {
+    fetchAllPlayersForTeams();
   });
 </script>
 
@@ -85,11 +121,9 @@
           </select>
         </label>
       </div>
-      {#if filterTeam}
-        <p class="filters__count muted">
-          {filteredPlayers.length} player{filteredPlayers.length === 1 ? '' : 's'}
-        </p>
-      {/if}
+      <p class="filters__count muted">
+        {filterTeam ? filteredPlayers.length : total} player{(filterTeam ? filteredPlayers.length : total) === 1 ? '' : 's'}
+      </p>
     </div>
 
     {#if filteredPlayers.length === 0 && filterTeam}
@@ -110,6 +144,14 @@
         </a>
       {/each}
     </div>
+
+    {#if !filterTeam}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
+    {/if}
     {/if}
   {/if}
 </div>

@@ -3,6 +3,7 @@
   import { type Game, STAGE_OPTIONS } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
+  import Pagination from '$lib/Pagination.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Match = {
@@ -25,6 +26,9 @@
 
   let filterStage = $state<string>('');
   let sortOrder = $state<'newest' | 'oldest'>('newest');
+  let currentPage = $state(1);
+  let totalPages = $state(1);
+  let total = $state(0);
 
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -71,13 +75,18 @@
       const params = new URLSearchParams();
       if (filterStage) params.set('stage', filterStage);
       params.set('sort', sortOrder);
+      params.set('page', String(currentPage));
+      params.set('limit', '20');
       const url = `${apiUrl}/matches${params.toString() ? `?${params}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
         error = 'Failed to load matches';
         return;
       }
-      matches = await res.json();
+      const response = await res.json();
+      matches = response.data || [];
+      totalPages = response.meta?.totalPages || 1;
+      total = response.meta?.total || 0;
     } catch {
       error = 'Could not reach API.';
     } finally {
@@ -85,9 +94,18 @@
     }
   }
 
+  function handlePageChange(page: number) {
+    currentPage = page;
+  }
+
   $effect(() => {
     filterStage;
     sortOrder;
+    currentPage = 1;
+  });
+
+  $effect(() => {
+    currentPage;
     fetchMatches();
   });
 </script>
@@ -157,11 +175,9 @@
           </select>
         </label>
       </div>
-      {#if filterStage}
-        <p class="filters__count muted">
-          {matches.length} match{matches.length === 1 ? '' : 'es'}
-        </p>
-      {/if}
+      <p class="filters__count muted">
+        {total} total match{total === 1 ? '' : 'es'}
+      </p>
     </div>
 
     {#if matches.length === 0}
@@ -201,7 +217,7 @@
                   {/if}
                 </span>
                 {#if match.p1DeckColor}
-                  <span class="matchcard__ink" title={match.p1DeckColoØr} aria-hidden="true"
+                  <span class="matchcard__ink" title={match.p1DeckColor} aria-hidden="true"
                     ><InkIcons deckColor={match.p1DeckColor} /></span
                   >
                 {/if}
@@ -235,6 +251,12 @@
           </a>
         {/each}
       </div>
+
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     {/if}
   {/if}
 </div>

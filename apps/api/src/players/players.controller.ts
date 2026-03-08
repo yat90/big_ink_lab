@@ -1,14 +1,17 @@
 import { Body, Controller, Get, Param, Patch, Post, Query, NotFoundException } from '@nestjs/common';
 import { Player } from '../matches/schemas/player.schema';
 import { PlayersService } from './players.service';
+import { FindPlayersQueryDto } from './dto/find-players-query.dto';
+import { PaginatedResponse, createPaginatedResponse } from '../common/dto/paginated-response.dto';
 
 @Controller('players')
 export class PlayersController {
   constructor(private readonly playersService: PlayersService) {}
 
   @Get()
-  async findAll(): Promise<Player[]> {
-    return this.playersService.findAll();
+  async findAll(@Query() query: FindPlayersQueryDto): Promise<PaginatedResponse<Player>> {
+    const { data, total } = await this.playersService.findAll(query.page ?? 1, query.limit ?? 20);
+    return createPaginatedResponse(data, total, query.page ?? 1, query.limit ?? 20);
   }
 
   @Get(':id')
