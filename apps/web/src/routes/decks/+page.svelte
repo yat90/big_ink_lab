@@ -1,10 +1,11 @@
+/* eslint-disable svelte/require-each-key */
 <script lang="ts">
   import { config } from '$lib/config';
-  import { onMount } from 'svelte';
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerName } from '$lib/decks';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
+  import Pagination from '$lib/Pagination.svelte';
 
   const BIG_INK_THEORY_TEAM = 'The Big Ink Theory';
   type Player = { _id: string; name: string; team?: string };
@@ -16,6 +17,9 @@
   let error = $state('');
   let filterColor = $state('');
   let filterPlayer = $state('');
+  let currentPage = $state(1);
+  let totalPages = $state(1);
+  let total = $state(0);
 
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -26,14 +30,18 @@
       const params = new URLSearchParams();
       if (filterColor.trim()) params.set('color', filterColor.trim());
       if (filterPlayer.trim()) params.set('player', filterPlayer.trim());
-      const qs = params.toString();
-      const url = qs ? `${apiUrl}/decks?${qs}` : `${apiUrl}/decks`;
+      params.set('page', String(currentPage));
+      params.set('limit', '5');
+      const url = `${apiUrl}/decks?${params}`;
       const res = await fetch(url);
       if (!res.ok) {
         error = 'Failed to load decks';
         return;
       }
-      decks = await res.json();
+      const response = await res.json();
+      decks = response.data || [];
+      totalPages = response.meta?.totalPages || 1;
+      total = response.meta?.total || 0;
     } catch {
       error = 'Could not reach API.';
     } finally {
@@ -41,19 +49,36 @@
     }
   }
 
-  onMount(async () => {
+  async function fetchPlayers() {
     try {
-      const playersRes = await fetch(`${apiUrl}/players`);
-      if (playersRes.ok) allPlayers = await playersRes.json();
+      const playersRes = await fetch(`${apiUrl}/players?limit=1000`);
+      if (playersRes.ok) {
+        const response = await playersRes.json();
+        allPlayers = response.data || [];
+      }
     } catch {
       // non-blocking
     }
-    await loadDecks();
+  }
+
+  function onFilterChange() {
+    currentPage = 1;
+  }
+
+  function handlePageChange(page: number) {
+    currentPage = page;
+  }
+
+  $effect(() => {
+    fetchPlayers();
   });
 
-  async function onFilterChange() {
-    await loadDecks();
-  }
+  $effect(() => {
+    filterColor;
+    filterPlayer;
+    currentPage;
+    loadDecks();
+  });
 </script>
 
 <svelte:head>
@@ -78,7 +103,11 @@
     <div class="card stack">
       <h2 class="card__title">No decks yet</h2>
       <p class="card__sub">Create a deck with name and card list.</p>
-      <a href="/decks/new" class="btn btn--primary" style="align-self: flex-start; margin-top: var(--space-sm);">
+      <a
+        href="/decks/new"
+        class="btn btn--primary"
+        style="align-self: flex-start; margin-top: var(--space-sm);"
+      >
         New deck
       </a>
     </div>
@@ -122,7 +151,11 @@
         <p class="muted">No decks match the selected filter.</p>
       {:else}
         {#each decks as deck}
-          <a href="/decks/{deck._id}" class="card deckcard" style="text-decoration: none; color: inherit;">
+          <a
+            href="/decks/{deck._id}"
+            class="card deckcard"
+            style="text-decoration: none; color: inherit;"
+          >
             <div class="deckcard__name">{deck.name}</div>
             <div class="deckcard__meta row" style="gap: var(--space-md); flex-wrap: wrap;">
               {#if deck.deckColor}
@@ -133,11 +166,21 @@
               {#if getDeckPlayerName(deck) !== '–'}
                 <span class="muted">{getDeckPlayerName(deck)}</span>
               {/if}
+              {#if deck.totalMatches !== undefined || deck.winRate != null}
+                <span class="deckcard__winrate" title="Matches and win rate">
+                  {deck.totalMatches ?? 0} match{(deck.totalMatches ?? 0) === 1 ? '' : 'es'}
+                  {#if deck.winRate != null}
+                    · {(deck.winRate * 100).toFixed(1)}% win rate
+                  {/if}
+                </span>
+              {/if}
             </div>
           </a>
         {/each}
       {/if}
     </div>
+
+    <Pagination {currentPage} {totalPages} onPageChange={handlePageChange} />
   {/if}
 </div>
 
@@ -167,5 +210,10 @@
   }
   .deckcard__ink {
     font-size: 1rem;
+  }
+  .deckcard__winrate {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--muted);
   }
 </style>

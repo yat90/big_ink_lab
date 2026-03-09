@@ -3,14 +3,16 @@ import { Match } from './schemas/lorcana-match.schema';
 import { MatchesService } from './matches.service';
 import { FindMatchesQueryDto } from './dto/find-matches-query.dto';
 import { StatsQueryDto } from './dto/stats-query.dto';
+import { PaginatedResponse, createPaginatedResponse } from '../common/dto/paginated-response.dto';
 
 @Controller('matches')
 export class MatchesController {
   constructor(private readonly matchesService: MatchesService) {}
 
   @Get()
-  async findAll(@Query() query: FindMatchesQueryDto): Promise<Match[]> {
-    return this.matchesService.findAll(query);
+  async findAll(@Query() query: FindMatchesQueryDto): Promise<PaginatedResponse<Match>> {
+    const { data, total } = await this.matchesService.findAll(query);
+    return createPaginatedResponse(data, total, query.page ?? 1, query.limit ?? 10);
   }
 
   @Get('stats')

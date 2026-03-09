@@ -3,6 +3,7 @@
   import { type Game, STAGE_OPTIONS } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
+  import Pagination from '$lib/Pagination.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Match = {
@@ -23,8 +24,14 @@
   let loading = $state(true);
   let error = $state('');
 
+  const PAGE_SIZE = 10;
+
   let filterStage = $state<string>('');
+  let filterTime = $state<string>('30'); // '' = all time, '7' | '30' | '90' = last N days
   let sortOrder = $state<'newest' | 'oldest'>('newest');
+  let currentPage = $state(1);
+  let totalPages = $state(1);
+  let total = $state(0);
 
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -32,8 +39,6 @@
     if (!p) return '–';
     return typeof p === 'string' ? p : (p.name ?? '–');
   }
-
- 
 
   function formatDate(s: string | undefined): string {
     if (!s) return '–';
@@ -63,21 +68,40 @@
     return games.filter((g) => gameWinnerId(g) === playerId).length;
   }
 
+  function getTimeRange(): { fromDate?: string; toDate?: string } {
+    if (!filterTime) return {};
+    const now = Date.now();
+    const days = Number.parseInt(filterTime, 10) || 7;
+    const fromMs = now - days * 24 * 60 * 60 * 1000;
+    return {
+      fromDate: new Date(fromMs).toISOString().slice(0, 10),
+      toDate: new Date(now).toISOString().slice(0, 10),
+    };
+  }
+
   async function fetchMatches() {
     loading = true;
     error = '';
     try {
+      const range = getTimeRange();
       // eslint-disable-next-line svelte/prefer-svelte-reactivity
       const params = new URLSearchParams();
       if (filterStage) params.set('stage', filterStage);
+      if (range.fromDate) params.set('fromDate', range.fromDate);
+      if (range.toDate) params.set('toDate', range.toDate);
       params.set('sort', sortOrder);
+      params.set('page', String(currentPage));
+      params.set('limit', String(PAGE_SIZE));
       const url = `${apiUrl}/matches${params.toString() ? `?${params}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
         error = 'Failed to load matches';
         return;
       }
-      matches = await res.json();
+      const response = await res.json();
+      matches = response.data || [];
+      totalPages = response.meta?.totalPages || 1;
+      total = response.meta?.total || 0;
     } catch {
       error = 'Could not reach API.';
     } finally {
@@ -85,9 +109,20 @@
     }
   }
 
+  function handlePageChange(page: number) {
+    currentPage = page;
+  }
+
   $effect(() => {
-    filterStage;
-    sortOrder;
+    // Track filter deps so we reset page when they change
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _ = [filterStage, filterTime, sortOrder];
+    currentPage = 1;
+  });
+
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _ = [currentPage, filterStage, filterTime, sortOrder];
     fetchMatches();
   });
 </script>
@@ -108,7 +143,7 @@
     <div class="card" role="alert" aria-live="assertive">
       <p class="alert">{error}</p>
     </div>
-  {:else if matches.length === 0 && !filterStage}
+  {:else if matches.length === 0 && !filterStage && !filterTime}
     <div class="card stack">
       <h2 class="card__title">No matches yet</h2>
       <p class="card__sub">Create your first match.</p>
@@ -122,7 +157,10 @@
     </div>
   {:else}
     <div class="row matches-header">
-      <h2 class="card__title" style="margin: 0;">Matches</h2>
+      <h2 class="card__title" style="margin: 0;">
+        Matches
+        <span class="matches-header__count muted" aria-label="Total matches">({total})</span>
+      </h2>
       <div class="row" style="gap: var(--space-sm);">
         <a href="/matches/new" class="btn btn--primary">New match</a>
       </div>
@@ -144,6 +182,20 @@
             {/each}
           </select>
         </label>
+        <label class="filters__label" for="filter-time">
+          <span class="muted" style="font-size: 0.85rem;">Time</span>
+          <select
+            id="filter-time"
+            class="input filters__select"
+            bind:value={filterTime}
+            aria-label="Filter by time range"
+          >
+            <option value="">All time</option>
+            <option value="7">Last 7 days</option>
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
+        </label>
         <label class="filters__label" for="filter-sort">
           <span class="muted" style="font-size: 0.85rem;">Sort</span>
           <select
@@ -157,17 +209,22 @@
           </select>
         </label>
       </div>
-      {#if filterStage}
-        <p class="filters__count muted">
-          {matches.length} match{matches.length === 1 ? '' : 'es'}
-        </p>
-      {/if}
+      <p class="filters__count muted">
+        {total} total match{total === 1 ? '' : 'es'}
+      </p>
     </div>
 
     {#if matches.length === 0}
       <div class="card stack">
         <p class="card__sub">No matches match your filters.</p>
-        <button type="button" class="btn" onclick={() => (filterStage = '')}>
+        <button
+          type="button"
+          class="btn"
+          onclick={() => {
+            filterStage = '';
+            filterTime = '';
+          }}
+        >
           Clear filters
         </button>
       </div>
@@ -201,7 +258,7 @@
                   {/if}
                 </span>
                 {#if match.p1DeckColor}
-                  <span class="matchcard__ink" title={match.p1DeckColoØr} aria-hidden="true"
+                  <span class="matchcard__ink" title={match.p1DeckColor} aria-hidden="true"
                     ><InkIcons deckColor={match.p1DeckColor} /></span
                   >
                 {/if}
@@ -235,6 +292,8 @@
           </a>
         {/each}
       </div>
+
+      <Pagination {currentPage} {totalPages} onPageChange={handlePageChange} />
     {/if}
   {/if}
 </div>
