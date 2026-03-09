@@ -692,6 +692,10 @@ a {
 	}
 }
 
+.filters__select-btn {
+	text-align: left;
+}
+
 .filters__count {
 	margin-top: var(--space-sm);
 	margin-bottom: 0;

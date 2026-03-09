@@ -37,11 +37,16 @@ export class MatchesService {
   }
 
   async findAll(query: FindMatchesQueryDto = {}): Promise<{ data: Match[]; total: number }> {
-    const { stage, sort = 'newest', page = 1, limit = 10, fromDate, toDate } = query;
+    const { stage, sort = 'newest', page = 1, limit = 10, fromDate, toDate, player } = query;
     const filter: Record<string, unknown> = {};
 
     if (stage && Object.values(Stage).includes(stage as Stage)) {
       filter.stage = stage;
+    }
+
+    if (player?.trim()) {
+      const playerId = player.trim();
+      filter.$or = [{ p1: playerId }, { p2: playerId }];
     }
 
     const dateFilter: { $gte?: Date; $lte?: Date } = {};

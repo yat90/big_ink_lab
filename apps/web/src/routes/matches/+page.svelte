@@ -1,9 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { config } from '$lib/config';
+  import { getAuthToken } from '$lib/auth';
   import { type Game, STAGE_OPTIONS } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import Pagination from '$lib/Pagination.svelte';
+  import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Match = {
@@ -28,6 +31,9 @@
 
   let filterStage = $state<string>('');
   let filterTime = $state<string>('30'); // '' = all time, '7' | '30' | '90' = last N days
+  let filterPlayerId = $state<string>('');
+  let filterPlayerName = $state<string>('');
+  let playerPickerOpen = $state(false);
   let currentPage = $state(1);
   let totalPages = $state(1);
   let total = $state(0);
@@ -86,6 +92,7 @@
       // eslint-disable-next-line svelte/prefer-svelte-reactivity
       const params = new URLSearchParams();
       if (filterStage) params.set('stage', filterStage);
+      if (filterPlayerId) params.set('player', filterPlayerId);
       if (range.fromDate) params.set('fromDate', range.fromDate);
       if (range.toDate) params.set('toDate', range.toDate);
       params.set('sort', 'newest');
@@ -112,16 +119,41 @@
     currentPage = page;
   }
 
+  function handlePlayerSelect(playerId: string, player?: { name: string; team?: string }) {
+    filterPlayerId = playerId ?? '';
+    filterPlayerName = player ? `${player.name}${player.team ? ` (${player.team})` : ''}` : '';
+  }
+
+  onMount(async () => {
+    const token = getAuthToken();
+    if (!token) return;
+    try {
+      const meRes = await fetch(`${apiUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (meRes.ok) {
+        const me = await meRes.json();
+        const p = me?.player;
+        if (p?._id) {
+          filterPlayerId = p._id;
+          filterPlayerName = `${p.name ?? ''}${p.team ? ` (${p.team})` : ''}`.trim() || '';
+        }
+      }
+    } catch {
+      /* non-blocking */
+    }
+  });
+
   $effect(() => {
     // Track filter deps so we reset page when they change
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [filterStage, filterTime];
+    const _ = [filterStage, filterTime, filterPlayerId];
     currentPage = 1;
   });
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [currentPage, filterStage, filterTime];
+    const _ = [currentPage, filterStage, filterTime, filterPlayerId];
     fetchMatches();
   });
 </script>
@@ -142,7 +174,7 @@
     <div class="card" role="alert" aria-live="assertive">
       <p class="alert">{error}</p>
     </div>
-  {:else if matches.length === 0 && !filterStage && !filterTime}
+  {:else if matches.length === 0 && !filterStage && !filterTime && !filterPlayerId}
     <div class="card stack">
       <h2 class="card__title">No matches yet</h2>
       <p class="card__sub">Create your first match.</p>
@@ -167,6 +199,18 @@
 
     <div class="filters card">
       <div class="filters__row">
+        <label class="filters__label" for="filter-player-btn">
+          <span class="muted" style="font-size: 0.85rem;">Player</span>
+          <button
+            id="filter-player-btn"
+            type="button"
+            class="btn filters__select filters__select-btn"
+            onclick={() => (playerPickerOpen = true)}
+            aria-label="Filter by player"
+          >
+            {filterPlayerName || 'All players'}
+          </button>
+        </label>
         <label class="filters__label" for="filter-stage">
           <span class="muted" style="font-size: 0.85rem;">Stage</span>
           <select
@@ -201,6 +245,14 @@
       </p>
     </div>
 
+    <PlayerPickerModal
+      bind:open={playerPickerOpen}
+      title="Filter by player"
+      forLabel=""
+      onSelect={handlePlayerSelect}
+      onClose={() => (playerPickerOpen = false)}
+    />
+
     {#if matches.length === 0}
       <div class="card stack">
         <p class="card__sub">No matches match your filters.</p>
@@ -210,6 +262,8 @@
           onclick={() => {
             filterStage = '';
             filterTime = '';
+            filterPlayerId = '';
+            filterPlayerName = '';
           }}
         >
           Clear filters

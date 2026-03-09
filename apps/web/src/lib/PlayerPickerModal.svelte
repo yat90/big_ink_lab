@@ -28,7 +28,8 @@
     title?: string;
     forLabel?: string;
     excludePlayerId?: string;
-    onSelect: (playerId: string) => void;
+    /** Second arg is the selected player's name/team when selecting from list; undefined when "No player". */
+    onSelect: (playerId: string, player?: { name: string; team?: string }) => void;
     onClose: () => void;
   } = $props();
 
@@ -81,8 +82,8 @@
     loadPlayers();
   }
 
-  function selectPlayer(playerId: string) {
-    onSelect(playerId);
+  function selectPlayer(playerId: string, player?: { name: string; team?: string }) {
+    onSelect(playerId, player);
     onClose();
   }
 
@@ -173,7 +174,7 @@
             <button
               type="button"
               class="btn btn--sm"
-              onclick={() => selectPlayer('')}
+              onclick={() => selectPlayer('', undefined)}
             >
               Select
             </button>
@@ -190,7 +191,7 @@
                 type="button"
                 class="btn btn--primary btn--sm"
                 disabled={excludePlayerId === player._id}
-                onclick={() => selectPlayer(player._id)}
+                onclick={() => selectPlayer(player._id, { name: player.name, team: player.team })}
                 title={excludePlayerId === player._id ? 'Already selected as other player' : ''}
               >
                 Select

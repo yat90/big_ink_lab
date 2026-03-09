@@ -1,9 +1,14 @@
-import { IsOptional, IsDateString } from 'class-validator';
+import { IsOptional, IsDateString, IsMongoId } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 export class FindMatchesQueryDto extends PaginationQueryDto {
   stage?: string;
   sort?: 'newest' | 'oldest';
+
+  /** Filter matches where this player participated (p1 or p2). */
+  @IsOptional()
+  @IsMongoId()
+  player?: string;
 
   /** Filter matches played on or after this date (ISO date string, e.g. YYYY-MM-DD). */
   @IsOptional()
