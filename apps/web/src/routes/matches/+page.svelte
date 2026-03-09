@@ -121,7 +121,7 @@
 
   function handlePlayerSelect(playerId: string, player?: { name: string; team?: string }) {
     filterPlayerId = playerId ?? '';
-    filterPlayerName = player ? `${player.name}${player.team ? ` (${player.team})` : ''}` : '';
+    filterPlayerName = player ? player.name : '';
   }
 
   onMount(async () => {
@@ -136,7 +136,7 @@
         const p = me?.player;
         if (p?._id) {
           filterPlayerId = p._id;
-          filterPlayerName = `${p.name ?? ''}${p.team ? ` (${p.team})` : ''}`.trim() || '';
+          filterPlayerName = (p.name ?? '').trim();
         }
       }
     } catch {

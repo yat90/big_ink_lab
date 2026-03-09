@@ -563,7 +563,18 @@
             title="Offline-safe: score saved locally, synced every minute."
             aria-label="Offline-safe: score saved locally, synced every minute."
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
               <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
             </svg>
           </span>
@@ -865,7 +876,7 @@
     border: none;
     background: transparent;
     color: #fff;
-    font-size: 10rem;
+    font-size: 7rem;
     font-weight: 400;
     cursor: pointer;
     display: flex;
@@ -878,20 +889,24 @@
     position: relative;
     z-index: 2;
   }
-
-  .lore-panel__btn:hover {
-    background: rgba(30, 30, 30, 0.15);
+  .lore-panel__btn--dec {
+    transform: translateX(-10%);
   }
-
-  .lore-panel__btn:active {
-    transform: scale(0.95);
+  .lore-panel__btn--inc {
+    transform: translateX(10%);
   }
 
   @media (max-width: 480px) {
     .lore-panel__btn {
       min-width: 64px;
-      font-size: 2rem;
+      font-size: 4em;
     }
+    .lore-panel__btn--dec {
+    transform: translateX(-25%);
+  }
+  .lore-panel__btn--inc {
+    transform: translateX(25%);
+  }
   }
 
   .lore-divider {
@@ -911,7 +926,9 @@
     font-size: 0.75rem;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.85);
-    text-shadow: 0 0 4px #000, 0 1px 2px #000;
+    text-shadow:
+      0 0 4px #000,
+      0 1px 2px #000;
     white-space: nowrap;
     max-width: 28vw;
     overflow: hidden;
@@ -926,7 +943,7 @@
   }
   .lore-divider__name--p1 {
     right: 12px;
-    text-align: right;    
+    text-align: right;
     transform: translateY(5%);
   }
 

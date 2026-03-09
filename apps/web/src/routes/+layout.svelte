@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte';
   import '../app.css';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
@@ -16,6 +17,8 @@
   import IconUser from '$lib/icons/IconUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import IconClose from '$lib/icons/IconClose.svelte';
+
+  let { children = undefined }: { children?: Snippet } = $props();
 
   injectAnalytics();
 
@@ -231,10 +234,10 @@
         class:topbar__link--active={isDecks}
         aria-current={isDecks ? 'page' : undefined}
       >
-        <span class="topbar__drawer-link-icon" aria-hidden="true">
+        <span class="topbar__link-icon" aria-hidden="true">
           <IconDecks size={24} />
         </span>
-        Decks
+        <span class="topbar__link-label">Decks</span>
       </a>
       <a
         href="/players"
@@ -410,7 +413,9 @@
 <div class="app">
   <main id="main" class="main" class:main--full={isLorePage} tabindex="-1">
     {#if authReady || isAuthPage}
-      <slot />
+      {#if children}
+        {@render children()}
+      {/if}
     {:else}
       <div class="page">
         <div class="card">
