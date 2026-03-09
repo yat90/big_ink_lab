@@ -1,5 +1,6 @@
 <script lang="ts">
   import { config } from '$lib/config';
+  import { getAuthToken } from '$lib/auth';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
   import Pagination from '$lib/Pagination.svelte';
@@ -46,6 +47,8 @@
   let total = $state(0);
   let loading = $state(false);
   let error = $state('');
+  /** Set to true after preset player is applied so first load uses it. */
+  let presetReady = $state(false);
 
   async function fetchPlayers() {
     try {
@@ -109,8 +112,32 @@
     if (open) fetchPlayers();
   });
 
+  /** When modal opens, fetch current user's player and preset the Player filter. */
   $effect(() => {
-    if (!open) return;
+    if (!open) {
+      presetReady = false;
+      return;
+    }
+    presetReady = false;
+    const token = getAuthToken();
+    if (token) {
+      fetch(`${apiUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((me: { player?: { _id: string } } | null) => {
+          const id = (me?.player?._id ?? '').toString();
+          if (id) filterPlayer = id;
+          presetReady = true;
+        })
+        .catch(() => {
+          presetReady = true;
+        });
+    } else {
+      presetReady = true;
+    }
+  });
+
+  $effect(() => {
+    if (!open || !presetReady) return;
     const _ = [currentPage, filterName, filterColor, filterPlayer];
     loadDecks();
   });

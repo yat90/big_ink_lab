@@ -13,6 +13,8 @@
     gamesPlayed: number;
     gamesWon: number;
     gameWinRate: number;
+    /** Average lore in games the player lost. null when no lost games or no lore data. */
+    avgLoreInLostGames?: number | null;
     gamesAsStarter: number;
     gamesWonAsStarter: number;
     starterWinRate: number;
@@ -107,6 +109,12 @@
           <span class="player-stats-overview__value">{stats.gameWinRate}%</span>
           <span class="player-stats-overview__label muted">Game win rate</span>
         </div>
+        {#if stats.avgLoreInLostGames != null}
+          <div class="player-stats-overview__item">
+            <span class="player-stats-overview__value">{stats.avgLoreInLostGames}</span>
+            <span class="player-stats-overview__label muted">Avg. lore in games lost</span>
+          </div>
+        {/if}
       </div>
     </div>
   </div>

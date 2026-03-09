@@ -21,6 +21,8 @@ export interface PlayerStats {
   gamesPlayed: number;
   gamesWon: number;
   gameWinRate: number;
+  /** Average lore (score) in games the player lost. null when they have no lost games. */
+  avgLoreInLostGames: number | null;
   gamesAsStarter: number;
   gamesWonAsStarter: number;
   starterWinRate: number;
@@ -108,11 +110,14 @@ export class PlayersService {
       gamesWonAsStarter: 0,
       gamesNotStarter: 0,
       gamesWonNotStarter: 0,
+      loreInLostGamesSum: 0,
+      lostGamesWithLoreCount: 0,
     };
 
     for (const match of matches) {
       const winnerId = match.matchWinner?.toString?.() ?? match.matchWinner;
       if (winnerId === playerId) acc.matchesWon++;
+      const isP1 = match.p1?.toString?.() === playerId;
 
       for (const game of match.games ?? []) {
         if (game.status !== 'done') continue;
@@ -120,6 +125,14 @@ export class PlayersService {
         const gameWinnerId = game.winner?.toString?.() ?? game.winner;
         const won = gameWinnerId === playerId;
         if (won) acc.gamesWon++;
+
+        if (!won) {
+          const lore = isP1 ? game.p1Lore : game.p2Lore;
+          if (typeof lore === 'number' && !Number.isNaN(lore)) {
+            acc.loreInLostGamesSum += lore;
+            acc.lostGamesWithLoreCount++;
+          }
+        }
 
         const starterId = game.starter as Types.ObjectId;
         if (!starterId) continue;
@@ -169,6 +182,11 @@ export class PlayersService {
       }
     }
 
+    const avgLoreInLostGames =
+      acc.lostGamesWithLoreCount >= 0
+        ? Math.round((acc.loreInLostGamesSum / acc.lostGamesWithLoreCount) * 10) / 10
+        : null;
+
     return {
       matchesPlayed,
       matchesWon: acc.matchesWon,
@@ -177,6 +195,7 @@ export class PlayersService {
       gamesPlayed: acc.gamesPlayed,
       gamesWon: acc.gamesWon,
       gameWinRate,
+      avgLoreInLostGames,
       gamesAsStarter: acc.gamesAsStarter,
       gamesWonAsStarter: acc.gamesWonAsStarter,
       starterWinRate,
