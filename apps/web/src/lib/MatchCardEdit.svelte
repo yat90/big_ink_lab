@@ -1,6 +1,7 @@
 <script lang="ts">
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
   import DeckPickerModal from '$lib/DeckPickerModal.svelte';
+  import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
 
   type PlayerOption = { _id: string; name: string };
   type DeckOption = { _id: string; name: string };
@@ -55,6 +56,8 @@
 
   let deckPickerOpen = $state(false);
   let deckPickerRole = $state<'p1' | 'p2'>('p1');
+  let playerPickerOpen = $state(false);
+  let playerPickerRole = $state<'p1' | 'p2'>('p1');
 
   function openDeckPicker(role: 'p1' | 'p2') {
     deckPickerRole = role;
@@ -64,6 +67,16 @@
   function handleDeckSelect(deckId: string) {
     onDeckChange(deckPickerRole, deckId);
     deckPickerOpen = false;
+  }
+
+  function openPlayerPicker(role: 'p1' | 'p2') {
+    playerPickerRole = role;
+    playerPickerOpen = true;
+  }
+
+  function handlePlayerSelect(playerId: string) {
+    onPlayerChange(playerPickerRole, playerId);
+    playerPickerOpen = false;
   }
 
   const p1DeckName = $derived(
@@ -76,6 +89,12 @@
       decks.find((d) => d._id === p2DeckId)?.name ??
       '—',
   );
+  const p1PlayerDisplayName = $derived(
+    p1Id ? players.find((p) => p._id === p1Id)?.name ?? 'Player 1' : 'Player 1',
+  );
+  const p2PlayerDisplayName = $derived(
+    p2Id ? players.find((p) => p._id === p2Id)?.name ?? 'Player 2' : 'Player 2',
+  );
 </script>
 
 <div class="matchcard__edit">
@@ -84,28 +103,16 @@
     <div class="matchcard__edit-fields">
       <div class="matchcard__edit-field">
         <span class="matchcard__edit-field-label">Player</span>
-        <select
-          class="input matchcard__player-select"
-          value={p1Id ?? ''}
+        <button
+          type="button"
+          class="input matchcard__player-select matchcard__deck-select-btn"
           disabled={updatingPlayer === 'p1'}
-          onchange={(e) => onPlayerChange('p1', e.currentTarget.value)}
+          onclick={() => openPlayerPicker('p1')}
           aria-label="Player 1"
+          title="Click to choose player"
         >
-          <option value="">Player 1</option>
-          {#each players as pl (pl._id)}
-            <option value={pl._id} disabled={pl._id === p2Id}>{pl.name}</option>
-          {/each}
-        </select>
-      </div>
-      <div class="matchcard__edit-field">
-        <span class="matchcard__edit-field-label">Deck color</span>
-        <DeckColorSelect
-          className="matchcard__deck-select"
-          value={p1DeckColor}
-          disabled={updatingDeckColor || !!p1DeckId}
-          onchange={(v) => onDeckColorChange(v || undefined, p2DeckColor || undefined)}
-          ariaLabel="P1 deck color"
-        />
+          {p1PlayerDisplayName}
+        </button>
       </div>
       {#if showP1DeckSelect}
         <div class="matchcard__edit-field">
@@ -122,6 +129,16 @@
           </button>
         </div>
       {/if}
+      <div class="matchcard__edit-field">
+        <span class="matchcard__edit-field-label">Deck color</span>
+        <DeckColorSelect
+          className="matchcard__deck-select"
+          value={p1DeckColor}
+          disabled={updatingDeckColor || !!p1DeckId}
+          onchange={(v) => onDeckColorChange(v || undefined, p2DeckColor || undefined)}
+          ariaLabel="P1 deck color"
+        />
+      </div>
     </div>
   </div>
   <div class="matchcard__edit-section">
@@ -129,28 +146,16 @@
     <div class="matchcard__edit-fields">
       <div class="matchcard__edit-field">
         <span class="matchcard__edit-field-label">Player</span>
-        <select
-          class="input matchcard__player-select"
-          value={p2Id ?? ''}
+        <button
+          type="button"
+          class="input matchcard__player-select matchcard__deck-select-btn"
           disabled={updatingPlayer === 'p2'}
-          onchange={(e) => onPlayerChange('p2', e.currentTarget.value)}
+          onclick={() => openPlayerPicker('p2')}
           aria-label="Player 2"
+          title="Click to choose player"
         >
-          <option value="">Player 2</option>
-          {#each players as pl (pl._id)}
-            <option value={pl._id} disabled={pl._id === p1Id}>{pl.name}</option>
-          {/each}
-        </select>
-      </div>
-      <div class="matchcard__edit-field">
-        <span class="matchcard__edit-field-label">Deck color</span>
-        <DeckColorSelect
-          className="matchcard__deck-select"
-          value={p2DeckColor}
-          disabled={updatingDeckColor || !!p2DeckId}
-          onchange={(v) => onDeckColorChange(p1DeckColor || undefined, v || undefined)}
-          ariaLabel="P2 deck color"
-        />
+          {p2PlayerDisplayName}
+        </button>
       </div>
       {#if showP2DeckSelect}
         <div class="matchcard__edit-field">
@@ -167,6 +172,16 @@
           </button>
         </div>
       {/if}
+      <div class="matchcard__edit-field">
+        <span class="matchcard__edit-field-label">Deck color</span>
+        <DeckColorSelect
+          className="matchcard__deck-select"
+          value={p2DeckColor}
+          disabled={updatingDeckColor || !!p2DeckId}
+          onchange={(v) => onDeckColorChange(p1DeckColor || undefined, v || undefined)}
+          ariaLabel="P2 deck color"
+        />
+      </div>
     </div>
   </div>
 
@@ -176,6 +191,14 @@
     forLabel={deckPickerRole === 'p1' ? p1PlayerName : p2PlayerName}
     onSelect={handleDeckSelect}
     onClose={() => (deckPickerOpen = false)}
+  />
+  <PlayerPickerModal
+    bind:open={playerPickerOpen}
+    title="Select player"
+    forLabel={playerPickerRole === 'p1' ? 'Player 1' : 'Player 2'}
+    excludePlayerId={playerPickerRole === 'p1' ? p2Id ?? '' : p1Id ?? ''}
+    onSelect={handlePlayerSelect}
+    onClose={() => (playerPickerOpen = false)}
   />
 </div>
 

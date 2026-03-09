@@ -1414,3 +1414,39 @@ a[class*="playercard"]:active {
 	margin: -8px -14px;
 	border-radius: var(--radius);
 }
+
+
+
+/* Flex helper classes */
+
+.flex-row-wrap {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-md);
+
+    justify-content: flex-start;
+    align-items: stretch;
+}
+.justify-start {
+	justify-content: flex-start;
+}
+.justify-end {
+	justify-content: flex-end;
+}
+.justify-center {
+	justify-content: center;
+}
+.justify-between {
+	justify-content: space-between;
+}
+.justify-around {
+	justify-content: space-around;
+}
+.justify-evenly {
+	justify-content: space-evenly;
+}
+.flex-column {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-md);
+}

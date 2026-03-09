@@ -3,6 +3,8 @@
   import { getAuthToken } from '$lib/auth';
   import { config } from '$lib/config';
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
+  import DeckPickerModal from '$lib/DeckPickerModal.svelte';
+  import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
   import { STAGE_OPTIONS } from '$lib/matches';
   import { onMount } from 'svelte';
 
@@ -11,6 +13,14 @@
   let players = $state<Player[]>([]);
   let p1 = $state('');
   let p2 = $state('');
+  let p1DeckId = $state('');
+  let p2DeckId = $state('');
+  let p1DeckDisplayName = $state('');
+  let p2DeckDisplayName = $state('');
+  let playerPickerOpen = $state(false);
+  let playerPickerRole = $state<'p1' | 'p2'>('p1');
+  let deckPickerOpen = $state(false);
+  let deckPickerRole = $state<'p1' | 'p2'>('p1');
   let stage = $state('Casual');
   let tournamentName = $state('');
   function nowForDatetimeLocal(): string {
@@ -24,20 +34,10 @@
   let p2DeckColor = $state('');
   let matchWinner = $state('');
   let notes = $state('');
-  let games = $state<object[]>([{}]);
   let loading = $state(false);
   let error = $state('');
 
   let showAddPlayer = $state(false);
-
-  function addGame() {
-    games = [...games, {}];
-  }
-
-  function removeGame(i: number) {
-    if (games.length <= 1) return;
-    games = games.filter((_, idx) => idx !== i);
-  }
   let newPlayerName = $state('');
   let newPlayerTeam = $state('');
   let addPlayerLoading = $state(false);
@@ -60,6 +60,71 @@
     [p1, p2].map((id) => players.find((pl) => pl._id === id)).filter((pl): pl is Player => !!pl)
   );
 
+  function getPlayerTeam(playerId: string): string {
+    return (players.find((pl) => pl._id === playerId)?.team ?? '').trim();
+  }
+  const showP1DeckSelect = $derived(!!p1 && getPlayerTeam(p1) === BIG_INK_TEAM);
+  const showP2DeckSelect = $derived(!!p2 && getPlayerTeam(p2) === BIG_INK_TEAM);
+
+  const p1PlayerDisplayName = $derived(
+    p1 ? (players.find((pl) => pl._id === p1)?.name ?? 'Player 1') : 'Player 1'
+  );
+  const p2PlayerDisplayName = $derived(
+    p2 ? (players.find((pl) => pl._id === p2)?.name ?? 'Player 2') : 'Player 2'
+  );
+
+  async function fetchDeck(deckId: string): Promise<{ name: string; deckColor: string } | null> {
+    if (!deckId.trim()) return null;
+    try {
+      const res = await fetch(`${apiUrl}/decks/${deckId}`);
+      if (res.ok) {
+        const deck = await res.json();
+        return {
+          name: deck?.name ?? '',
+          deckColor: (deck?.deckColor ?? '').trim(),
+        };
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
+
+  function openPlayerPicker(role: 'p1' | 'p2') {
+    playerPickerRole = role;
+    playerPickerOpen = true;
+  }
+
+  function handlePlayerSelect(playerId: string) {
+    if (playerPickerRole === 'p1') p1 = playerId;
+    else p2 = playerId;
+    playerPickerOpen = false;
+  }
+
+  function openDeckPicker(role: 'p1' | 'p2') {
+    deckPickerRole = role;
+    deckPickerOpen = true;
+  }
+
+  async function handleDeckSelect(deckId: string) {
+    const deck = deckId.trim() ? await fetchDeck(deckId) : null;
+    if (deckPickerRole === 'p1') {
+      p1DeckId = deckId;
+      p1DeckDisplayName = deck?.name ?? '';
+      if (deck?.deckColor) p1DeckColor = deck.deckColor;
+      else if (!deckId.trim()) p1DeckColor = '';
+    } else {
+      p2DeckId = deckId;
+      p2DeckDisplayName = deck?.name ?? '';
+      if (deck?.deckColor) p2DeckColor = deck.deckColor;
+      else if (!deckId.trim()) p2DeckColor = '';
+    }
+    deckPickerOpen = false;
+  }
+
+  const p1DeckButtonLabel = $derived(p1DeckDisplayName || '—');
+  const p2DeckButtonLabel = $derived(p2DeckDisplayName || '—');
+
   $effect(() => {
     if (matchWinner && !winnerOptions.some((pl) => pl._id === matchWinner)) {
       matchWinner = '';
@@ -74,8 +139,11 @@
 
   async function fetchPlayers() {
     try {
-      const res = await fetch(`${apiUrl}/players`);
-      if (res.ok) players = await res.json();
+      const res = await fetch(`${apiUrl}/players?limit=500`);
+      if (res.ok) {
+        const json = await res.json();
+        players = Array.isArray(json) ? json : (json?.data ?? []);
+      }
     } catch {
       /* ignore */
     }
@@ -145,9 +213,11 @@
         playedAt: playedAt ? new Date(playedAt).toISOString() : new Date().toISOString(),
         p1DeckColor: p1DeckColor || undefined,
         p2DeckColor: p2DeckColor || undefined,
+        p1Deck: p1DeckId.trim() || undefined,
+        p2Deck: p2DeckId.trim() || undefined,
         matchWinner: matchWinner || undefined,
         notes: notes.trim(),
-        games: games.map(() => ({})),
+        games: [],
       };
       if (stage === 'Tournament') {
         body.tournamentName = tournamentName.trim();
@@ -174,40 +244,132 @@
   }
 </script>
 
-<div class="page">
-  <div class="card stack">
-    <h2 class="card__title">New match</h2>
-    <p class="card__sub">Create a new match between two players.</p>
+<div class="page new-match-page">
+  <h2 class="page-title">New match</h2>
+  <p class="page-sub">Create a new match between two players.</p>
 
-    <form onsubmit={onSubmit} class="stack" style="margin-top: 8px;">
+  <form onsubmit={onSubmit} class="new-match__form stack">
+    <input type="hidden" name="p1" value={p1} required />
+
+    <!-- Match base info -->
+    <section class="card stack new-match__card" aria-labelledby="match-card-title">
+      <h3 id="match-card-title" class="card__title new-match__card-title">Match</h3>
       <div class="formgrid">
-        <label class="label" for="p1">
-          Player 1
-          <select id="p1" class="input" bind:value={p1} required>
-            <option value="">Select player</option>
-            {#each playersForSelect as pl}
-              <option value={pl._id}
-                >{pl.name} - {#if pl.team}
-                  {pl.team}{/if}</option
-              >
+        <label class="label" for="stage">
+          Stage
+          <select id="stage" class="input" bind:value={stage}>
+            {#each STAGE_OPTIONS as s}
+              <option value={s}>{s}</option>
             {/each}
           </select>
         </label>
-        <label class="label" for="p2">
-          Player 2
-          <select id="p2" class="input" bind:value={p2}>
-            <option value="">Select player</option>
-            {#each playersForSelect as pl}
-              <option value={pl._id} disabled={pl._id === p1}
-                >{pl.name} - {#if pl.team}
-                  {pl.team}{/if}</option
-              >
-            {/each}
-          </select>
+        <label class="label" for="playedAt">
+          Played at
+          <input id="playedAt" type="datetime-local" class="input" bind:value={playedAt} />
         </label>
       </div>
+      {#if stage === 'Tournament'}
+        <label class="label" for="tournamentName">Tournament name</label>
+        <input
+          id="tournamentName"
+          type="text"
+          class="input"
+          bind:value={tournamentName}
+          placeholder="Tournament name"
+        />
+        <div class="formgrid">
+          <label class="label" for="round">Round</label>
+          <input
+            id="round"
+            type="number"
+            class="input"
+            min="1"
+            bind:value={round}
+            placeholder="Round number"
+          />
+          <label class="label" for="matchWinner">Winner</label>
+          <select id="matchWinner" class="input" bind:value={matchWinner}>
+            <option value="">–</option>
+            {#each winnerOptions as pl}
+              <option value={pl._id}
+                >{pl.name}{#if pl.team}
+                  – {pl.team}{/if}</option
+              >
+            {/each}
+          </select>
+        </div>
+      {:else}
+        <label class="label" for="matchWinner">Winner</label>
+        <select id="matchWinner" class="input" bind:value={matchWinner}>
+          <option value="">–</option>
+          {#each winnerOptions as pl}
+            <option value={pl._id}
+              >{pl.name}{#if pl.team}
+                – {pl.team}{/if}</option
+            >
+          {/each}
+        </select>
+      {/if}
+      <label class="label" for="notes">Notes</label>
+      <input id="notes" type="text" class="input" bind:value={notes} placeholder="Optional" />
+    </section>
 
-      <div class="row" style="align-items: center; gap: 8px;">
+    <!-- Player 1 -->
+    <section class="card stack new-match__card" aria-labelledby="p1-card-title">
+      <h3 id="p1-card-title" class="card__title new-match__card-title">Player 1</h3>
+      <label class="label" for="p1">Player</label>
+      <button
+        id="p1"
+        type="button"
+        class="input new-match__select-btn"
+        onclick={() => openPlayerPicker('p1')}
+        title="Click to choose player"
+      >
+        {p1PlayerDisplayName}
+      </button>
+      {#if showP1DeckSelect}
+        <label class="label" for="p1Deck">Deck</label>
+        <button
+          id="p1Deck"
+          type="button"
+          class="input new-match__select-btn"
+          onclick={() => openDeckPicker('p1')}
+          title="Optional deck – click to choose"
+        >
+          {p1DeckButtonLabel}
+        </button>
+      {/if}
+      <label class="label" for="p1DeckColor">Deck color</label>
+      <DeckColorSelect id="p1DeckColor" bind:value={p1DeckColor} ariaLabel="P1 deck color" />
+    </section>
+
+    <!-- Player 2 -->
+    <section class="card stack new-match__card" aria-labelledby="p2-card-title">
+      <h3 id="p2-card-title" class="card__title new-match__card-title">Player 2</h3>
+      <label class="label" for="p2">Player</label>
+      <button
+        id="p2"
+        type="button"
+        class="input new-match__select-btn"
+        onclick={() => openPlayerPicker('p2')}
+        title="Click to choose player"
+      >
+        {p2PlayerDisplayName}
+      </button>
+      {#if showP2DeckSelect}
+        <label class="label" for="p2Deck">Deck</label>
+        <button
+          id="p2Deck"
+          type="button"
+          class="input new-match__select-btn"
+          onclick={() => openDeckPicker('p2')}
+          title="Optional deck – click to choose"
+        >
+          {p2DeckButtonLabel}
+        </button>
+      {/if}
+
+      <div class="row new-match__add-player-row">
         <button
           type="button"
           class="btn"
@@ -219,12 +381,12 @@
       </div>
 
       {#if showAddPlayer}
-        <div class="card stack" style="margin-top: 8px; padding: 14px;">
+        <div class="card stack new-match__card new-match__add-player-card">
           <p class="card__sub" style="margin: 0;">
-            Create a player and they'll be added to the list above.
+            Create a player and they'll be added to the list.
           </p>
           <div class="stack formgrid" style="margin-top: 10px;">
-            <label class="label" for="newPlayerName">Name *</label>
+            <label class="label" for="newPlayerName">Name</label>
             <input
               id="newPlayerName"
               type="text"
@@ -257,106 +419,94 @@
         </div>
       {/if}
 
-      <div class="formgrid">
-        <label class="label" for="stage">
-          Stage
-          <select id="stage" class="input" bind:value={stage}>
-            {#each STAGE_OPTIONS as s}
-              <option value={s}>{s}</option>
-            {/each}
-          </select>
-        </label>
-        <label class="label" for="playedAt">
-          Played at
-          <input id="playedAt" type="datetime-local" class="input" bind:value={playedAt} />
-        </label>
-      </div>
+      <label class="label" for="p2DeckColor">Deck color</label>
+      <DeckColorSelect id="p2DeckColor" bind:value={p2DeckColor} ariaLabel="P2 deck color" />
+    </section>
 
-      {#if stage === 'Tournament'}
-        <label class="label" for="tournamentName">Tournament name</label>
-        <input
-          id="tournamentName"
-          type="text"
-          class="input"
-          bind:value={tournamentName}
-          placeholder="Tournament name"
-        />
+    {#if error}
+      <p class="alert" role="alert" aria-live="assertive">{error}</p>
+    {/if}
 
-        <div class="formgrid">
-          <label class="label" for="round">Round</label>
-          <input
-            id="round"
-            type="number"
-            class="input"
-            min="1"
-            bind:value={round}
-            placeholder="Round number"
-          />
-          <label class="label" for="matchWinner">Winner</label>
-          <select id="matchWinner" class="input" bind:value={matchWinner}>
-            <option value="">–</option>
-            {#each winnerOptions as pl}
-              <option value={pl._id}
-                >{pl.name} - {#if pl.team}
-                  {pl.team}{/if}</option
-              >
-            {/each}
-          </select>
-        </div>
-      {:else}
-        <label class="label" for="matchWinner">Winner</label>
-        <select id="matchWinner" class="input" bind:value={matchWinner}>
-          <option value="">–</option>
-          {#each winnerOptions as pl}
-            <option value={pl._id}
-              >{pl.name} - {#if pl.team}
-                {pl.team}{/if}</option
-            >
-          {/each}
-        </select>
-      {/if}
+    <div class="row new-match__actions">
+      <button type="submit" class="btn btn--primary" disabled={loading}>
+        {loading ? 'Creating…' : 'Create match'}
+      </button>
+      <a href="/matches" class="btn">Cancel</a>
+    </div>
+  </form>
 
-      <div class="formgrid">
-        <label class="label" for="p1DeckColor">P1 deck color</label>
-        <DeckColorSelect id="p1DeckColor" bind:value={p1DeckColor} ariaLabel="P1 deck color" />
-        <label class="label" for="p2DeckColor">P2 deck color</label>
-        <DeckColorSelect id="p2DeckColor" bind:value={p2DeckColor} ariaLabel="P2 deck color" />
-      </div>
-
-      <div class="stack">
-        <div class="row" style="justify-content: space-between; align-items: center;">
-          <span class="label" style="margin: 0;">Games</span>
-          <button type="button" class="btn" onclick={addGame}>+ Add game</button>
-        </div>
-        {#each games as _, i}
-          <div class="row" style="align-items: center; gap: 8px;">
-            <span class="label" style="margin: 0;">Game {i + 1}</span>
-            <button
-              type="button"
-              class="btn"
-              onclick={() => removeGame(i)}
-              disabled={games.length <= 1}
-              aria-label="Remove game"
-            >
-              Remove
-            </button>
-          </div>
-        {/each}
-      </div>
-
-      <label class="label" for="notes">Notes</label>
-      <input id="notes" type="text" class="input" bind:value={notes} placeholder="Optional" />
-
-      {#if error}
-        <p class="alert" role="alert" aria-live="assertive">{error}</p>
-      {/if}
-
-      <div class="row" style="margin-top: 8px; gap: 12px;">
-        <button type="submit" class="btn btn--primary" disabled={loading}>
-          {loading ? 'Creating…' : 'Create match'}
-        </button>
-        <a href="/matches" class="btn">Cancel</a>
-      </div>
-    </form>
-  </div>
+  <PlayerPickerModal
+    bind:open={playerPickerOpen}
+    title="Select player"
+    forLabel={playerPickerRole === 'p1' ? 'Player 1' : 'Player 2'}
+    excludePlayerId={playerPickerRole === 'p1' ? p2 : p1}
+    onSelect={handlePlayerSelect}
+    onClose={() => (playerPickerOpen = false)}
+  />
+  <DeckPickerModal
+    bind:open={deckPickerOpen}
+    title="Select deck"
+    forLabel={deckPickerRole === 'p1' ? p1PlayerDisplayName : p2PlayerDisplayName}
+    onSelect={handleDeckSelect}
+    onClose={() => (deckPickerOpen = false)}
+  />
 </div>
+
+<style>
+  .new-match-page {
+    max-width: 720px;
+  }
+  .new-match-page .page-title {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+  .new-match-page .page-sub {
+    margin: 0 0 1.25rem 0;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+  .new-match__form {
+    margin-top: 0;
+  }
+  .new-match__card {
+    margin-bottom: var(--space-md, 1rem);
+    z-index:1;
+  }
+  .new-match__card-title {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .new-match__add-player-row {
+    margin-bottom: var(--space-sm, 0.5rem);
+  }
+  .new-match__add-player-card {
+    margin-bottom: var(--space-md, 1rem);
+  }
+  .new-match__actions {
+    margin-top: var(--space-md, 1rem);
+    gap: 0.75rem;
+  }
+  @media (min-width: 640px) {
+    .new-match__form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-md, 1rem);
+      align-items: start;
+    }
+    .new-match__form .new-match__card:first-of-type {
+      grid-column: 1 / -1;
+    }
+    .new-match__form .new-match__add-player-row,
+    .new-match__form .new-match__add-player-card,
+    .new-match__form .alert,
+    .new-match__form .new-match__actions {
+      grid-column: 1 / -1;
+    }
+  }
+  .new-match__select-btn {
+    text-align: left;
+    cursor: pointer;
+    width: 100%;
+  }
+</style>

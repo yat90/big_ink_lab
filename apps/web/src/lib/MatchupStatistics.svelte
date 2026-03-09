@@ -124,6 +124,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
+    min-width: 0;
+    width: 100%;
   }
 
   .matchup-matrix__header {
@@ -177,13 +179,21 @@
   .matchup-matrix__wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    min-width: 0;
   }
 
   .matchup-matrix__table {
-    width: 100%;
-    min-width: 280px;
+    width: max-content;
+    min-width: 100%;
     border-collapse: collapse;
     font-size: 0.9rem;
+  }
+
+  @media (max-width: 639px) {
+    .matchup-matrix__table {
+      font-size: 0.8rem;
+    }
   }
 
   .matchup-matrix__table th,
@@ -191,6 +201,13 @@
     border: 1px solid var(--border);
     padding: var(--space-xs) var(--space-sm);
     text-align: center;
+  }
+
+  @media (max-width: 639px) {
+    .matchup-matrix__table th,
+    .matchup-matrix__table td {
+      padding: 4px 6px;
+    }
   }
 
   .matchup-matrix__corner {

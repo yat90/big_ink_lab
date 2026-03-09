@@ -10,7 +10,12 @@ export class PlayersController {
 
   @Get()
   async findAll(@Query() query: FindPlayersQueryDto): Promise<PaginatedResponse<Player>> {
-    const { data, total } = await this.playersService.findAll(query.page ?? 1, query.limit ?? 20);
+    const { data, total } = await this.playersService.findAll(
+      query.page ?? 1,
+      query.limit ?? 20,
+      query.name,
+      query.team
+    );
     return createPaginatedResponse(data, total, query.page ?? 1, query.limit ?? 20);
   }
 

@@ -192,7 +192,7 @@
 
   .deck-color-select__list {
     position: absolute;
-    z-index: 50;
+    z-index: 9999;
     top: calc(100% + 4px);
     left: 0;
     right: 0;

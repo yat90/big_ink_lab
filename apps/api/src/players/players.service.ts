@@ -53,14 +53,25 @@ export class PlayersService {
     matrix[myDeck][oppDeck].won += won;
   }
 
-  async findAll(page = 1, limit = 20): Promise<{ data: Player[]; total: number }> {
+  async findAll(
+    page = 1,
+    limit = 20,
+    name?: string,
+    team?: string
+  ): Promise<{ data: Player[]; total: number }> {
     const skip = (page - 1) * limit;
-
+    const filter: Record<string, unknown> = {};
+    if (name?.trim()) {
+      filter.name = { $regex: name.trim(), $options: 'i' };
+    }
+    if (team?.trim()) {
+      filter.team = { $regex: team.trim(), $options: 'i' };
+    }
+    const query = this.playerModel.find(filter).sort({ name: 1 });
     const [data, total] = await Promise.all([
-      this.playerModel.find().sort({ name: 1 }).skip(skip).limit(limit).exec(),
-      this.playerModel.countDocuments().exec(),
+      query.clone().skip(skip).limit(limit).exec(),
+      this.playerModel.countDocuments(filter).exec(),
     ]);
-
     return { data, total };
   }
 

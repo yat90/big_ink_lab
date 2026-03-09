@@ -101,7 +101,10 @@
   {:else}
     <div class="player-overview">
       <div class="card stack player-overview__header">
-        <div class="row" style="justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md);">
+        <div
+          class="row"
+          style="justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md);"
+        >
           <div>
             <h1 class="card__title" style="margin: 0;">{player.name}</h1>
             {#if player.team}
@@ -133,69 +136,79 @@
       </div>
 
       {#if player.stats}
-        <div class="player-stats card">
-          <h2 class="player-stats__title">Game statistics</h2>
-          <div class="player-stats__grid">
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.matchesPlayed}</span>
-              <span class="player-stats__label muted">Matches played</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.matchesWon}</span>
-              <span class="player-stats__label muted">Matches won</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.matchesLost}</span>
-              <span class="player-stats__label muted">Matches lost</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.matchWinRate}%</span>
-              <span class="player-stats__label muted">Match win rate</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.gamesPlayed}</span>
-              <span class="player-stats__label muted">Games played</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.gamesWon}</span>
-              <span class="player-stats__label muted">Games won</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.gameWinRate}%</span>
-              <span class="player-stats__label muted">Game win rate</span>
+        <h2>Game statistics</h2>
+        <div class="card stack flex-row-wrap player-match-stats">
+          <div class="player-stats__block">
+            <h3>Matches</h3>
+            <div class="player-stats__row">
+              <div class="player-stats__item">
+                <span class="player-stats__value">{player.stats.matchesPlayed}</span>
+                <span class="player-stats__label muted">Matches played</span>
+              </div>
+              <div class="player-stats__item">
+                <span class="player-stats__value">{player.stats.matchesWon}</span>
+                <span class="player-stats__label muted">Matches won</span>
+              </div>
+              <div class="player-stats__item">
+                <span class="player-stats__value">{player.stats.matchWinRate}%</span>
+                <span class="player-stats__label muted">Match win rate</span>
+              </div>
             </div>
           </div>
-
-          <h3 class="player-stats__subtitle">By starting player</h3>
-          <div class="player-stats__grid">
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.gamesAsStarter}</span>
-              <span class="player-stats__label muted">Games started</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.gamesWonAsStarter}</span>
-              <span class="player-stats__label muted">Won when starting</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.starterWinRate}%</span>
-              <span class="player-stats__label muted">Win rate when starting</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.gamesNotStarter}</span>
-              <span class="player-stats__label muted">Games not started</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.gamesWonNotStarter}</span>
-              <span class="player-stats__label muted">Won when not starting</span>
-            </div>
-            <div class="player-stats__item">
-              <span class="player-stats__value">{player.stats.nonStarterWinRate}%</span>
-              <span class="player-stats__label muted">Win rate when not starting</span>
+          <div class="player-stats__block">
+            <h3>Games</h3>
+            <div class="player-stats__row">
+              <div class="player-stats__item">
+                <span class="player-stats__value">{player.stats.gamesPlayed}</span>
+                <span class="player-stats__label muted">Games played</span>
+              </div>
+              <div class="player-stats__item">
+                <span class="player-stats__value">{player.stats.gamesWon}</span>
+                <span class="player-stats__label muted">Games won</span>
+              </div>
+              <div class="player-stats__item">
+                <span class="player-stats__value">{player.stats.gameWinRate}%</span>
+                <span class="player-stats__label muted">Game win rate</span>
+              </div>
             </div>
           </div>
-
+        </div>
+        <div class="card stack">
+          <h3>By starting player</h3>
+          <p class="player-stats__description muted">
+            <strong>On the play (OTP)</strong>: the player started the game.
+            <strong>On the draw (OTD)</strong>: the player did not start and goes second.
+          </p>
+          <table class="player-stats__table" aria-label="Statistics by starting player">
+            <thead>
+              <tr>
+                <th scope="col"></th>
+                <th scope="col">OTP</th>
+                <th scope="col">OTD</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row" class="player-stats__table-row-header">Games</th>
+                <td>{player.stats.gamesAsStarter}</td>
+                <td>{player.stats.gamesNotStarter}</td>
+              </tr>
+              <tr>
+                <th scope="row" class="player-stats__table-row-header">Won</th>
+                <td>{player.stats.gamesWonAsStarter}</td>
+                <td>{player.stats.gamesWonNotStarter}</td>
+              </tr>
+              <tr>
+                <th scope="row" class="player-stats__table-row-header">Win rate</th>
+                <td>{player.stats.starterWinRate}%</td>
+                <td>{player.stats.nonStarterWinRate}%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card stack player-overview__matchup-card">
           {#if player.stats.deckColorMatrix}
-            <h3 class="player-stats__subtitle">By deck colors</h3>
+            <h3>By deck colors</h3>
             <MatchupStatistics
               matrix={player.stats.deckColorMatrix}
               bind:analysisMode={selectedMatrixMode}
@@ -250,6 +263,12 @@
     min-width: 14rem;
   }
 
+  .player-overview__matchup-card {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
   .player-stats__title {
     font-size: 1rem;
     font-weight: 700;
@@ -265,11 +284,84 @@
     padding-top: var(--space-md);
     border-top: 1px solid var(--border);
   }
+  .player-match-stats {
+    gap: var(--space-lg);
+  }
+  .player-match-stats > .player-stats__block {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  @media (max-width: 639px) {
+    .player-match-stats {
+      flex-direction: column;
+    }
+    .player-match-stats > .player-stats__block {
+      flex: 1 1 auto;
+      min-width: unset;
+    }
+  }
+
+  .player-stats__block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .player-stats__block h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .player-stats__description {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .player-stats__row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-md) var(--space-lg);
+  }
 
   .player-stats__grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: var(--space-lg);
+  }
+
+  .player-stats__table {
+    width: 100%;
+    max-width: 24rem;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  .player-stats__table th,
+  .player-stats__table td {
+    border: 1px solid var(--border);
+    padding: var(--space-sm) var(--space-md);
+    text-align: left;
+  }
+
+  .player-stats__table thead th {
+    font-weight: 700;
+    background: var(--glass-bg-strong, rgba(0, 0, 0, 0.06));
+  }
+
+  .player-stats__table th:not(.player-stats__table-row-header) {
+    text-align: center;
+  }
+
+  .player-stats__table td {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .player-stats__table-row-header {
+    font-weight: 600;
   }
 
   .player-stats__item {
@@ -288,5 +380,4 @@
     font-size: 0.85rem;
     font-weight: 500;
   }
-
 </style>
