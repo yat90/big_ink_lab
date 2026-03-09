@@ -1,5 +1,6 @@
 <script lang="ts">
   import { config } from '$lib/config';
+  import { getAuthToken } from '$lib/auth';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { type Game } from '$lib/matches';
@@ -33,6 +34,8 @@
   let loading = $state(true);
   let error = $state('');
   let loreTrackerLoading = $state(false);
+  /** Current user's linked player id (for Quick Match P1). */
+  let myPlayerId = $state<string | null>(null);
 
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -43,13 +46,14 @@
   async function startLoreTracker() {
     loreTrackerLoading = true;
     try {
+      const p1Id = myPlayerId ?? QUICK_MATCH_P1_ID;
       const res = await fetch(`${apiUrl}/matches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           stage: 'Casual',
           games: [{}],
-          p1: QUICK_MATCH_P1_ID,
+          p1: p1Id,
           p2: QUICK_MATCH_P2_ID,
           playedAt: new Date().toISOString(),
         }),
@@ -100,6 +104,20 @@
 
   onMount(async () => {
     try {
+      const token = getAuthToken();
+      if (token) {
+        try {
+          const meRes = await fetch(`${apiUrl}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (meRes.ok) {
+            const me = await meRes.json();
+            if (me?.player?._id) myPlayerId = me.player._id;
+          }
+        } catch {
+          /* ignore */
+        }
+      }
       const [statsRes, playersRes, decksRes, matchesRes] = await Promise.all([
         fetch(`${apiUrl}/matches/stats`),
         fetch(`${apiUrl}/players`),

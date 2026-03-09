@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { config } from '$lib/config';
   import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
-  import { STAGE_OPTIONS, DECK_COLOR_OPTIONS } from '$lib/matches';
+  import { getAuthToken } from '$lib/auth';
+  import { config } from '$lib/config';
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
+  import { STAGE_OPTIONS } from '$lib/matches';
+  import { onMount } from 'svelte';
 
   type Player = { _id: string; name: string; team: string };
 
@@ -52,13 +53,11 @@
       if (aPreferred && !bPreferred) return -1;
       if (!aPreferred && bPreferred) return 1;
       return 0;
-    }),
+    })
   );
 
   const winnerOptions = $derived(
-    [p1, p2]
-      .map((id) => players.find((pl) => pl._id === id))
-      .filter((pl): pl is Player => !!pl),
+    [p1, p2].map((id) => players.find((pl) => pl._id === id)).filter((pl): pl is Player => !!pl)
   );
 
   $effect(() => {
@@ -82,7 +81,26 @@
     }
   }
 
-  onMount(fetchPlayers);
+  async function preselectMyPlayer() {
+    const token = getAuthToken();
+    if (!token) return;
+    try {
+      const res = await fetch(`${apiUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.player?._id) p1 = data.player._id;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  onMount(async () => {
+    await fetchPlayers();
+    await preselectMyPlayer();
+  });
 
   async function onAddPlayer(e: Event) {
     e.preventDefault();
@@ -168,7 +186,10 @@
           <select id="p1" class="input" bind:value={p1} required>
             <option value="">Select player</option>
             {#each playersForSelect as pl}
-              <option value={pl._id}>{pl.name} - {#if pl.team} {pl.team}{/if}</option>
+              <option value={pl._id}
+                >{pl.name} - {#if pl.team}
+                  {pl.team}{/if}</option
+              >
             {/each}
           </select>
         </label>
@@ -177,7 +198,10 @@
           <select id="p2" class="input" bind:value={p2}>
             <option value="">Select player</option>
             {#each playersForSelect as pl}
-              <option value={pl._id} disabled={pl._id === p1}>{pl.name} - {#if pl.team} {pl.team}{/if}</option>
+              <option value={pl._id} disabled={pl._id === p1}
+                >{pl.name} - {#if pl.team}
+                  {pl.team}{/if}</option
+              >
             {/each}
           </select>
         </label>
@@ -196,7 +220,9 @@
 
       {#if showAddPlayer}
         <div class="card stack" style="margin-top: 8px; padding: 14px;">
-          <p class="card__sub" style="margin: 0;">Create a player and they'll be added to the list above.</p>
+          <p class="card__sub" style="margin: 0;">
+            Create a player and they'll be added to the list above.
+          </p>
           <div class="stack formgrid" style="margin-top: 10px;">
             <label class="label" for="newPlayerName">Name *</label>
             <input
@@ -218,7 +244,12 @@
               <p class="alert" style="grid-column: 1 / -1;">{addPlayerError}</p>
             {/if}
             <div class="row" style="grid-column: 1 / -1;">
-              <button type="button" class="btn btn--primary" disabled={addPlayerLoading} onclick={onAddPlayer}>
+              <button
+                type="button"
+                class="btn btn--primary"
+                disabled={addPlayerLoading}
+                onclick={onAddPlayer}
+              >
                 {addPlayerLoading ? 'Adding…' : 'Add player'}
               </button>
             </div>
@@ -243,16 +274,32 @@
 
       {#if stage === 'Tournament'}
         <label class="label" for="tournamentName">Tournament name</label>
-        <input id="tournamentName" type="text" class="input" bind:value={tournamentName} placeholder="Tournament name" />
+        <input
+          id="tournamentName"
+          type="text"
+          class="input"
+          bind:value={tournamentName}
+          placeholder="Tournament name"
+        />
 
         <div class="formgrid">
           <label class="label" for="round">Round</label>
-          <input id="round" type="number" class="input" min="1" bind:value={round} placeholder="Round number" />
+          <input
+            id="round"
+            type="number"
+            class="input"
+            min="1"
+            bind:value={round}
+            placeholder="Round number"
+          />
           <label class="label" for="matchWinner">Winner</label>
           <select id="matchWinner" class="input" bind:value={matchWinner}>
             <option value="">–</option>
             {#each winnerOptions as pl}
-              <option value={pl._id}>{pl.name} - {#if pl.team} {pl.team}{/if}</option>
+              <option value={pl._id}
+                >{pl.name} - {#if pl.team}
+                  {pl.team}{/if}</option
+              >
             {/each}
           </select>
         </div>
@@ -261,7 +308,10 @@
         <select id="matchWinner" class="input" bind:value={matchWinner}>
           <option value="">–</option>
           {#each winnerOptions as pl}
-            <option value={pl._id}>{pl.name} - {#if pl.team} {pl.team}{/if}</option>
+            <option value={pl._id}
+              >{pl.name} - {#if pl.team}
+                {pl.team}{/if}</option
+            >
           {/each}
         </select>
       {/if}

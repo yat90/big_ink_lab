@@ -488,8 +488,10 @@
     goto(`/matches/${id}/lore?game=${gameIndex}`, { replaceState: true });
   }
 
-  function closeGameAndLeave() {
+  async function closeGameAndLeave() {
     showCloseGamePrompt = false;
+    persistCurrentGameLocally();
+    await save();
     goto(`/matches/${id}`);
   }
 
@@ -555,6 +557,17 @@
         <div class="lore-score-pill">
           <span class="lore-score-pill__score">{p2GamesWon} – {p1GamesWon}</span>
         </div>
+        {#if hasPendingLocalSync}
+          <span
+            class="lore-sync-badge"
+            title="Offline-safe: score saved locally, synced every minute."
+            aria-label="Offline-safe: score saved locally, synced every minute."
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+            </svg>
+          </span>
+        {/if}
       </div>
 
       <!-- P2 top (purple) -->
@@ -580,12 +593,14 @@
       </div>
 
       <div class="lore-divider">
+        <span class="lore-divider__name lore-divider__name--p2" aria-hidden="true">{p2Name}</span>
         <button
           type="button"
           class="lore-divider__menu"
           aria-label="Menu"
           onclick={() => (showCloseGamePrompt = true)}>☰</button
         >
+        <span class="lore-divider__name lore-divider__name--p1" aria-hidden="true">{p1Name}</span>
       </div>
 
       <!-- P1 bottom (grey): left = decrease, right = increase -->
@@ -613,11 +628,6 @@
 
     {#if error}
       <p class="alert" role="alert" aria-live="assertive">{error}</p>
-    {/if}
-    {#if hasPendingLocalSync}
-      <p class="muted lore-sync-status" aria-live="polite">
-        Offline-safe mode active: score is saved locally and synced every minute.
-      </p>
     {/if}
   {:else}
     <div class="card">
@@ -720,9 +730,23 @@
     margin: 0 auto;
   }
 
-  .lore-sync-status {
-    margin: 8px 16px;
-    text-align: center;
+  .lore-sync-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.35);
+    color: rgba(255, 255, 255, 0.9);
+    pointer-events: auto;
+  }
+  .lore-sync-badge svg {
+    flex-shrink: 0;
   }
 
   /* Split layout: two full-height halves + divider */
@@ -878,6 +902,32 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .lore-divider__name {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 0 4px #000, 0 1px 2px #000;
+    white-space: nowrap;
+    max-width: 28vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .lore-divider__name--p2 {
+    left: 50px;
+    text-align: left;
+    transform: translateY(-100%) rotate(180deg) translateX(-50%);
+  }
+  .lore-divider__name--p1 {
+    right: 12px;
+    text-align: right;    
+    transform: translateY(5%);
   }
 
   .lore-divider__menu {
