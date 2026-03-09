@@ -1,5 +1,6 @@
 <script lang="ts">
   import { config } from '$lib/config';
+  import { getAuthToken } from '$lib/auth';
   import Pagination from '$lib/Pagination.svelte';
 
   let players = $state<Array<{ _id: string; name: string; team: string }>>([]);
@@ -57,6 +58,24 @@
         const response = await res.json();
         allPlayers = response.data || [];
         const teams = [...new Set(allPlayers.map((p) => (p.team ?? '').trim()).filter((t) => t !== ''))];
+        const token = getAuthToken();
+        if (token) {
+          try {
+            const meRes = await fetch(`${apiUrl}/auth/me`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (meRes.ok) {
+              const me = await meRes.json();
+              const myTeam = (me?.player?.team ?? '').trim();
+              if (myTeam && teams.includes(myTeam)) {
+                filterTeam = myTeam;
+                return;
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+        }
         if (teams.includes(DEFAULT_TEAM)) {
           filterTeam = DEFAULT_TEAM;
         }

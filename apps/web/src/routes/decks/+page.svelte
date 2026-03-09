@@ -1,6 +1,7 @@
 /* eslint-disable svelte/require-each-key */
 <script lang="ts">
   import { config } from '$lib/config';
+  import { getAuthToken } from '$lib/auth';
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerName } from '$lib/decks';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
@@ -55,6 +56,23 @@
       if (playersRes.ok) {
         const response = await playersRes.json();
         allPlayers = response.data || [];
+      }
+      const token = getAuthToken();
+      if (token) {
+        try {
+          const meRes = await fetch(`${apiUrl}/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (meRes.ok) {
+            const me = await meRes.json();
+            const myId = me?.player?._id;
+            if (myId && allPlayers.some((p) => (p.team ?? '').trim() === BIG_INK_THEORY_TEAM && p._id === myId)) {
+              filterPlayer = myId;
+            }
+          }
+        } catch {
+          /* non-blocking */
+        }
       }
     } catch {
       // non-blocking

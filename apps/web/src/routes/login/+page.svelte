@@ -1,7 +1,6 @@
 <script lang="ts">
   import { config } from '$lib/config';
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import { setAuthSession } from '$lib/auth';
 
   type AuthMode = 'login' | 'register';
@@ -46,7 +45,7 @@
       }
       const data = (await res.json()) as AuthResponse;
       setAuthSession(data.accessToken, data.user);
-      goto(nextPath, { replaceState: true });
+      window.location.href = nextPath;
     } catch {
       error = 'Could not reach API.';
     } finally {

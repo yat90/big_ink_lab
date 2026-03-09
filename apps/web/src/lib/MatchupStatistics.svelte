@@ -33,6 +33,13 @@
     analysisMode = nextMode;
     onchange?.(nextMode);
   }
+
+  /** 0% = red, 50% = yellow, 100% = green. Returns dark HSL for readable light text. */
+  function backgroundColorForPercent(pct: number | null): string {
+    if (pct == null) return '';
+    const hue = (Math.max(0, Math.min(100, pct)) / 100) * 120;
+    return `hsl(${hue}, 65%, 28%)`;
+  }
 </script>
 
 <section class="matchup-matrix" aria-label={title}>
@@ -87,8 +94,8 @@
                 {@const winPct = cell ? Math.round((cell.won / cell.played) * 100) : null}
                 <td
                   class="matchup-matrix__cell"
-                  class:matchup-matrix__cell--win={winPct != null && winPct > 50}
-                  class:matchup-matrix__cell--loss={winPct != null && winPct < 50}
+                  class:matchup-matrix__cell--tinted={winPct != null}
+                  style={winPct != null ? `background-color: ${backgroundColorForPercent(winPct)}` : ''}
                 >
                   {#if cell}
                     <span
@@ -216,12 +223,8 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .matchup-matrix__cell--win {
-    background-color: rgba(34, 197, 94, 0.2);
-  }
-
-  .matchup-matrix__cell--loss {
-    background-color: rgba(220, 38, 38, 0.2);
+  .matchup-matrix__cell--tinted {
+    color: #fff;
   }
 
   .matchup-matrix__cell-inner {

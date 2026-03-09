@@ -81,7 +81,7 @@
   const p2DeckId = $derived(getDeckId(match?.p2Deck));
 
   const playersForSelect = $derived(
-    [...players].sort((a, b) => {
+    (Array.isArray(players) ? players : []).slice().sort((a, b) => {
       const aPreferred = (a.team?.trim() ?? '') === PREFERRED_TEAM;
       const bPreferred = (b.team?.trim() ?? '') === PREFERRED_TEAM;
       if (aPreferred && !bPreferred) return -1;
@@ -169,7 +169,10 @@
       }
       const loadedMatch = await matchRes.json();
       match = loadedMatch;
-      if (playersRes.ok) players = await playersRes.json();
+      if (playersRes.ok) {
+        const playersJson = await playersRes.json();
+        players = Array.isArray(playersJson) ? playersJson : (playersJson?.data ?? []);
+      }
       if (decksRes.ok) {
         const list = await decksRes.json();
         decks = Array.isArray(list)

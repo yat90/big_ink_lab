@@ -28,7 +28,6 @@
 
   let filterStage = $state<string>('');
   let filterTime = $state<string>('30'); // '' = all time, '7' | '30' | '90' = last N days
-  let sortOrder = $state<'newest' | 'oldest'>('newest');
   let currentPage = $state(1);
   let totalPages = $state(1);
   let total = $state(0);
@@ -89,7 +88,7 @@
       if (filterStage) params.set('stage', filterStage);
       if (range.fromDate) params.set('fromDate', range.fromDate);
       if (range.toDate) params.set('toDate', range.toDate);
-      params.set('sort', sortOrder);
+      params.set('sort', 'newest');
       params.set('page', String(currentPage));
       params.set('limit', String(PAGE_SIZE));
       const url = `${apiUrl}/matches${params.toString() ? `?${params}` : ''}`;
@@ -116,13 +115,13 @@
   $effect(() => {
     // Track filter deps so we reset page when they change
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [filterStage, filterTime, sortOrder];
+    const _ = [filterStage, filterTime];
     currentPage = 1;
   });
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [currentPage, filterStage, filterTime, sortOrder];
+    const _ = [currentPage, filterStage, filterTime];
     fetchMatches();
   });
 </script>
@@ -194,18 +193,6 @@
             <option value="7">Last 7 days</option>
             <option value="30">Last 30 days</option>
             <option value="90">Last 90 days</option>
-          </select>
-        </label>
-        <label class="filters__label" for="filter-sort">
-          <span class="muted" style="font-size: 0.85rem;">Sort</span>
-          <select
-            id="filter-sort"
-            class="input filters__select"
-            bind:value={sortOrder}
-            aria-label="Sort order"
-          >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
           </select>
         </label>
       </div>
