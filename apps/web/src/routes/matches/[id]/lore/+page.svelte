@@ -46,6 +46,7 @@
   let error = $state('');
   let winCheckTimeout: ReturnType<typeof setTimeout> | null = null;
   let syncInterval: ReturnType<typeof setInterval> | null = null;
+  let pruneChangesInterval: ReturnType<typeof setInterval> | null = null;
   let syncInFlight = false;
   let hasPendingLocalSync = $state(false);
   let wakeLockSentinel: WakeLockSentinel | null = null;
@@ -56,6 +57,30 @@
   let lastP2ChangeAt = 0;
   let lastP1WasInc = false;
   let lastP2WasInc = false;
+
+  /** All lore changes since last clear; cleared after LORE_INACTIVITY_CLEAR_MS with no new changes. */
+  const LORE_INACTIVITY_CLEAR_MS = 2500;
+  let recentChanges = $state<{ player: 'p1' | 'p2'; delta: number; at: number }[]>([]);
+
+  function clearChangesAfterInactivity() {
+    if (recentChanges.length === 0) return;
+    const latestAt = Math.max(...recentChanges.map((c) => c.at));
+    if (Date.now() - latestAt >= LORE_INACTIVITY_CLEAR_MS) {
+      recentChanges = [];
+    }
+  }
+
+  function addChange(player: 'p1' | 'p2', delta: number) {
+    recentChanges = [...recentChanges, { player, delta, at: Date.now() }];
+  }
+
+  /** Sum of changes since last activity (cleared after 5s inactivity). */
+  const p1DeltaLastSecond = $derived(
+    recentChanges.filter((c) => c.player === 'p1').reduce((sum, c) => sum + c.delta, 0)
+  );
+  const p2DeltaLastSecond = $derived(
+    recentChanges.filter((c) => c.player === 'p2').reduce((sum, c) => sum + c.delta, 0)
+  );
 
   /** Game indices for which the user dismissed the "choose starter" prompt (Skip). */
   let starterPromptDismissed = $state<Record<number, boolean>>({});
@@ -293,6 +318,9 @@
     syncInterval = setInterval(() => {
       void syncLocalDrafts();
     }, SCORE_SYNC_INTERVAL_MS);
+    pruneChangesInterval = setInterval(() => {
+      clearChangesAfterInactivity();
+    }, 200);
     void requestWakeLock();
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('online', handleOnline);
@@ -302,6 +330,7 @@
       disposed = true;
       if (winCheckTimeout) clearTimeout(winCheckTimeout);
       if (syncInterval) clearInterval(syncInterval);
+      if (pruneChangesInterval) clearInterval(pruneChangesInterval);
       void releaseWakeLock();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleOnline);
@@ -367,6 +396,7 @@
     if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP1WasInc) return;
     lastP1ChangeAt = now;
     lastP1WasInc = true;
+    addChange('p1', 1);
     p1Lore = Math.min(LORE_MAX, p1Lore + 1);
     scheduleWinCheck();
     persistCurrentGameLocally();
@@ -376,6 +406,7 @@
     if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP1WasInc) return;
     lastP1ChangeAt = now;
     lastP1WasInc = false;
+    addChange('p1', -1);
     p1Lore = Math.max(0, p1Lore - 1);
     persistCurrentGameLocally();
   }
@@ -384,6 +415,7 @@
     if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP2WasInc) return;
     lastP2ChangeAt = now;
     lastP2WasInc = true;
+    addChange('p2', 1);
     p2Lore = Math.min(LORE_MAX, p2Lore + 1);
     scheduleWinCheck();
     persistCurrentGameLocally();
@@ -393,6 +425,7 @@
     if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP2WasInc) return;
     lastP2ChangeAt = now;
     lastP2WasInc = false;
+    addChange('p2', -1);
     p2Lore = Math.max(0, p2Lore - 1);
     persistCurrentGameLocally();
   }
@@ -593,7 +626,19 @@
             onclick={decP2}
             aria-label="Decrease Lore">−</button
           >
-          <span class="lore-panel__value">{p2Lore}</span>
+          <span class="lore-panel__value">
+            <span
+              class="lore-panel__delta"
+              class:lore-panel__delta--pos={p2DeltaLastSecond > 0}
+              class:lore-panel__delta--neg={p2DeltaLastSecond < 0}
+              aria-label="Sum of changes since last activity"
+            >
+              {#if p2DeltaLastSecond !== 0}
+                {p2DeltaLastSecond > 0 ? '+' : ''}{p2DeltaLastSecond}
+              {/if}
+            </span>
+            <span class="lore-panel__number">{p2Lore}</span>
+          </span>
           <button
             type="button"
             class="lore-panel__btn lore-panel__btn--inc"
@@ -626,7 +671,19 @@
             onclick={decP1}
             aria-label="Decrease Lore">−</button
           >
-          <span class="lore-panel__value">{p1Lore}</span>
+          <span class="lore-panel__value">
+            <span
+              class="lore-panel__delta"
+              class:lore-panel__delta--pos={p1DeltaLastSecond > 0}
+              class:lore-panel__delta--neg={p1DeltaLastSecond < 0}
+              aria-label="Sum of changes since last activity"
+            >
+              {#if p1DeltaLastSecond !== 0}
+                {p1DeltaLastSecond > 0 ? '+' : ''}{p1DeltaLastSecond}
+              {/if}
+            </span>
+            <span class="lore-panel__number">{p1Lore}</span>
+          </span>
           <button
             type="button"
             class="lore-panel__btn lore-panel__btn--inc"
@@ -857,15 +914,39 @@
   }
 
   .lore-panel__value {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    position: absolute;
+    pointer-events: none;
+    text-align: center;
+  }
+
+  .lore-panel__number {
     font-size: 15rem;
     font-weight: 500;
     line-height: 15rem;
     color: #fff;
     min-width: 2ch;
-    z-index: 1;
-    text-align: center;
-    position: absolute;
-    pointer-events: none;
+  }
+
+  .lore-panel__delta {
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1;
+    opacity: 0.95;
+    letter-spacing: 0.02em;
+    min-height: 1.2em;
+  }
+  .lore-panel__delta--pos {
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 0 8px rgba(134, 239, 172, 0.6);
+  }
+  .lore-panel__delta--neg {
+    color: rgba(255, 255, 255, 0.9);
+    text-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
   }
 
   .lore-panel__btn {
