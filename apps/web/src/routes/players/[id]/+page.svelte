@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import MatchupStatistics from '$lib/MatchupStatistics.svelte';
+  import IconEdit from '../../../lib/icons/IconEdit.svelte';
 
   type DeckColorMatrixCell = { played: number; won: number };
   type DeckColorMatrix = Record<string, Record<string, DeckColorMatrixCell>>;
@@ -96,7 +97,6 @@
   {:else if error || !player}
     <div class="card" role="alert">
       <p class="alert">{error || 'Player not found'}</p>
-      <a href="/players" class="btn">Back to players</a>
     </div>
   {:else}
     <div class="player-overview">
@@ -112,31 +112,36 @@
             {/if}
           </div>
           <div class="row" style="gap: var(--space-sm);">
-            <a href="/players/{player._id}/edit" class="btn">Edit</a>
-            <a href="/players" class="btn">Back to players</a>
+            <a href="/players/{player._id}/edit" class="btn">
+              <IconEdit size={16} className="icon-inline" />
+              <span style="margin-left: var(--space-xs);">Edit</span>
+            </a>
           </div>
         </div>
-        {#if decksUsed.length > 0}
-          <div class="player-overview__deck-filter">
-            <label for="filter-deck" class="player-overview__deck-filter-label">Deck</label>
-            <select
-              id="filter-deck"
-              class="input player-overview__deck-filter-select"
-              bind:value={filterDeckId}
-              onchange={onDeckFilterChange}
-              aria-label="Filter statistics by deck"
-            >
-              <option value="">All decks</option>
-              {#each decksUsed as deck (deck._id)}
-                <option value={deck._id}>{deck.name}</option>
-              {/each}
-            </select>
-          </div>
-        {/if}
       </div>
 
       {#if player.stats}
         <h2>Game statistics</h2>
+
+        {#if decksUsed.length > 0}
+          <div class="card ">
+            <div class="player-overview__deck-filter">
+              <label for="filter-deck" class="player-overview__deck-filter-label">Deck</label>
+              <select
+                id="filter-deck"
+                class="input player-overview__deck-filter-select"
+                bind:value={filterDeckId}
+                onchange={onDeckFilterChange}
+                aria-label="Filter statistics by deck"
+              >
+                <option value="">All decks</option>
+                {#each decksUsed as deck (deck._id)}
+                  <option value={deck._id}>{deck.name}</option>
+                {/each}
+              </select>
+            </div>
+          </div>
+        {/if}
         <div class="card stack flex-row-wrap player-match-stats">
           <div class="player-stats__block">
             <h3>Matches</h3>
@@ -248,9 +253,6 @@
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    margin-top: var(--space-md);
-    padding-top: var(--space-md);
-    border-top: 1px solid var(--border);
   }
 
   .player-overview__deck-filter-label {
