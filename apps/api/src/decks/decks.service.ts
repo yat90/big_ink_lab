@@ -154,8 +154,8 @@ export class DecksService {
   async findAll(
     filters?: { color?: string; player?: string },
     page = 1,
-    limit = 20
-  ): Promise<{ data: Deck[]; total: number }> {
+    limit = 5
+  ): Promise<{ data: (Deck & { winRate?: number | null })[]; total: number }> {
     const query: Record<string, unknown> = {};
     if (filters?.color?.trim()) {
       query.deckColor = filters.color.trim();
@@ -166,7 +166,7 @@ export class DecksService {
 
     const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
+    const [rawData, total] = await Promise.all([
       this.deckModel
         .find(query)
         .sort({ updatedAt: -1 })
@@ -174,11 +174,49 @@ export class DecksService {
         .populate('cards.card')
         .skip(skip)
         .limit(limit)
+        .lean()
         .exec(),
       this.deckModel.countDocuments(query).exec(),
     ]);
 
-    return { data, total };
+    const data = await Promise.all(
+      (rawData as unknown as (Deck & { _id: Types.ObjectId })[]).map(async (deck) => {
+        const summary = await this.getDeckStatsSummary(deck._id.toString());
+        return {
+          ...deck,
+          winRate: summary.winRate,
+          totalMatches: summary.totalMatches,
+        };
+      })
+    );
+
+    return {
+      data: data as unknown as (Deck & { winRate?: number | null; totalMatches?: number })[],
+      total,
+    };
+  }
+
+  /** Lightweight stats for list view: total matches and win rate only. */
+  async getDeckStatsSummary(
+    deckId: string
+  ): Promise<{ totalMatches: number; wins: number; losses: number; winRate: number | null }> {
+    const matches = await this.matchModel
+      .find({
+        $or: [{ p1Deck: deckId }, { p2Deck: deckId }],
+      })
+      .select('p1 p2 matchWinner p1Deck p2Deck')
+      .lean()
+      .exec();
+
+    let wins = 0;
+    for (const m of matches) {
+      const result = this.interpretMatchForDeck(m, deckId);
+      if (result?.won) wins += 1;
+    }
+    const totalMatches = matches.length;
+    const losses = totalMatches - wins;
+    const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 1000) / 1000 : null;
+    return { totalMatches, wins, losses, winRate };
   }
 
   async findOne(id: string): Promise<Deck | null> {

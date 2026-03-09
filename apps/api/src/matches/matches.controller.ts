@@ -12,7 +12,7 @@ export class MatchesController {
   @Get()
   async findAll(@Query() query: FindMatchesQueryDto): Promise<PaginatedResponse<Match>> {
     const { data, total } = await this.matchesService.findAll(query);
-    return createPaginatedResponse(data, total, query.page ?? 1, query.limit ?? 20);
+    return createPaginatedResponse(data, total, query.page ?? 1, query.limit ?? 10);
   }
 
   @Get('stats')

@@ -37,11 +37,22 @@ export class MatchesService {
   }
 
   async findAll(query: FindMatchesQueryDto = {}): Promise<{ data: Match[]; total: number }> {
-    const { stage, sort = 'newest', page = 1, limit = 20 } = query;
+    const { stage, sort = 'newest', page = 1, limit = 10, fromDate, toDate } = query;
     const filter: Record<string, unknown> = {};
 
     if (stage && Object.values(Stage).includes(stage as Stage)) {
       filter.stage = stage;
+    }
+
+    const dateFilter: { $gte?: Date; $lte?: Date } = {};
+    if (fromDate) dateFilter.$gte = new Date(fromDate);
+    if (toDate) {
+      const endOfDay = new Date(toDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      dateFilter.$lte = endOfDay;
+    }
+    if (Object.keys(dateFilter).length > 0) {
+      filter.playedAt = dateFilter;
     }
 
     const sortOrder = sort === 'oldest' ? 1 : -1;
