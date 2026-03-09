@@ -214,17 +214,7 @@
         </span>
         <span class="topbar__link-label">Matches</span>
       </a>
-      <a
-        href="/players"
-        class="topbar__link"
-        class:topbar__link--active={isPlayers}
-        aria-current={isPlayers ? 'page' : undefined}
-      >
-        <span class="topbar__link-icon" aria-hidden="true">
-          <IconUsers size={28} />
-        </span>
-        <span class="topbar__link-label">Players</span>
-      </a>
+
       <a
         href="/matches/quick"
         class="topbar__link"
@@ -258,6 +248,19 @@
         </span>
         Decks
       </a>
+
+      <a
+        href="/players"
+        class="topbar__link"
+        class:topbar__link--active={isPlayers}
+        aria-current={isPlayers ? 'page' : undefined}
+      >
+        <span class="topbar__link-icon" aria-hidden="true">
+          <IconUsers size={28} />
+        </span>
+        <span class="topbar__link-label">Players</span>
+      </a>
+
       <a
         href="/me"
         class="topbar__link"
@@ -329,18 +332,7 @@
         </span>
         Matches
       </a>
-      <a
-        href="/players"
-        class="topbar__drawer-link"
-        class:topbar__drawer-link--active={isPlayers}
-        aria-current={isPlayers ? 'page' : undefined}
-        onclick={closeMenu}
-      >
-        <span class="topbar__drawer-link-icon" aria-hidden="true">
-          <IconUsers size={24} />
-        </span>
-        Players
-      </a>
+
       <a
         href="/matches/quick"
         class="topbar__drawer-link"
@@ -376,6 +368,18 @@
           <IconBarChart size={24} />
         </span>
         Statistics
+      </a>
+      <a
+        href="/players"
+        class="topbar__drawer-link"
+        class:topbar__drawer-link--active={isPlayers}
+        aria-current={isPlayers ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        <span class="topbar__drawer-link-icon" aria-hidden="true">
+          <IconUsers size={24} />
+        </span>
+        Players
       </a>
       <div class="topbar__drawer-divider" role="separator" aria-hidden="true"></div>
       <a

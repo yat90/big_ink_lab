@@ -559,6 +559,10 @@
             p2DeckColor={match.p2DeckColor ?? ''}
             {p1DeckId}
             {p2DeckId}
+            p1DeckDisplayName={getDeckDisplayName(match.p1Deck)}
+            p2DeckDisplayName={getDeckDisplayName(match.p2Deck)}
+            p1PlayerName={displayPlayerName(match.p1, 'Player 1')}
+            p2PlayerName={displayPlayerName(match.p2, 'Player 2')}
             players={playersForSelect}
             {decks}
             {showP1DeckSelect}
@@ -730,73 +734,74 @@
             </dd>
           </div>
         {/if}
-        {#if match.games?.length}
-          <div class="stack" style="gap: 12px;">
-            <div
-              class="row"
-              style="align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;"
-            >
-              <h3 style="margin: 0;">Games</h3>
-              {#if editingGames}
-                <button
-                  type="button"
-                  class="btn btn--sm"
-                  onclick={() => (editingGames = false)}
-                  aria-label="Done editing"
-                >
-                  Done
-                </button>
-              {:else}
-                <button
-                  type="button"
-                  class="btn btn--sm"
-                  onclick={() => (editingGames = true)}
-                  aria-label="Edit starter and winner for all games"
-                  title="Edit starter and winner"
-                >
-                  <IconEdit size={16} className="icon-inline" />
-                  <span style="margin-left: 4px;">Edit</span>
-                </button>
-              {/if}
-            </div>
-            <div class="player_header-sentinel" aria-hidden="true" use:playerHeaderSentinel></div>
-            <div class="player_header" class:player_header--stuck={playerHeaderStuck}>
-              <h4>{displayPlayerName(match.p1, 'Player 1')}</h4>
-              <h4>{displayPlayerName(match.p2, 'Player 2')}</h4>
-            </div>
-            {#each match.games as g, i (i)}
-              <GameLine
-                game={g}
-                index={i}
-                matchId={id ?? ''}
-                p1DisplayName={displayPlayerName(match.p1, 'Player 1')}
-                p2DisplayName={displayPlayerName(match.p2, 'Player 2')}
-                p1Id={p1Id ?? undefined}
-                p2Id={p2Id ?? undefined}
-                isEditing={editingGames}
-                isUpdating={updatingGameIndex === i}
-                isDeleting={deletingGameIndex === i}
-                {onGameChange}
-                {onDeleteGame}
-                onEditDone={() => (editingGames = false)}
-              />
-            {/each}
-          </div>
-        {/if}
       </dl>
-
-      {#if match.games != null}
-        <div class="row" style="margin-top: 12px; gap: 12px; flex-wrap: wrap;">
-          <button type="button" class="btn" disabled={addingGame} onclick={onAddGame}>
-            {addingGame ? 'Adding…' : 'Add next game'}
-          </button>
-        </div>
-      {/if}
-
-      {#if error}
-        <p class="alert" role="alert" aria-live="assertive">{error}</p>
-      {/if}
     </div>
+
+    <div class="stack" style="gap: 12px; margin-top: 12px;">
+      <div
+        class="row"
+        style="align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;"
+      >
+        <h3 style="margin: 0;">Games</h3>
+        {#if editingGames}
+          <button
+            type="button"
+            class="btn btn--sm"
+            onclick={() => (editingGames = false)}
+            aria-label="Done editing"
+          >
+            Done
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="btn btn--sm"
+            onclick={() => (editingGames = true)}
+            aria-label="Edit starter and winner for all games"
+            title="Edit starter and winner"
+          >
+            <IconEdit size={16} className="icon-inline" />
+            <span style="margin-left: 4px;">Edit</span>
+          </button>
+        {/if}
+      </div>
+      <div class="player_header-sentinel" aria-hidden="true" use:playerHeaderSentinel></div>
+    </div>
+
+    <div class="player_header" class:player_header--stuck={playerHeaderStuck}>
+      <h4>{displayPlayerName(match.p1, 'Player 1')}</h4>
+      <h4>{displayPlayerName(match.p2, 'Player 2')}</h4>
+    </div>
+    {#if match.games?.length}
+      {#each match.games as g, i (i)}
+        <GameLine
+          game={g}
+          index={i}
+          matchId={id ?? ''}
+          p1DisplayName={displayPlayerName(match.p1, 'Player 1')}
+          p2DisplayName={displayPlayerName(match.p2, 'Player 2')}
+          p1Id={p1Id ?? undefined}
+          p2Id={p2Id ?? undefined}
+          isEditing={editingGames}
+          isUpdating={updatingGameIndex === i}
+          isDeleting={deletingGameIndex === i}
+          {onGameChange}
+          {onDeleteGame}
+          onEditDone={() => (editingGames = false)}
+        />
+      {/each}
+    {/if}
+
+    {#if match.games != null}
+      <div class="row" style="margin-top: 12px; gap: 12px; flex-wrap: wrap;">
+        <button type="button" class="btn" disabled={addingGame} onclick={onAddGame}>
+          {addingGame ? 'Adding…' : '+ Add game'}
+        </button>
+      </div>
+    {/if}
+    {#if error}
+      <p class="alert" role="alert" aria-live="assertive">{error}</p>
+    {/if}
 
     <!-- Delete match confirmation -->
     {#if showDeleteMatchPrompt}

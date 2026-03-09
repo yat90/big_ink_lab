@@ -21,7 +21,7 @@ export class DecksController {
   @Get()
   async findAll(@Query() query: FindDecksQueryDto): Promise<PaginatedResponse<Deck>> {
     const { data, total } = await this.decksService.findAll(
-      { color: query.color, player: query.player },
+      { color: query.color, player: query.player, name: query.name },
       query.page ?? 1,
       query.limit ?? 20
     );

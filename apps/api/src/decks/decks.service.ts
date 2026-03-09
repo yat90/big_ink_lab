@@ -152,7 +152,7 @@ export class DecksService {
   ) {}
 
   async findAll(
-    filters?: { color?: string; player?: string },
+    filters?: { color?: string; player?: string; name?: string },
     page = 1,
     limit = 5
   ): Promise<{ data: (Deck & { winRate?: number | null })[]; total: number }> {
@@ -162,6 +162,9 @@ export class DecksService {
     }
     if (filters?.player?.trim() && Types.ObjectId.isValid(filters.player.trim())) {
       query.player = filters.player.trim();
+    }
+    if (filters?.name?.trim()) {
+      query.name = { $regex: filters.name.trim(), $options: 'i' };
     }
 
     const skip = (page - 1) * limit;

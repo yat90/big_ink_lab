@@ -213,7 +213,7 @@ a {
 }
 /* Hide logo (Home), Players, Decks, Me, Logout on mobile – Matches, Quick Match, Statistics, More */
 .topbar__nav .topbar__link:nth-child(1),
-.topbar__nav .topbar__link:nth-child(3),
+.topbar__nav .topbar__link:nth-child(5),
 .topbar__nav .topbar__link:nth-child(6),
 .topbar__nav .topbar__link:nth-child(7),
 .topbar__nav .topbar__link:nth-child(8) {

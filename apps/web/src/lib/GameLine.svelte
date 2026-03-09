@@ -100,22 +100,7 @@
   </div>
 
   <div class="game-line__actions">
-    {#if isEditing}
-      <button type="button" class="btn btn--sm" onclick={onEditDone} aria-label="Done editing">
-        Done
-      </button>
-    {:else if onEditStart}
-      <button
-        type="button"
-        class="btn btn--sm game-line__edit-btn"
-        onclick={onEditStart}
-        aria-label="Edit starter and winner"
-        title="Edit starter and winner"
-      >
-        <IconEdit size={16} className="game-line__icon game-line__edit-icon" />
-        <span class="game-line__icon-label">Edit</span>
-      </button>
-    {/if}
+  
     {#if !gameWinnerId(game)}
       <a
         href="/matches/{matchId}/lore?game={index}"
@@ -125,20 +110,23 @@
         <span class="game-line__icon-label">Continue</span>
       </a>
     {/if}
-    <button
-      type="button"
-      class="btn btn--icon game-line__delete-btn"
-      disabled={isDeleting}
-      onclick={() => onDeleteGame(index)}
-      aria-label="Delete game {index + 1}"
-      title="Delete game"
-    >
-      {#if isDeleting}
-        Removing…
-      {:else}
-        <IconTrash size={18} className="game-line__icon icon-trash" />
-      {/if}
-    </button>
+    {#if isEditing}
+      <button
+        type="button"
+        class="btn btn--icon game-line__delete-btn"
+        disabled={isDeleting}
+        onclick={() => onDeleteGame(index)}
+        aria-label="Delete game {index + 1}"
+        title="Delete game"
+      >
+        {#if isDeleting}
+          Removing…
+        {:else}
+          <IconTrash size={18} className="game-line__icon icon-trash" />
+          <span class="game-line__icon-label">Delete</span>
+        {/if}
+      </button>
+    {/if}
   </div>
 
   {#if isEditing}
@@ -226,14 +214,16 @@
     padding: 4px 14px;
   }
   .game-line__actions {
-    position: absolute;
-   right: 8px;
-    bottom: -24px;
+    /* position: absolute; */
+    /* right: 8px;
+    bottom: -24px; */
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    justify-content: space-between;
+    justify-content: flex-end;
+    padding:0;
+    margin: 0;
   }
   .game-line__actions .btn,
   .game-line__actions a.btn {
@@ -248,7 +238,7 @@
   }
   .game-line__delete-btn,
   .game-line__actions .game-line__delete-btn {
-    height:24px;
+    height: 24px;
     padding-top: 0;
     padding-bottom: 0;
     color: var(--danger);

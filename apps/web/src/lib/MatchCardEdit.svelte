@@ -1,5 +1,6 @@
 <script lang="ts">
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
+  import DeckPickerModal from '$lib/DeckPickerModal.svelte';
 
   type PlayerOption = { _id: string; name: string };
   type DeckOption = { _id: string; name: string };
@@ -11,6 +12,12 @@
     p2DeckColor: string;
     p1DeckId: string;
     p2DeckId: string;
+    /** Display name from match (populated deck); used so selected deck name shows after save. */
+    p1DeckDisplayName?: string;
+    p2DeckDisplayName?: string;
+    /** Player display names for deck picker headline (e.g. "Robert" not "Player 1"). */
+    p1PlayerName?: string;
+    p2PlayerName?: string;
     players: PlayerOption[];
     decks: DeckOption[];
     showP1DeckSelect: boolean;
@@ -30,6 +37,10 @@
     p2DeckColor,
     p1DeckId,
     p2DeckId,
+    p1DeckDisplayName = '',
+    p2DeckDisplayName = '',
+    p1PlayerName = 'Player 1',
+    p2PlayerName = 'Player 2',
     players,
     decks,
     showP1DeckSelect,
@@ -41,6 +52,30 @@
     onDeckColorChange,
     onDeckChange,
   }: Props = $props();
+
+  let deckPickerOpen = $state(false);
+  let deckPickerRole = $state<'p1' | 'p2'>('p1');
+
+  function openDeckPicker(role: 'p1' | 'p2') {
+    deckPickerRole = role;
+    deckPickerOpen = true;
+  }
+
+  function handleDeckSelect(deckId: string) {
+    onDeckChange(deckPickerRole, deckId);
+    deckPickerOpen = false;
+  }
+
+  const p1DeckName = $derived(
+    (p1DeckDisplayName && p1DeckDisplayName !== '—' ? p1DeckDisplayName : null) ??
+      decks.find((d) => d._id === p1DeckId)?.name ??
+      '—',
+  );
+  const p2DeckName = $derived(
+    (p2DeckDisplayName && p2DeckDisplayName !== '—' ? p2DeckDisplayName : null) ??
+      decks.find((d) => d._id === p2DeckId)?.name ??
+      '—',
+  );
 </script>
 
 <div class="matchcard__edit">
@@ -75,19 +110,16 @@
       {#if showP1DeckSelect}
         <div class="matchcard__edit-field">
           <span class="matchcard__edit-field-label">Deck</span>
-          <select
-            class="input matchcard__deck-select"
-            value={p1DeckId}
+          <button
+            type="button"
+            class="input matchcard__deck-select matchcard__deck-select-btn"
             disabled={updatingDeck === 'p1'}
-            onchange={(e) => onDeckChange('p1', e.currentTarget.value)}
+            onclick={() => openDeckPicker('p1')}
             aria-label="P1 deck (optional)"
-            title="Optional deck"
+            title="Optional deck – click to choose"
           >
-            <option value="">—</option>
-            {#each decks as d (d._id)}
-              <option value={d._id}>{d.name}</option>
-            {/each}
-          </select>
+            {p1DeckName}
+          </button>
         </div>
       {/if}
     </div>
@@ -123,23 +155,28 @@
       {#if showP2DeckSelect}
         <div class="matchcard__edit-field">
           <span class="matchcard__edit-field-label">Deck</span>
-          <select
-            class="input matchcard__deck-select"
-            value={p2DeckId}
+          <button
+            type="button"
+            class="input matchcard__deck-select matchcard__deck-select-btn"
             disabled={updatingDeck === 'p2'}
-            onchange={(e) => onDeckChange('p2', e.currentTarget.value)}
+            onclick={() => openDeckPicker('p2')}
             aria-label="P2 deck (optional)"
-            title="Optional deck"
+            title="Optional deck – click to choose"
           >
-            <option value="">—</option>
-            {#each decks as d (d._id)}
-              <option value={d._id}>{d.name}</option>
-            {/each}
-          </select>
+            {p2DeckName}
+          </button>
         </div>
       {/if}
     </div>
   </div>
+
+  <DeckPickerModal
+    bind:open={deckPickerOpen}
+    title="Select deck"
+    forLabel={deckPickerRole === 'p1' ? p1PlayerName : p2PlayerName}
+    onSelect={handleDeckSelect}
+    onClose={() => (deckPickerOpen = false)}
+  />
 </div>
 
 <style>
@@ -178,5 +215,9 @@
   .matchcard__edit-fields .matchcard__player-select,
   .matchcard__edit-fields .matchcard__deck-select {
     min-width: 160px;
+  }
+  .matchcard__deck-select-btn {
+    text-align: left;
+    cursor: pointer;
   }
 </style>
