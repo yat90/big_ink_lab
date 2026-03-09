@@ -23,6 +23,10 @@ export type Deck = {
   player?: { _id: string; name: string; team?: string } | string;
   createdAt?: string;
   updatedAt?: string;
+  /** Total matches (when included in list response). */
+  totalMatches?: number;
+  /** Win rate 0–1 (when included in list response). */
+  winRate?: number | null;
 };
 
 /** Body for create/update (player as id string). */

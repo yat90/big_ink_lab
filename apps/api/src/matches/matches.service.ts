@@ -36,20 +36,40 @@ export class MatchesService {
     matrix[myDeck][oppDeck].won += won;
   }
 
-  async findAll(query: FindMatchesQueryDto = {}): Promise<Match[]> {
-    const { stage, sort = 'newest' } = query;
+  async findAll(query: FindMatchesQueryDto = {}): Promise<{ data: Match[]; total: number }> {
+    const { stage, sort = 'newest', page = 1, limit = 10, fromDate, toDate } = query;
     const filter: Record<string, unknown> = {};
 
     if (stage && Object.values(Stage).includes(stage as Stage)) {
       filter.stage = stage;
     }
 
+    const dateFilter: { $gte?: Date; $lte?: Date } = {};
+    if (fromDate) dateFilter.$gte = new Date(fromDate);
+    if (toDate) {
+      const endOfDay = new Date(toDate);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+      dateFilter.$lte = endOfDay;
+    }
+    if (Object.keys(dateFilter).length > 0) {
+      filter.playedAt = dateFilter;
+    }
+
     const sortOrder = sort === 'oldest' ? 1 : -1;
-    return this.matchModel
-      .find(filter)
-      .populate('p1 p2 matchWinner p1Deck p2Deck')
-      .sort({ playedAt: sortOrder })
-      .exec();
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.matchModel
+        .find(filter)
+        .populate('p1 p2 matchWinner p1Deck p2Deck')
+        .sort({ playedAt: sortOrder })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.matchModel.countDocuments(filter).exec(),
+    ]);
+
+    return { data, total };
   }
 
   async findOne(id: string): Promise<Match | null> {

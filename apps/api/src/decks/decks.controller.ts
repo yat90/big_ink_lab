@@ -11,17 +11,21 @@ import {
 } from '@nestjs/common';
 import { Deck } from './schemas/deck.schema';
 import { DecksService, type DeckStats } from './decks.service';
+import { FindDecksQueryDto } from './dto/find-decks-query.dto';
+import { PaginatedResponse, createPaginatedResponse } from '../common/dto/paginated-response.dto';
 
 @Controller('decks')
 export class DecksController {
   constructor(private readonly decksService: DecksService) {}
 
   @Get()
-  async findAll(
-    @Query('color') color?: string,
-    @Query('player') player?: string,
-  ): Promise<Deck[]> {
-    return this.decksService.findAll({ color, player });
+  async findAll(@Query() query: FindDecksQueryDto): Promise<PaginatedResponse<Deck>> {
+    const { data, total } = await this.decksService.findAll(
+      { color: query.color, player: query.player },
+      query.page ?? 1,
+      query.limit ?? 20
+    );
+    return createPaginatedResponse(data, total, query.page ?? 1, query.limit ?? 20);
   }
 
   @Get(':id/stats')

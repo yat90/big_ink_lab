@@ -53,8 +53,15 @@ export class PlayersService {
     matrix[myDeck][oppDeck].won += won;
   }
 
-  async findAll(): Promise<Player[]> {
-    return this.playerModel.find().sort({ name: 1 }).exec();
+  async findAll(page = 1, limit = 20): Promise<{ data: Player[]; total: number }> {
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.playerModel.find().sort({ name: 1 }).skip(skip).limit(limit).exec(),
+      this.playerModel.countDocuments().exec(),
+    ]);
+
+    return { data, total };
   }
 
   async findOne(id: string): Promise<Player | null> {
