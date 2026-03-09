@@ -2,34 +2,16 @@
   import { config } from '$lib/config';
   import { onMount } from 'svelte';
   import { getAuthToken } from '$lib/auth';
-  import MatchupStatistics from '$lib/MatchupStatistics.svelte';
+  import PlayerStatsOverview, { type PlayerStats } from '$lib/PlayerStatsOverview.svelte';
 
   type MeUser = { id: string; email: string; name?: string };
   type MePlayer = { _id: string; name: string; team: string };
 
-  type DeckColorMatrixCell = { played: number; won: number };
-  type DeckColorMatrix = Record<string, Record<string, DeckColorMatrixCell>>;
-
-  type PlayerStats = {
-    matchesPlayed: number;
-    matchesWon: number;
-    matchesLost: number;
-    matchWinRate: number;
-    gamesPlayed: number;
-    gamesWon: number;
-    gameWinRate: number;
-    gamesAsStarter: number;
-    gamesWonAsStarter: number;
-    starterWinRate: number;
-    gamesNotStarter: number;
-    gamesWonNotStarter: number;
-    nonStarterWinRate: number;
-    deckColorMatrix?: DeckColorMatrix;
-  };
-
   let user = $state<MeUser | null>(null);
   let player = $state<MePlayer | null>(null);
   let playerStats = $state<PlayerStats | null>(null);
+  let decksUsed = $state<{ _id: string; name: string }[]>([]);
+  let filterDeckId = $state('');
   let teamName = $state('');
   let loading = $state(true);
   let savingTeam = $state(false);
@@ -40,18 +22,28 @@
   const apiUrl = config.apiUrl ?? '/api';
   const token = $derived(getAuthToken());
 
-  async function loadPlayerStats(matrixMode: MatrixMode) {
+  async function loadPlayerStats(matrixMode: MatrixMode, deckId?: string) {
     if (!player?._id) return;
     try {
-      const statsRes = await fetch(`${apiUrl}/players/${player._id}?matrixMode=${matrixMode}`);
+      const params = new URLSearchParams();
+      params.set('matrixMode', matrixMode);
+      if (deckId?.trim()) params.set('deckId', deckId.trim());
+      const statsRes = await fetch(
+        `${apiUrl}/players/${player._id}${params.toString() ? `?${params}` : ''}`,
+      );
       if (statsRes.ok) {
         const withStats = await statsRes.json();
         playerStats = withStats?.stats ?? null;
+        decksUsed = Array.isArray(withStats?.decksUsed) ? withStats.decksUsed : [];
         selectedMatrixMode = matrixMode;
       }
     } catch {
       /* ignore stats load */
     }
+  }
+
+  async function onDeckFilterChange() {
+    await loadPlayerStats(selectedMatrixMode, filterDeckId || undefined);
   }
 
   async function loadMe() {
@@ -173,66 +165,18 @@
     {/if}
   </div>
   {#if player && playerStats}
-    <div class="me-stats card">
-      <h2 class="me-stats__title">My statistics</h2>
-
-      <section class="me-stats__block" aria-labelledby="me-stats-matches">
-        <h3 id="me-stats-matches" class="me-stats__block-title">Matches</h3>
-        <p class="me-stats__summary">
-          <span class="me-stats__record"
-            >{playerStats.matchesWon} wins, {playerStats.matchesLost} losses</span
-          >
-          <span class="me-stats__rate">{playerStats.matchWinRate}% win rate</span>
-        </p>
-        <p class="me-stats__meta muted">{playerStats.matchesPlayed} matches played</p>
-      </section>
-
-      <section class="me-stats__block" aria-labelledby="me-stats-games">
-        <h3 id="me-stats-games" class="me-stats__block-title">Individual games</h3>
-        <p class="me-stats__summary">
-          <span class="me-stats__record"
-            >{playerStats.gamesWon} wins, {playerStats.gamesPlayed - playerStats.gamesWon}
-            losses</span
-          >
-          <span class="me-stats__rate">{playerStats.gameWinRate}% win rate</span>
-        </p>
-        <p class="me-stats__meta muted">{playerStats.gamesPlayed} games played</p>
-      </section>
-
-      <section class="me-stats__block me-stats__block--split" aria-labelledby="me-stats-starter">
-        <h3 id="me-stats-starter" class="me-stats__block-title">When I start vs when I don’t</h3>
-        <div class="me-stats__twocol">
-          <div class="me-stats__half">
-            <span class="me-stats__half-label">When I start</span>
-            <span class="me-stats__half-value"
-              >{playerStats.gamesWonAsStarter}–{playerStats.gamesAsStarter -
-                playerStats.gamesWonAsStarter}</span
-            >
-            <span class="me-stats__half-rate muted">{playerStats.starterWinRate}%</span>
-          </div>
-          <div class="me-stats__half">
-            <span class="me-stats__half-label">When I don’t start</span>
-            <span class="me-stats__half-value"
-              >{playerStats.gamesWonNotStarter}–{playerStats.gamesNotStarter -
-                playerStats.gamesWonNotStarter}</span
-            >
-            <span class="me-stats__half-rate muted">{playerStats.nonStarterWinRate}%</span>
-          </div>
-        </div>
-      </section>
+    <div class="me-stats">
+      <PlayerStatsOverview
+        stats={playerStats}
+        sectionTitle="My statistics"
+        decksUsed={decksUsed}
+        bind:filterDeckId
+        onDeckFilterChange={onDeckFilterChange}
+        bind:analysisMode={selectedMatrixMode}
+        onMatrixModeChange={(mode) => loadPlayerStats(mode, filterDeckId || undefined)}
+        emptyText="No matchup data yet."
+      />
     </div>
-
-    {#if playerStats.deckColorMatrix && Object.keys(playerStats.deckColorMatrix).length > 0}
-      <div class="card me-stats__matrix-card">
-        <MatchupStatistics
-          matrix={playerStats.deckColorMatrix}
-          bind:analysisMode={selectedMatrixMode}
-          onchange={(mode) => loadPlayerStats(mode)}
-          title="Deck color matchups"
-          emptyText="No matchup data yet."
-        />
-      </div>
-    {/if}
   {:else if player}
     <div class="card">
       <p class="card__sub muted">No match data yet. Play some matches to see your statistics.</p>
@@ -264,68 +208,5 @@
 
   .me-stats {
     margin-top: var(--space-lg);
-  }
-  .me-stats__matrix-card {
-    margin-top: var(--space-lg);
-  }
-  .me-stats__title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0 0 var(--space-md);
-  }
-  .me-stats__block {
-    margin-bottom: var(--space-lg);
-  }
-  .me-stats__block:last-child {
-    margin-bottom: 0;
-  }
-  .me-stats__block-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    margin: 0 0 var(--space-xs);
-    color: var(--muted);
-  }
-  .me-stats__summary {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.5em;
-    margin: 0;
-    font-size: 1.1rem;
-  }
-  .me-stats__record {
-    font-weight: 700;
-  }
-  .me-stats__rate {
-    font-weight: 600;
-  }
-  .me-stats__meta {
-    margin: var(--space-xs) 0 0;
-    font-size: 0.85rem;
-  }
-  .me-stats__block--split .me-stats__twocol {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-md);
-    margin-top: var(--space-sm);
-  }
-  .me-stats__half {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.35em;
-    min-width: 10rem;
-  }
-  .me-stats__half-label {
-    width: 100%;
-    font-size: 0.85rem;
-    color: var(--muted);
-  }
-  .me-stats__half-value {
-    font-weight: 700;
-    font-size: 1.05rem;
-  }
-  .me-stats__half-rate {
-    font-size: 0.9rem;
   }
 </style>

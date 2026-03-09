@@ -273,7 +273,11 @@
     }
   }
   async function patchGames(games: Game[]) {
-    if (!match || p1Id == null || p2Id == null) return false;
+    console.log('patchGames', games);
+    console.log('match', match);
+    console.log('p1Id', p1Id);
+    console.log('p2Id', p2Id);
+    if (!match || p1Id == null) return false;
     const winnerId =
       typeof match.matchWinner === 'object' && match.matchWinner
         ? match.matchWinner._id
@@ -298,17 +302,22 @@
     error = '';
     try {
       const existing = match.games ?? [];
-      const withPreviousDone =
-        existing.length > 0
-          ? existing.map((g, i) =>
-              i === existing.length - 1 ? { ...g, status: 'done' as GameStatus } : g
-            )
-          : existing;
+      let withPreviousDone: Game[] = [];
+      if (existing.length > 0) {
+        withPreviousDone = existing.map((g, i) =>
+          i === existing.length - 1 ? { ...g, status: 'done' as GameStatus } : g
+        );
+      }
       const games: Game[] = [...withPreviousDone, { status: 'in_progress' as GameStatus }];
       const ok = await patchGames(games);
-      if (ok) await goto(`/matches/${id}/lore?game=${existing.length}`);
+      if (ok) {
+        await goto(`/matches/${id}/lore?game=${existing.length}`);
+      } else {
+        error = 'Could not add game';
+      }
     } catch {
       error = 'Could not reach API.';
+      console.error(error);
     } finally {
       addingGame = false;
     }

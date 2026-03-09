@@ -49,7 +49,7 @@
 
   async function fetchPlayers() {
     try {
-      const res = await fetch(`${apiUrl}/players?limit=1000`);
+      const res = await fetch(`${apiUrl}/players?limit=100`);
       if (res.ok) {
         const json = await res.json();
         const data = json.data ?? json;

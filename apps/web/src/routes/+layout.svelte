@@ -214,18 +214,6 @@
         </span>
         <span class="topbar__link-label">Matches</span>
       </a>
-
-      <a
-        href="/matches/quick"
-        class="topbar__link"
-        class:topbar__link--active={isQuickMatch}
-        aria-current={isQuickMatch ? 'page' : undefined}
-      >
-        <span class="topbar__link-icon" aria-hidden="true">
-          <IconPlay size={28} />
-        </span>
-        <span class="topbar__link-label">Quick Match</span>
-      </a>
       <a
         href="/stats"
         class="topbar__link"
@@ -248,7 +236,6 @@
         </span>
         Decks
       </a>
-
       <a
         href="/players"
         class="topbar__link"
@@ -260,7 +247,6 @@
         </span>
         <span class="topbar__link-label">Players</span>
       </a>
-
       <a
         href="/me"
         class="topbar__link"

@@ -1,4 +1,3 @@
-/* eslint-disable svelte/require-each-key */
 <script lang="ts">
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
@@ -52,7 +51,7 @@
 
   async function fetchPlayers() {
     try {
-      const playersRes = await fetch(`${apiUrl}/players?limit=1000`);
+      const playersRes = await fetch(`${apiUrl}/players?limit=100`);
       if (playersRes.ok) {
         const response = await playersRes.json();
         allPlayers = response.data || [];
