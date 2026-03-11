@@ -44,11 +44,7 @@
 </script>
 
 {#if open}
-  <div
-    class="mobile-nav__backdrop"
-    role="presentation"
-    onclick={closeMenu}
-  ></div>
+  <div class="mobile-nav__backdrop" role="presentation" onclick={closeMenu}></div>
   <nav id="mobile-nav-drawer" class="mobile-nav__drawer" aria-label="More menu">
     <button
       type="button"
@@ -59,8 +55,7 @@
       <IconClose size={24} />
     </button>
     <div class="mobile-nav__drawer-header">
-      <img class="mobile-nav__drawer-header-logo" src={logo} alt="" width="48" height="48" />
-      <h2 class="mobile-nav__drawer-header-title">Big Ink Lab</h2>
+      <img class="mobile-nav__drawer-header-logo" src={logo} alt="" width="128" height="128" />
     </div>
     <a
       href="/"
@@ -69,10 +64,7 @@
       aria-current={isHome ? 'page' : undefined}
       onclick={closeMenu}
     >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <img class="mobile-nav__drawer-logo" src={logo} alt="" width="24" height="24" />
-      </span>
-      Home
+      Dashboard
     </a>
     <a
       href="/matches"

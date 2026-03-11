@@ -4,6 +4,9 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import IconClock from '$lib/icons/IconClock.svelte';
+  import IconCloud from '$lib/icons/IconCloud.svelte';
+  import IconMenu from '$lib/icons/IconMenu.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Game = {
@@ -12,6 +15,7 @@
     status?: string;
     winner?: string;
     starter?: string | { _id: string };
+    events?: Array<{ type: string; timestamp: string | Date; player?: string }>;
   };
   type Match = {
     _id: string;
@@ -20,11 +24,14 @@
     matchWinner?: Player | string;
     games?: Game[];
   };
+  /** Local draft for a single game; events are synced to API with the game. */
   type LoreDraft = {
     p1Lore: number;
     p2Lore: number;
     starter?: string;
     updatedAt: number;
+    /** Events (start, lore_increased, lore_decreased) to merge into game.events when syncing. */
+    events?: Array<{ type: 'start' | 'lore_increased' | 'lore_decreased'; timestamp: number; player: string }>;
   };
   type LoreDraftMap = Record<string, LoreDraft>;
   type WakeLockNavigator = Navigator & {
@@ -95,6 +102,9 @@
   /** Menu button: show "close game?" confirmation modal. */
   let showCloseGamePrompt = $state(false);
 
+  /** Events list popup for current game. */
+  let showEventsPopup = $state(false);
+
   const apiUrl = config.apiUrl ?? '/api';
   const LORE_MAX = 25;
   const LORE_WIN = 20;
@@ -162,6 +172,55 @@
     hasPendingLocalSync = Object.keys(readLocalDrafts()).length > 0;
   }
 
+  /** Merged events for current game (server + local draft), sorted by timestamp. */
+  function getCurrentGameEvents(): Array<{
+    type: string;
+    timestamp: number;
+    playerId?: string;
+    playerLabel: string;
+  }> {
+    const cur = match?.games?.[gameIndex];
+    const serverEvents = (cur?.events ?? []).map((e) => ({
+      type: e.type,
+      timestamp:
+        typeof e.timestamp === 'string'
+          ? new Date(e.timestamp).getTime()
+          : (e.timestamp as Date).getTime(),
+      playerId: e.player,
+      playerLabel:
+        e.player === p1Id ? p1Name : e.player === p2Id ? p2Name : e.player ? 'Player' : '–',
+    }));
+    const draft = readLocalDrafts()[String(gameIndex)];
+    const draftEvents = (draft?.events ?? []).map((e) => ({
+      type: e.type,
+      timestamp: e.timestamp,
+      playerId: e.player,
+      playerLabel: e.player === p1Id ? p1Name : e.player === p2Id ? p2Name : '–',
+    }));
+    const merged = [...serverEvents, ...draftEvents].sort((a, b) => a.timestamp - b.timestamp);
+    return merged;
+  }
+
+  /** Add a 'start' event to the current game's draft (e.g. after user selects starting player). */
+  function addStartEventToCurrentDraft(playerId: string) {
+    const drafts = readLocalDrafts();
+    const key = String(gameIndex);
+    const existing = drafts[key] ?? {
+      p1Lore: Math.min(LORE_MAX, Math.max(0, p1Lore)),
+      p2Lore: Math.min(LORE_MAX, Math.max(0, p2Lore)),
+      updatedAt: Date.now(),
+      ...(starter ? { starter } : {}),
+    };
+    const startEvent = { type: 'start' as const, timestamp: Date.now(), player: playerId };
+    drafts[key] = {
+      ...existing,
+      events: [...(existing.events ?? []), startEvent],
+      updatedAt: Date.now(),
+    };
+    writeLocalDrafts(drafts);
+    hasPendingLocalSync = true;
+  }
+
   function clearLocalDraftForGame(index: number) {
     const drafts = readLocalDrafts();
     if (!(String(index) in drafts)) return;
@@ -170,13 +229,28 @@
     refreshPendingLocalSyncFlag();
   }
 
-  function persistCurrentGameLocally() {
+  /**
+   * Persist current game state (and optionally one new lore_increased/lore_decreased event) to local drafts.
+   * Events are merged into game.events when syncing to the API.
+   */
+  function persistCurrentGameLocally(loreEvent?: { player: string; direction: 'increase' | 'decrease' }) {
     const drafts = readLocalDrafts();
-    drafts[String(gameIndex)] = {
+    const key = String(gameIndex);
+    const existing = drafts[key];
+    const existingEvents = existing?.events ?? [];
+    const eventType = loreEvent?.direction === 'increase' ? 'lore_increased' : 'lore_decreased';
+    const newEvents = loreEvent
+      ? [
+          ...existingEvents,
+          { type: eventType as 'lore_increased' | 'lore_decreased', timestamp: Date.now(), player: loreEvent.player },
+        ]
+      : existingEvents;
+    drafts[key] = {
       p1Lore: Math.min(LORE_MAX, Math.max(0, p1Lore)),
       p2Lore: Math.min(LORE_MAX, Math.max(0, p2Lore)),
       ...(starter ? { starter } : {}),
       updatedAt: Date.now(),
+      ...(newEvents.length > 0 ? { events: newEvents } : {}),
     };
     writeLocalDrafts(drafts);
     hasPendingLocalSync = true;
@@ -192,18 +266,31 @@
     hasPendingLocalSync = true;
   }
 
+  /** Merge draft scores and pending events into games for API sync. */
   function applyDraftsToGames(sourceGames: Game[], drafts: LoreDraftMap): Game[] {
-    const updatedGames = [...sourceGames];
+    const updatedGames = sourceGames.map((g) => ({ ...g }));
     for (const [rawIndex, draft] of Object.entries(drafts)) {
       const idx = Number(rawIndex);
       if (!Number.isInteger(idx) || idx < 0) continue;
       const current = updatedGames[idx];
       if (current?.status === 'done') continue;
+      const existingEvents = (current?.events ?? []).map((e) => ({
+        type: e.type,
+        timestamp:
+          typeof e.timestamp === 'string' ? e.timestamp : new Date(e.timestamp).toISOString(),
+        player: e.player,
+      }));
+      const draftEvents = (draft.events ?? []).map((e) => ({
+        type: e.type,
+        timestamp: new Date(e.timestamp).toISOString(),
+        player: e.player,
+      }));
       updatedGames[idx] = {
         ...(current ?? {}),
         p1Lore: Math.min(LORE_MAX, Math.max(0, draft.p1Lore)),
         p2Lore: Math.min(LORE_MAX, Math.max(0, draft.p2Lore)),
         ...(draft.starter ? { starter: draft.starter } : {}),
+        events: [...existingEvents, ...draftEvents],
       };
     }
     return updatedGames;
@@ -372,6 +459,7 @@
   async function chooseStarter(playerId: string) {
     if (starterSaving) return;
     starter = playerId;
+    addStartEventToCurrentDraft(playerId);
     starterSaving = true;
     try {
       await save();
@@ -385,7 +473,10 @@
     if (winCheckTimeout) clearTimeout(winCheckTimeout);
     winCheckTimeout = setTimeout(() => {
       winCheckTimeout = null;
-      if (p1Lore >= LORE_WIN || p2Lore >= LORE_WIN) {
+      const draft = readLocalDrafts()[String(gameIndex)];
+      const p1 = draft != null ? draft.p1Lore : p1Lore;
+      const p2 = draft != null ? draft.p2Lore : p2Lore;
+      if (p1 >= LORE_WIN || p2 >= LORE_WIN) {
         saveAsDone();
       }
     }, 500);
@@ -399,7 +490,7 @@
     addChange('p1', 1);
     p1Lore = Math.min(LORE_MAX, p1Lore + 1);
     scheduleWinCheck();
-    persistCurrentGameLocally();
+    persistCurrentGameLocally(p1Id ? { player: p1Id, direction: 'increase' } : undefined);
   }
   function decP1() {
     const now = Date.now();
@@ -408,7 +499,7 @@
     lastP1WasInc = false;
     addChange('p1', -1);
     p1Lore = Math.max(0, p1Lore - 1);
-    persistCurrentGameLocally();
+    persistCurrentGameLocally(p1Id ? { player: p1Id, direction: 'decrease' } : undefined);
   }
   function incP2() {
     const now = Date.now();
@@ -418,7 +509,7 @@
     addChange('p2', 1);
     p2Lore = Math.min(LORE_MAX, p2Lore + 1);
     scheduleWinCheck();
-    persistCurrentGameLocally();
+    persistCurrentGameLocally(p2Id ? { player: p2Id, direction: 'increase' } : undefined);
   }
   function decP2() {
     const now = Date.now();
@@ -427,36 +518,50 @@
     lastP2WasInc = false;
     addChange('p2', -1);
     p2Lore = Math.max(0, p2Lore - 1);
-    persistCurrentGameLocally();
+    persistCurrentGameLocally(p2Id ? { player: p2Id, direction: 'decrease' } : undefined);
   }
 
   async function saveAsDone() {
     if (!match?.games?.length) return;
     const cur = match.games[gameIndex];
     if (cur?.status === 'done') return;
+    const draft = readLocalDrafts()[String(gameIndex)];
+    const effectiveP1 = draft != null ? draft.p1Lore : p1Lore;
+    const effectiveP2 = draft != null ? draft.p2Lore : p2Lore;
+    if (effectiveP1 < LORE_WIN && effectiveP2 < LORE_WIN) return;
     const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
     const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
     let winnerId: string | undefined;
-    if (p1Lore >= LORE_WIN && p2Lore >= LORE_WIN) {
-      winnerId = p1Lore >= p2Lore ? p1Id : p2Id;
-    } else if (p1Lore >= LORE_WIN) {
+    if (effectiveP1 >= LORE_WIN && effectiveP2 >= LORE_WIN) {
+      winnerId = effectiveP1 >= effectiveP2 ? p1Id : p2Id;
+    } else if (effectiveP1 >= LORE_WIN) {
       winnerId = p1Id;
-    } else if (p2Lore >= LORE_WIN) {
+    } else if (effectiveP2 >= LORE_WIN) {
       winnerId = p2Id;
     }
-    if (winnerId == null) return;
     persistCurrentGameLocally();
     saving = true;
     error = '';
     try {
-      const updatedGames = [...match.games];
+      const updatedGames = applyDraftsToGames(match.games, readLocalDrafts());
       if (!updatedGames[gameIndex]) updatedGames[gameIndex] = {};
+      const existingEvents = (updatedGames[gameIndex].events ?? []).map((e) => ({
+        type: e.type,
+        timestamp: typeof e.timestamp === 'string' ? e.timestamp : new Date(e.timestamp).toISOString(),
+        player: e.player,
+      }));
+      const endEvent = {
+        type: 'end' as const,
+        timestamp: new Date().toISOString(),
+        ...(winnerId ? { player: winnerId } : {}),
+      };
       updatedGames[gameIndex] = {
         ...updatedGames[gameIndex],
-        p1Lore,
-        p2Lore,
+        p1Lore: effectiveP1,
+        p2Lore: effectiveP2,
         status: 'done',
         winner: winnerId,
+        events: [...existingEvents, endEvent],
         ...(starter ? { starter } : {}),
       };
       const mw = match.matchWinner;
@@ -477,7 +582,7 @@
       } else {
         match = await res.json();
         clearLocalDraftForGame(gameIndex);
-        gameOverWinnerId = winnerId;
+        gameOverWinnerId = winnerId ?? null;
         showGameOverPrompt = true;
       }
     } catch {
@@ -535,7 +640,7 @@
     saving = true;
     error = '';
     try {
-      const updatedGames = [...match.games];
+      const updatedGames = applyDraftsToGames(match.games, readLocalDrafts());
       if (!updatedGames[gameIndex]) updatedGames[gameIndex] = {};
       updatedGames[gameIndex] = {
         ...updatedGames[gameIndex],
@@ -590,26 +695,22 @@
         <div class="lore-score-pill">
           <span class="lore-score-pill__score">{p2GamesWon} – {p1GamesWon}</span>
         </div>
+        <button
+          type="button"
+          class="lore-score-pill__events-btn"
+          aria-label="Show game events"
+          title="Game events"
+          onclick={() => (showEventsPopup = true)}
+        >
+          <IconClock size={20} />
+        </button>
         {#if hasPendingLocalSync}
           <span
             class="lore-sync-badge"
             title="Offline-safe: score saved locally, synced every minute."
             aria-label="Offline-safe: score saved locally, synced every minute."
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
-            </svg>
+            <IconCloud size={12} />
           </span>
         {/if}
       </div>
@@ -654,8 +755,10 @@
           type="button"
           class="lore-divider__menu"
           aria-label="Menu"
-          onclick={() => (showCloseGamePrompt = true)}>☰</button
+          onclick={() => (showCloseGamePrompt = true)}
         >
+          <IconMenu size={18} />
+        </button>
         <span class="lore-divider__name lore-divider__name--p1" aria-hidden="true">{p1Name}</span>
       </div>
 
@@ -701,6 +804,53 @@
     <div class="card">
       <p class="muted">No games in this match yet.</p>
       <a href="/matches/{id}" class="btn">Back to match</a>
+    </div>
+  {/if}
+
+  <!-- Game events list popup -->
+  {#if showEventsPopup}
+    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="events-popup-title">
+      <button
+        type="button"
+        class="lore-modal__backdrop"
+        aria-label="Close"
+        onclick={() => (showEventsPopup = false)}
+      ></button>
+      <div class="lore-modal__card card lore-events-popup">
+        <h2 id="events-popup-title" class="lore-modal__title">Game {gameIndex + 1} events</h2>
+        <div class="lore-events-popup__list">
+          {#each getCurrentGameEvents() as evt, i (evt.timestamp + '-' + i)}
+            <div class="lore-events-popup__row">
+              <span class="lore-events-popup__time" title={new Date(evt.timestamp).toISOString()}>
+                {new Date(evt.timestamp).toLocaleTimeString(undefined, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+                })}
+              </span>
+              <span class="lore-events-popup__type">
+                {evt.type === 'lore_increased'
+                  ? 'Lore +'
+                  : evt.type === 'lore_decreased'
+                    ? 'Lore −'
+                    : evt.type === 'start'
+                      ? 'Start'
+                      : evt.type === 'end'
+                        ? 'End'
+                        : evt.type === 'lore_update'
+                          ? 'Lore change'
+                          : evt.type}
+              </span>
+              <span class="lore-events-popup__player muted">{evt.playerLabel}</span>
+            </div>
+          {:else}
+            <p class="muted lore-events-popup__empty">No events yet.</p>
+          {/each}
+        </div>
+        <div class="lore-modal__actions">
+          <button type="button" class="btn" onclick={() => (showEventsPopup = false)}>Close</button>
+        </div>
+      </div>
     </div>
   {/if}
 
@@ -827,18 +977,48 @@
     position: relative;
   }
 
-  /* Vertical game counter: straddles the divider, half in top panel and half in bottom */
+  /* Vertical game counter + events button: left side */
   .lore-score-pill-wrap {
     position: absolute;
-    left: 0px;
+    left: 0;
     top: 0;
     bottom: 0;
     width: 36px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     z-index: 2;
     pointer-events: none;
+  }
+
+  .lore-score-pill-wrap .lore-score-pill__events-btn {
+    pointer-events: auto;
+  }
+
+  .lore-score-pill__events-btn {
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    padding: 0;
+    border-radius: 0 12px 12px 0;
+    background: rgba(30, 30, 30, 0.85);
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lore-score-pill__events-btn:hover {
+    background: rgba(50, 50, 50, 0.9);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .lore-score-pill__events-btn:active {
+    transform: scale(0.98);
   }
 
   .lore-score-pill {
@@ -983,11 +1163,11 @@
       font-size: 4em;
     }
     .lore-panel__btn--dec {
-    transform: translateX(-25%);
-  }
-  .lore-panel__btn--inc {
-    transform: translateX(25%);
-  }
+      transform: translateX(-25%);
+    }
+    .lore-panel__btn--inc {
+      transform: translateX(25%);
+    }
   }
 
   .lore-divider {
@@ -1030,26 +1210,23 @@
 
   .lore-divider__menu {
     position: absolute;
+
     width: 48px;
     height: 48px;
     padding: 0;
     border-radius: 50%;
     background: #111;
     cursor: pointer;
+    z-index: 2;
     font: inherit;
     appearance: none;
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
-    z-index: 2;
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
-    font-weight: 700;
-    text-decoration: none;
-    line-height: 1;
     transition:
       background 0.15s,
       transform 0.1s;
@@ -1063,6 +1240,51 @@
 
   .lore-divider__menu:active {
     transform: scale(0.98);
+  }
+
+  .lore-events-popup__list {
+    max-height: 50vh;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    text-align: left;
+  }
+
+  .lore-events-popup__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--glass-border);
+    font-size: 0.9rem;
+  }
+
+  .lore-events-popup__row:last-child {
+    border-bottom: none;
+  }
+
+  .lore-events-popup__time {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    min-width: 5.5em;
+  }
+
+  .lore-events-popup__type {
+    flex-shrink: 0;
+    font-weight: 600;
+    min-width: 6em;
+  }
+
+  .lore-events-popup__player {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lore-events-popup__empty {
+    padding: 16px 0;
+    margin: 0;
+    text-align: center;
   }
 
   .lore-game-over__title {

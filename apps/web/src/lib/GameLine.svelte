@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { type Game, type GameStatus } from '$lib/matches';
-  import IconPlay from '$lib/icons/IconPlay.svelte';
-  import IconEdit from '$lib/icons/IconEdit.svelte';
-  import IconTrash from '$lib/icons/IconTrash.svelte';
+  import IconClock from '$lib/icons/IconClock.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
+  import IconPlay from '$lib/icons/IconPlay.svelte';
+  import IconSparkle from '$lib/icons/IconSparkle.svelte';
+  import IconTrash from '$lib/icons/IconTrash.svelte';
+  import { type Game, type GameStatus } from '$lib/matches';
 
   type Props = {
     game: Game;
@@ -23,6 +24,8 @@
     onDeleteGame: (index: number) => void;
     onEditStart?: () => void;
     onEditDone: () => void;
+    onShowEvents?: (index: number) => void;
+    onAnalyse?: (index: number) => void;ø
   };
 
   let {
@@ -38,8 +41,8 @@
     isDeleting,
     onGameChange,
     onDeleteGame,
-    onEditStart,
-    onEditDone,
+    onShowEvents,
+    onAnalyse,
   }: Props = $props();
 
   function gameWinnerId(g: Game): string | undefined {
@@ -101,6 +104,30 @@
 
   <div class="game-line__actions">
   
+    {#if onShowEvents}
+      <button
+        type="button"
+        class="btn btn--icon game-line__events-btn"
+        onclick={() => onShowEvents(index)}
+        aria-label="View game {index + 1} events"
+        title="View events"
+      >
+        <IconClock size={18} className="game-line__icon icon-clock" />
+        <span class="game-line__icon-label">Events</span>
+      </button>
+    {/if}
+    {#if onAnalyse}
+      <button
+        type="button"
+        class="btn btn--icon game-line__analyse-btn"
+        onclick={() => onAnalyse(index)}
+        aria-label="Analyse game {index + 1} with AI"
+        title="Analyse with AI"
+      >
+        <IconSparkle size={18} className="game-line__icon icon-sparkle" />
+        <span class="game-line__icon-label">Analyse</span>
+      </button>
+    {/if}
     {#if !gameWinnerId(game)}
       <a
         href="/matches/{matchId}/lore?game={index}"

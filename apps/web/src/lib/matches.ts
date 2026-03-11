@@ -43,6 +43,23 @@ export type DeckColor = (typeof DECK_COLOR_OPTIONS)[number];
 
 export type GameStatus = 'in_progress' | 'done';
 
+/** Game event type (must match API GameEventType enum). */
+export const GameEventType = {
+  Start: 'start',
+  End: 'end',
+  LoreIncreased: 'lore_increased',
+  LoreDecreased: 'lore_decreased',
+} as const;
+
+export type GameEventTypeValue = (typeof GameEventType)[keyof typeof GameEventType];
+
+/** Game event for tracking start, end, and lore changes (syncs to API). */
+export interface GameEvent {
+  type: GameEventTypeValue;
+  timestamp: Date | string;
+  player?: string;
+}
+
 export interface Game {
   p1Lore?: number;
   p2Lore?: number;
@@ -50,4 +67,6 @@ export interface Game {
   winner?: string;
   /** Player ID who started the game (went first). */
   starter?: string;
+  /** Events (start, end, lore_increased, lore_decreased) for this game. */
+  events?: GameEvent[];
 }

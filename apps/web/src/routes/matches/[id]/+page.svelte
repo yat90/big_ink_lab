@@ -4,12 +4,21 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { type Game, type GameStatus, STAGE_OPTIONS } from '$lib/matches';
+  import type { Deck } from '$lib/decks';
+  import {
+    AnalysePromptBuilder,
+    AnalyseMatchPromptBuilder,
+    formatDeckListForPrompt,
+    type GameSummaryForPrompt,
+  } from '$lib/analyse-prompt';
   import GameLine from '$lib/GameLine.svelte';
+  import GameAnalysePopup from '$lib/GameAnalysePopup.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
   import MatchCardEdit from '$lib/MatchCardEdit.svelte';
   import IconEdit from '$lib/icons/IconEdit.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
+  import IconSparkle from '$lib/icons/IconSparkle.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type DeckRef = { _id: string; name: string };
@@ -34,6 +43,8 @@
   let match = $state<Match | null>(null);
   let players = $state<Player[]>([]);
   let decks = $state<{ _id: string; name: string }[]>([]);
+  /** Full deck data (with cards) for match decks, keyed by deck id. */
+  let deckDetails = $state<Record<string, Deck>>({});
   let loading = $state(true);
   let saving = $state(false);
   let error = $state('');
@@ -43,6 +54,12 @@
   let deletingGameIndex = $state<number | null>(null);
   /** Index of game to delete; when set, show "really delete?" modal. */
   let gameToDeleteIndex = $state<number | null>(null);
+  /** Index of game whose events popup is open; null when closed. */
+  let eventsPopupGameIndex = $state<number | null>(null);
+  /** Index of game whose analyse popup is open; null when closed. */
+  let analysePopupGameIndex = $state<number | null>(null);
+  /** When true, the match-level analyse popup is open. */
+  let analyseMatchPopupOpen = $state(false);
   /** When true, all game lines show edit UI (Starter/Winner). */
   let editingGames = $state(false);
   /** Match card (players, deck colors, decks) in edit mode. */
@@ -120,6 +137,133 @@
     }
   }
 
+  /** Event type label for display. */
+  function eventTypeLabel(type: string): string {
+    if (type === 'lore_increased') return 'Lore +';
+    if (type === 'lore_decreased') return 'Lore −';
+    if (type === 'start') return 'Start';
+    if (type === 'end') return 'End';
+    if (type === 'lore_update') return 'Lore change';
+    return type;
+  }
+
+  /** Events for a game at index, formatted for the popup (sorted by time). */
+  function getGameEventsForPopup(
+    gameIndex: number
+  ): Array<{ type: string; time: string; playerLabel: string }> {
+    const g = match?.games?.[gameIndex];
+    const events = g?.events ?? [];
+    const p1Name = match ? displayPlayerName(match.p1, 'Player 1') : 'Player 1';
+    const p2Name = match ? displayPlayerName(match.p2, 'Player 2') : 'Player 2';
+    const withTs = events.map((e) => {
+      const ts =
+        typeof e.timestamp === 'string'
+          ? e.timestamp
+          : ((e.timestamp as Date)?.toISOString?.() ?? '');
+      const time = ts
+        ? new Date(ts).toLocaleTimeString(undefined, {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          })
+        : '–';
+      const playerLabel =
+        e.player === p1Id ? p1Name : e.player === p2Id ? p2Name : e.player ? 'Player' : '–';
+      const t =
+        typeof e.timestamp === 'string'
+          ? new Date(e.timestamp).getTime()
+          : ((e.timestamp as Date)?.getTime?.() ?? 0);
+      return { type: e.type, time, playerLabel, t };
+    });
+    withTs.sort((a, b) => a.t - b.t);
+    return withTs.map(({ type, time, playerLabel }) => ({ type, time, playerLabel }));
+  }
+
+  /** Build a text prompt describing the game for pasting into an AI agent. */
+  function getAnalysePromptForGame(gameIndex: number): string {
+    if (!match) return '';
+    const g = match.games?.[gameIndex];
+    const p1Name = displayPlayerName(match.p1, 'Player 1');
+    const p2Name = displayPlayerName(match.p2, 'Player 2');
+    let winner = '–';
+    if (g?.winner != null) {
+      const wid =
+        typeof g.winner === 'object' && g.winner !== null
+          ? (g.winner as { _id?: string })._id
+          : g.winner;
+      winner = wid === p1Id ? p1Name : wid === p2Id ? p2Name : 'Winner';
+    }
+    const events = getGameEventsForPopup(gameIndex).map((e) => ({
+      time: e.time,
+      typeLabel: eventTypeLabel(e.type),
+      playerLabel: e.playerLabel,
+    }));
+    return AnalysePromptBuilder.createGamePrompt({
+      stage: match.stage ?? '–',
+      tournamentName: match.tournamentName ?? '–',
+      round: match.round ?? '–',
+      p1Name,
+      p2Name,
+      p1DeckList: getDeckList(match.p1Deck),
+      p2DeckList: getDeckList(match.p2Deck),
+      gameIndex,
+      p1Lore: g?.p1Lore ?? '–',
+      p2Lore: g?.p2Lore ?? '–',
+      winner,
+      events,
+    });
+  }
+
+  /** Build a text prompt for the full match (all games) for pasting into an AI agent. */
+  function getAnalyseMatchPrompt(): string {
+    if (!match?.games?.length) return '';
+    const p1Name = displayPlayerName(match.p1, 'Player 1');
+    const p2Name = displayPlayerName(match.p2, 'Player 2');
+    const p1Wins = gamesWon(match, p1Id ?? '');
+    const p2Wins = gamesWon(match, p2Id ?? '');
+    const matchWinnerText =
+      p1Wins > p2Wins ? `${p1Name} wins ${p1Wins}–${p2Wins}` : p2Wins > p1Wins ? `${p2Name} wins ${p2Wins}–${p1Wins}` : undefined;
+
+    const games: GameSummaryForPrompt[] = match.games.map((g, i) => {
+      let winner = '–';
+      if (g.winner != null) {
+        const wid =
+          typeof g.winner === 'object' && g.winner !== null
+            ? (g.winner as { _id?: string })._id
+            : g.winner;
+        winner = wid === p1Id ? p1Name : wid === p2Id ? p2Name : 'Winner';
+      }
+      return {
+        gameIndex: i,
+        p1Lore: g.p1Lore ?? '–',
+        p2Lore: g.p2Lore ?? '–',
+        winner,
+        events: getGameEventsForPopup(i).map((e) => ({
+          time: e.time,
+          typeLabel: eventTypeLabel(e.type),
+          playerLabel: e.playerLabel,
+        })),
+      };
+    });
+
+    return AnalyseMatchPromptBuilder.createMatchPrompt({
+      stage: match.stage ?? '–',
+      tournamentName: match.tournamentName ?? '–',
+      round: match.round ?? '–',
+      p1Name,
+      p2Name,
+      p1DeckList: getDeckList(match.p1Deck),
+      p2DeckList: getDeckList(match.p2Deck),
+      games,
+      matchWinner: matchWinnerText,
+    });
+  }
+
+  /** Returns deck name and card list (for analyse prompt). Uses deckDetails when loaded. */
+  function getDeckList(deck: DeckRef | string | undefined): string {
+    return formatDeckListForPrompt(deck, getDeckId(deck), deckDetails, getDeckDisplayName);
+  }
+
   function getDeckDisplayName(deck: DeckRef | string | undefined): string {
     if (!deck || typeof deck === 'string') return '—';
     return deck.name ?? '—';
@@ -178,6 +322,22 @@
         decks = Array.isArray(list)
           ? list.map((d: { _id: string; name: string }) => ({ _id: d._id, name: d.name }))
           : [];
+      }
+      const p1Did = getDeckId(loadedMatch?.p1Deck);
+      const p2Did = getDeckId(loadedMatch?.p2Deck);
+      const deckIds = [p1Did, p2Did].filter(Boolean) as string[];
+      if (deckIds.length > 0) {
+        const deckResponses = await Promise.all(
+          deckIds.map((deckId) => fetch(`${apiUrl}/decks/${deckId}`))
+        );
+        const next: Record<string, Deck> = { ...deckDetails };
+        for (let i = 0; i < deckIds.length; i++) {
+          if (deckResponses[i].ok) {
+            const deckJson = await deckResponses[i].json();
+            next[deckIds[i]] = deckJson;
+          }
+        }
+        deckDetails = next;
       }
       if (loadedMatch) {
         const noPlayers =
@@ -773,6 +933,18 @@
             <span style="margin-left: 4px;">Edit</span>
           </button>
         {/if}
+        {#if match.games?.length}
+          <button
+            type="button"
+            class="btn btn--sm btn--icon"
+            onclick={() => { analysePopupGameIndex = null; analyseMatchPopupOpen = true; }}
+            aria-label="Analyse match with AI"
+            title="Analyse match"
+          >
+            <IconSparkle size={16} className="icon-inline" />
+            <span style="margin-left: 4px;">Analyse</span>
+          </button>
+        {/if}
       </div>
       <div class="player_header-sentinel" aria-hidden="true" use:playerHeaderSentinel></div>
     </div>
@@ -797,6 +969,8 @@
           {onGameChange}
           {onDeleteGame}
           onEditDone={() => (editingGames = false)}
+          onShowEvents={(idx) => (eventsPopupGameIndex = idx)}
+          onAnalyse={(idx) => { analyseMatchPopupOpen = false; analysePopupGameIndex = idx; }}
         />
       {/each}
     {/if}
@@ -867,6 +1041,52 @@
         </div>
       </div>
     {/if}
+
+    <!-- Game events popup -->
+    {#if eventsPopupGameIndex != null}
+      <div
+        class="delete-game-modal game-events-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="game-events-title"
+      >
+        <button
+          type="button"
+          class="delete-game-modal__backdrop"
+          aria-label="Close"
+          onclick={() => (eventsPopupGameIndex = null)}
+        ></button>
+        <div class="delete-game-modal__card card game-events-modal__card">
+          <h2 id="game-events-title" class="delete-game-modal__title">
+            Game {eventsPopupGameIndex + 1} events
+          </h2>
+          <div class="game-events-modal__list">
+            {#each getGameEventsForPopup(eventsPopupGameIndex) as evt, i (evt.time + '-' + i)}
+              <div class="game-events-modal__row">
+                <span class="game-events-modal__time">{evt.time}</span>
+                <span class="game-events-modal__type">{eventTypeLabel(evt.type)}</span>
+                <span class="game-events-modal__player muted">{evt.playerLabel}</span>
+              </div>
+            {:else}
+              <p class="muted game-events-modal__empty">No events yet.</p>
+            {/each}
+          </div>
+          <div class="delete-game-modal__actions row">
+            <button type="button" class="btn" onclick={() => (eventsPopupGameIndex = null)}
+              >Close</button
+            >
+          </div>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Analyse popup (single game or full match) -->
+    <GameAnalysePopup
+      open={analyseMatchPopupOpen || analysePopupGameIndex != null}
+      title={analyseMatchPopupOpen ? 'Analyse match' : (analysePopupGameIndex != null ? `Analyse game ${analysePopupGameIndex + 1}` : '')}
+      getPromptText={() => analyseMatchPopupOpen ? getAnalyseMatchPrompt() : (analysePopupGameIndex != null ? getAnalysePromptForGame(analysePopupGameIndex) : '')}
+      onClose={() => { analysePopupGameIndex = null; analyseMatchPopupOpen = false; }}
+    />
   {/if}
 </div>
 
@@ -1012,5 +1232,54 @@
 
   .btn--icon:not(:has(.icon-trash)) {
     gap: 0;
+  }
+
+  .game-events-modal__card {
+    max-width: 420px;
+  }
+
+  .game-events-modal__list {
+    max-height: 50vh;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    text-align: left;
+  }
+
+  .game-events-modal__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--glass-border);
+    font-size: 0.9rem;
+  }
+
+  .game-events-modal__row:last-child {
+    border-bottom: none;
+  }
+
+  .game-events-modal__time {
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    min-width: 5.5em;
+  }
+
+  .game-events-modal__type {
+    flex-shrink: 0;
+    font-weight: 600;
+    min-width: 6em;
+  }
+
+  .game-events-modal__player {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .game-events-modal__empty {
+    padding: 16px 0;
+    margin: 0;
+    text-align: center;
   }
 </style>
