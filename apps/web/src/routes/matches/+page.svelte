@@ -193,6 +193,7 @@
         <span class="matches-header__count muted" aria-label="Total matches">({total})</span>
       </h2>
       <div class="row" style="gap: var(--space-sm);">
+        <a href="/matches/quick" class="btn">Quick match</a>
         <a href="/matches/new" class="btn btn--primary">New match</a>
       </div>
     </div>
