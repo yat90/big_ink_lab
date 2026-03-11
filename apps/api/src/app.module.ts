@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { CoreModule } from './core/core.module';
 import { MatchesModule } from './matches/matches.module';
 import { PlayersModule } from './players/players.module';
 import { DecksModule } from './decks/decks.module';
 import { AuthModule } from './auth/auth.module';
-import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { AnalyticsModule } from './analytics/analytics.module';
+import { DEFAULT_MONGODB_URI, DEFAULT_DB_NAME } from './constants';
 
 @Module({
   imports: [
@@ -17,22 +18,18 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        uri: config.get<string>('MONGODB_URI') ?? 'mongodb://localhost:27017/big-ink-lab',
-        dbName: 'big-ink-lab',
+        uri: config.get<string>('MONGODB_URI') ?? DEFAULT_MONGODB_URI,
+        dbName: DEFAULT_DB_NAME,
       }),
     }),
+    CoreModule,
     PlayersModule,
     MatchesModule,
     DecksModule,
     AuthModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
-  ],
+  providers: [AppService],
 })
 export class AppModule {}

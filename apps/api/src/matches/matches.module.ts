@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Match, MatchSchema } from './schemas/lorcana-match.schema';
-import { Deck, DeckSchema } from '../decks/schemas/deck.schema';
+import { DecksModule } from '../decks/decks.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 import { MatchesController } from './matches.controller';
 import { MatchesService } from './matches.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Match.name, schema: MatchSchema },
-      { name: Deck.name, schema: DeckSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Match.name, schema: MatchSchema }]),
+    DecksModule,
+    AnalyticsModule,
   ],
   controllers: [MatchesController],
   providers: [MatchesService],

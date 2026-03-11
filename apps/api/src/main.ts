@@ -1,10 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { DEFAULT_PORT } from './constants';
 
-async function bootstrap() {
+/**
+ * Bootstraps the NestJS application and listens for HTTP requests.
+ */
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-  app.enableCors({ origin: true }); // configure allowed origins in production
-  const port = Number(process.env.PORT) || 3001;
+  app.enableCors({ origin: true });
+  const port = Number(process.env.PORT) || DEFAULT_PORT;
   await app.listen(port);
 }
 
