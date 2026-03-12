@@ -26,6 +26,7 @@
   );
   const isStats = $derived($page.url.pathname === '/stats');
   const isMe = $derived($page.url.pathname === '/me');
+  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
 </script>
 
 <nav class="desktop-nav" aria-label="Primary">
@@ -94,6 +95,18 @@
       <IconUser size={28} />
     </span>
     <span class="desktop-nav__link-label">Me</span>
+  </a>
+  <a
+    href="/me/statistics"
+    class="desktop-nav__link"
+    class:desktop-nav__link--active={isMyStatistics}
+    aria-current={isMyStatistics ? 'page' : undefined}
+    title="My statistics"
+  >
+    <span class="desktop-nav__link-icon" aria-hidden="true">
+      <IconBarChart size={28} />
+    </span>
+    <span class="desktop-nav__link-label">My Statistics</span>
   </a>
   <button type="button" class="desktop-nav__link" onclick={logout} title="Logout">
     <span class="desktop-nav__link-icon" aria-hidden="true">

@@ -55,6 +55,7 @@
     (() => {
       const p = $page.url.pathname;
       if (p === '/me') return 'Me';
+      if (p === '/me/statistics') return 'My statistics';
       if (p === '/players/new') return 'New player';
       if (p.startsWith('/players')) return 'Players';
       if (p === '/matches/quick') return 'Quick Match';

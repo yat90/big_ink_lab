@@ -572,164 +572,9 @@ a {
 	flex-shrink: 0;
 	margin-bottom: 4px;
 }
-
-.topbar__brand {
-	display: none;
-	align-items: center;
-	justify-content: center;
-	gap: 8px;
-	height: 64px;
-	min-width: 44px;
-	border-radius: var(--radius-sm);
-	overflow: hidden;
-	text-decoration: none;
-	color: inherit;
-	font-weight: 800;
-	font-size: 0.95rem;
-	letter-spacing: -0.02em;
-	transition: transform var(--transition);
-}
-
-.topbar__brand:hover {
-	transform: scale(1.05);
-}
-
-.topbar__sitename {
-	display: none;
-	white-space: nowrap;
-}
-@media (min-width: 640px) {
-	.topbar__brand {
-		display: inline-flex;
-	}
-	.topbar__sitename {
-		display: inline;
-	}
-}
-
-/* Mobile: single row – Matches, Statistics, Me + More (logo hidden, burger inside nav) */
-.topbar__nav {
-	display: flex;
-	flex: 1;
-	flex-wrap: nowrap;
-	min-width: 0;
-	width: 100%;
-	gap: 4px;
-}
-.topbar__nav .topbar__link,
-.topbar__nav .topbar__burger {
-	flex: 1 1 0;
-	min-width: 0;
-}
-/* Hide logo (Home), Players, Decks, Me, Logout on mobile – Matches, Quick Match, Statistics, More */
-.topbar__nav .topbar__link:nth-child(1),
-.topbar__nav .topbar__link:nth-child(5),
-.topbar__nav .topbar__link:nth-child(6),
-.topbar__nav .topbar__link:nth-child(7),
-.topbar__nav .topbar__link:nth-child(8) {
-	display: none;
-}
-@media (min-width: 640px) {
-	.topbar__nav {
-		flex: unset;
-		width: auto;
-		align-items: center;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-	.topbar__nav .topbar__link {
-		flex: 0 1 auto;
-		min-width: unset;
-	}
-	.topbar__nav .topbar__link:nth-child(1),
-	.topbar__nav .topbar__link:nth-child(5),
-	.topbar__nav .topbar__link:nth-child(6),
-	.topbar__nav .topbar__link:nth-child(7),
-	.topbar__nav .topbar__link:nth-child(8) {
-		display: flex;
-	}
-}
-
-/* Mobile: “More” menu trigger – same style as nav items (icon + label) */
-.topbar__burger {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 2px;
-	min-height: 48px;
-	min-width: 0;
-	padding: 8px 4px;
-	margin: 0;
-	background: transparent;
-	border: none;
-	border-radius: var(--radius-sm);
-	color: var(--muted);
-	cursor: pointer;
-	-webkit-tap-highlight-color: transparent;
-	touch-action: manipulation;
-	transition: background var(--transition), color var(--transition);
-}
-.topbar__burger:hover {
-	color: var(--fg);
-	background: var(--glass-bg-strong);
-}
-.topbar__burger-icon {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	gap: 5px;
-	width: 22px;
-	height: 22px;
-}
-.topbar__burger-label {
-	font-size: 0.6rem;
-	line-height: 1.1;
-	font-weight: 600;
-}
-.topbar__burger[aria-expanded="true"] .topbar__burger-line:first-child {
-	transform: translateY(8px) rotate(45deg);
-}
-.topbar__burger[aria-expanded="true"] .topbar__burger-line:nth-child(2) {
-	opacity: 0;
-}
-.topbar__burger[aria-expanded="true"] .topbar__burger-line:last-child {
-	transform: translateY(-8px) rotate(-45deg);
-}
-@media (min-width: 640px) {
-	.topbar {
-		display: flex;
-		grid-template-columns: unset;
-	}
-	.topbar__burger {
-		display: none;
-	}
-}
-
-.topbar__burger-line {
-	display: block;
-	width: 22px;
-	height: 2px;
-	background: currentColor;
-	border-radius: 1px;
-	transition: transform var(--transition), opacity var(--transition);
-}
-
-.topbar__backdrop {
-	position: fixed;
-	inset: 0;
-	z-index: 15;
-	background: rgba(0, 0, 0, 0.5);
-	backdrop-filter: blur(2px);
-	-webkit-backdrop-filter: blur(2px);
-	animation: topbar-backdrop-in 0.2s var(--ease);
-}
-@keyframes topbar-backdrop-in {
-	from { opacity: 0; }
-	to { opacity: 1; }
-}
-
+ 
+ 
+ 
 /* Mobile: fullscreen overlay menu */
 .topbar__drawer {
 	position: fixed;
@@ -887,19 +732,6 @@ a {
 	width: 100%;
 	height: 100%;
 }
-.topbar__link-icon .topbar__brand-logo {
-	width: 24px;
-	height: 24px;
-	object-fit: contain;
-}
-/* Mobile: bigger logo in first nav item */
-@media (max-width: 639px) {
-	.topbar__nav .topbar__link:first-child .topbar__link-icon,
-	.topbar__nav .topbar__link:first-child .topbar__link-icon .topbar__brand-logo {
-		width: 36px;
-		height: 36px;
-	}
-}
 .topbar__link-label {
 	font-size: 0.7rem;
 	line-height: 1.2;
@@ -983,40 +815,6 @@ a {
 	-webkit-touch-callout: none;
 	border-radius: 18px;
 	padding: 0px;
-}
-.navitem {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	min-height: 64px;
-	border-radius: var(--radius-full);
-	text-decoration: none;
-	background: transparent;
-	border: 1px solid transparent;
-	color: var(--muted);
-	font-weight: 600;
-	font-size: 1.2rem;
-	transition:
-		color var(--transition),
-		background var(--transition),
-		border-color var(--transition);
-}
-
-.navitem:hover {
-	color: var(--fg);
-	background: var(--glass-bg-strong);
-}
-
-.navitem--active {
-	background: var(--ink);
-	color: white;
-	border-color: transparent;
-	box-shadow: 0 4px 14px var(--ink-glow);
-}
-
-.navitem--active:hover {
-	background: var(--ink-hover);
-	color: white;
 }
 
 .page {
@@ -1179,19 +977,6 @@ a {
 	margin: 0;
 }
 
-.match-meta-row {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-@media (min-width: 768px) {
-	.match-meta-row {
-		flex-direction: row;
-		flex-wrap: wrap;
-		gap: 24px;
-	}
-}
-
 .card {
 	background: var(--glass-bg);
 	backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
@@ -1243,12 +1028,6 @@ a {
 	font-size: 0.95rem;
 	font-weight: 500;
 	line-height: 1.4;
-}
-
-.card__sub--lead {
-	font-size: 1.35rem;
-	font-weight: 600;
-	letter-spacing: -0.01em;
 }
 
 .stack {
@@ -1829,40 +1608,4 @@ a[class*="playercard"]:active {
 	padding: 8px 14px;
 	margin: -8px -14px;
 	border-radius: var(--radius);
-}
-
-
-
-/* Flex helper classes */
-
-.flex-row-wrap {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--space-md);
-
-    justify-content: flex-start;
-    align-items: stretch;
-}
-.justify-start {
-	justify-content: flex-start;
-}
-.justify-end {
-	justify-content: flex-end;
-}
-.justify-center {
-	justify-content: center;
-}
-.justify-between {
-	justify-content: space-between;
-}
-.justify-around {
-	justify-content: space-around;
-}
-.justify-evenly {
-	justify-content: space-evenly;
-}
-.flex-column {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-md);
 }

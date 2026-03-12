@@ -32,6 +32,7 @@
     $page.url.pathname === '/players' || $page.url.pathname.startsWith('/players/')
   );
   const isMe = $derived($page.url.pathname === '/me');
+  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
 
   $effect(() => {
     if (!open) return;
@@ -138,6 +139,18 @@
         <IconUser size={24} />
       </span>
       Me
+    </a>
+    <a
+      href="/me/statistics"
+      class="mobile-nav__drawer-link mobile-nav__drawer-link--bottom"
+      class:mobile-nav__drawer-link--active={isMyStatistics}
+      aria-current={isMyStatistics ? 'page' : undefined}
+      onclick={closeMenu}
+    >
+      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+        <IconBarChart size={24} />
+      </span>
+      My Statistics
     </a>
     <button
       type="button"

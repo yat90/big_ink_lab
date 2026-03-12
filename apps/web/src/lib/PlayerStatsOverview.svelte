@@ -172,6 +172,8 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
+    min-width: 0;
+    width: 100%;
   }
 
   .player-stats-overview__section-title {
@@ -199,7 +201,8 @@
   .player-stats-overview__matchup-card {
     width: 100%;
     min-width: 0;
-    overflow: hidden;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .player-stats-overview__match-stats {

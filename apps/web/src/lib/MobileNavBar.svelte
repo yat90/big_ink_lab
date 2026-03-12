@@ -21,6 +21,7 @@
   );
   const isQuickMatch = $derived($page.url.pathname === '/matches/quick');
   const isStats = $derived($page.url.pathname === '/stats');
+  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
 
   function openQuickMatchConfirm() {
     showQuickMatchConfirm = true;
@@ -60,15 +61,15 @@
         <span class="mobile-nav__item-label">Matches</span>
       </a>
       <a
-        href="/stats"
+        href="/me/statistics"
         class="mobile-nav__item"
-        class:mobile-nav__item--active={isStats}
-        aria-current={isStats ? 'page' : undefined}
+        class:mobile-nav__item--active={isMyStatistics}
+        aria-current={isMyStatistics ? 'page' : undefined}
       >
         <span class="mobile-nav__item-icon" aria-hidden="true">
           <IconBarChart size={24} />
         </span>
-        <span class="mobile-nav__item-label">Statistics</span>
+        <span class="mobile-nav__item-label">My Stats</span>
       </a>
       <button
         type="button"
