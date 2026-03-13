@@ -1,13 +1,38 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { Match } from './schemas/lorcana-match.schema';
 import { MatchesService } from './matches.service';
+import { AuthService } from '../auth/auth.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { GlobalMatchStats } from '../analytics/interfaces/analytics-response.interface';
 import { FindMatchesQueryDto } from './dto/find-matches-query.dto';
 import { StatsQueryDto } from './dto/stats-query.dto';
 import { PaginatedResponse, createPaginatedResponse } from '../common/dto/paginated-response.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { JwtPayload } from '../auth/jwt.strategy';
 import { DEFAULT_MATCHES_PAGE_SIZE } from '../constants';
+
+function toPlayerId(p: unknown): string | null {
+  if (p == null) return null;
+  if (typeof p === 'string') return p;
+  if (typeof p === 'object' && p !== null && '_id' in p) {
+    const id = (p as { _id: unknown })._id;
+    return id != null ? String(id) : null;
+  }
+  return String(p);
+}
 
 /** Controller for match CRUD, global stats, and tournament names. */
 @Controller('matches')
@@ -15,6 +40,7 @@ import { DEFAULT_MATCHES_PAGE_SIZE } from '../constants';
 export class MatchesController {
   constructor(
     private readonly matchesService: MatchesService,
+    private readonly authService: AuthService,
     private readonly analyticsService: AnalyticsService,
   ) {}
 
@@ -54,16 +80,45 @@ export class MatchesController {
     return this.matchesService.create(dto);
   }
 
-  /** Updates an existing match by id. */
+  /** Updates an existing match by id. Only participants (p1 or p2) may update. */
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: Partial<Match>): Promise<Match | null> {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: Partial<Match>,
+    @Req() req: Request & { user?: JwtPayload },
+  ): Promise<Match | null> {
+    await this.ensureUserIsParticipant(id, req.user?.sub);
     return this.matchesService.update(id, dto);
   }
 
-  /** Deletes a match by id. */
+  /** Deletes a match by id. Only participants (p1 or p2) may delete. */
   @Delete(':id')
-  async remove(@Param('id') id: string): Promise<{ deleted: true }> {
+  async remove(
+    @Param('id') id: string,
+    @Req() req: Request & { user?: JwtPayload },
+  ): Promise<{ deleted: true }> {
+    await this.ensureUserIsParticipant(id, req.user?.sub);
     await this.matchesService.remove(id);
     return { deleted: true };
+  }
+
+  /** Throws ForbiddenException if the current user is not p1 or p2 of the match. */
+  private async ensureUserIsParticipant(matchId: string, userId: string | undefined): Promise<void> {
+    if (!userId) {
+      throw new ForbiddenException('Only match participants can edit this match.');
+    }
+    const myPlayerId = await this.authService.getPlayerId(userId);
+    if (!myPlayerId) {
+      throw new ForbiddenException('Only match participants can edit this match.');
+    }
+    const match = await this.matchesService.findOne(matchId);
+    if (!match) {
+      throw new ForbiddenException('Only match participants can edit this match.');
+    }
+    const p1Id = toPlayerId(match.p1);
+    const p2Id = toPlayerId(match.p2);
+    if (myPlayerId !== p1Id && myPlayerId !== p2Id) {
+      throw new ForbiddenException('Only match participants can edit this match.');
+    }
   }
 }

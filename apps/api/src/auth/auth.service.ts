@@ -116,6 +116,18 @@ export class AuthService {
     return this.toAuthResponse(user);
   }
 
+  /** Returns the current user's linked player id, or null if none. */
+  async getPlayerId(userId: string): Promise<string | null> {
+    const user = await this.userModel
+      .findById(userId)
+      .select('player')
+      .lean()
+      .exec();
+    if (!user?.player) return null;
+    const ref = (user as { player: Types.ObjectId }).player;
+    return ref instanceof Types.ObjectId ? ref.toString() : String(ref);
+  }
+
   async me(userId: string): Promise<{ user: PublicUser; player: MePlayer | null }> {
     const user = await this.userModel
       .findById(userId)

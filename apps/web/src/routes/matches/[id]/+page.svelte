@@ -64,6 +64,8 @@
   let editingGames = $state(false);
   /** Match card (players, deck colors, decks) in edit mode. */
   let editingMatchCard = $state(false);
+  /** True while loading players/decks for edit mode (avoids duplicate fetches). */
+  let loadingEditData = $state(false);
   let showDeleteMatchPrompt = $state(false);
   let updatingDeckColor = $state(false);
   let updatingDeck = $state<'p1' | 'p2' | null>(null);
@@ -107,6 +109,10 @@
     })
   );
   const isQuickMatch = $derived(!p1Id && !p2Id);
+  /** Current user's linked player id; set after loading /auth/me. */
+  let myPlayerId = $state<string | null>(null);
+  /** True if the current user is p1 or p2 and can edit the match. */
+  const canEditMatch = $derived(!!myPlayerId && (myPlayerId === p1Id || myPlayerId === p2Id));
   const matchWinnerId = $derived(
     match &&
       (typeof match.matchWinner === 'object' && match.matchWinner
@@ -222,7 +228,11 @@
     const p1Wins = gamesWon(match, p1Id ?? '');
     const p2Wins = gamesWon(match, p2Id ?? '');
     const matchWinnerText =
-      p1Wins > p2Wins ? `${p1Name} wins ${p1Wins}–${p2Wins}` : p2Wins > p1Wins ? `${p2Name} wins ${p2Wins}–${p1Wins}` : undefined;
+      p1Wins > p2Wins
+        ? `${p1Name} wins ${p1Wins}–${p2Wins}`
+        : p2Wins > p1Wins
+          ? `${p2Name} wins ${p2Wins}–${p1Wins}`
+          : undefined;
 
     const games: GameSummaryForPrompt[] = match.games.map((g, i) => {
       let winner = '–';
@@ -301,11 +311,14 @@
 
   onMount(async () => {
     try {
-      const [matchRes, playersRes, decksRes] = await Promise.all([
+      const [matchRes, meRes] = await Promise.all([
         fetch(`${apiUrl}/matches/${id}`),
-        fetch(`${apiUrl}/players`),
-        fetch(`${apiUrl}/decks`),
+        fetch(`${apiUrl}/auth/me`),
       ]);
+      if (meRes?.ok) {
+        const me = await meRes.json();
+        myPlayerId = me?.player?._id ?? null;
+      }
       if (!matchRes.ok) {
         error = 'Match not found';
         loading = false;
@@ -313,41 +326,19 @@
       }
       const loadedMatch = await matchRes.json();
       match = loadedMatch;
-      if (playersRes.ok) {
-        const playersJson = await playersRes.json();
-        players = Array.isArray(playersJson) ? playersJson : (playersJson?.data ?? []);
-      }
-      if (decksRes.ok) {
-        const list = await decksRes.json();
-        decks = Array.isArray(list)
-          ? list.map((d: { _id: string; name: string }) => ({ _id: d._id, name: d.name }))
-          : [];
-      }
-      const p1Did = getDeckId(loadedMatch?.p1Deck);
-      const p2Did = getDeckId(loadedMatch?.p2Deck);
-      const deckIds = [p1Did, p2Did].filter(Boolean) as string[];
-      if (deckIds.length > 0) {
-        const deckResponses = await Promise.all(
-          deckIds.map((deckId) => fetch(`${apiUrl}/decks/${deckId}`))
-        );
-        const next: Record<string, Deck> = { ...deckDetails };
-        for (let i = 0; i < deckIds.length; i++) {
-          if (deckResponses[i].ok) {
-            const deckJson = await deckResponses[i].json();
-            next[deckIds[i]] = deckJson;
-          }
-        }
-        deckDetails = next;
-      }
       if (loadedMatch) {
-        const noPlayers =
-          !(typeof loadedMatch.p1 === 'object' && loadedMatch.p1
+        const loadedP1Id =
+          typeof loadedMatch.p1 === 'object' && loadedMatch.p1
             ? loadedMatch.p1._id
-            : loadedMatch.p1) &&
-          !(typeof loadedMatch.p2 === 'object' && loadedMatch.p2
+            : loadedMatch.p1;
+        const loadedP2Id =
+          typeof loadedMatch.p2 === 'object' && loadedMatch.p2
             ? loadedMatch.p2._id
-            : loadedMatch.p2);
-        if (noPlayers && !loadedMatch.playedAt) {
+            : loadedMatch.p2;
+        const isParticipant =
+          myPlayerId && (myPlayerId === loadedP1Id || myPlayerId === loadedP2Id);
+        const noPlayers = !loadedP1Id && !loadedP2Id;
+        if (isParticipant && noPlayers && !loadedMatch.playedAt) {
           const res = await fetch(`${apiUrl}/matches/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -361,6 +352,55 @@
     } finally {
       loading = false;
     }
+  });
+
+  /** Load players and decks when entering edit mode (only if not yet loaded). */
+  $effect(() => {
+    if (!canEditMatch || !editingMatchCard || loadingEditData || players.length > 0) return;
+    loadingEditData = true;
+    (async () => {
+      try {
+        const [playersRes, decksRes] = await Promise.all([
+          fetch(`${apiUrl}/players`),
+          fetch(`${apiUrl}/decks`),
+        ]);
+        if (playersRes.ok) {
+          const playersJson = await playersRes.json();
+          players = Array.isArray(playersJson) ? playersJson : (playersJson?.data ?? []);
+        }
+        if (decksRes.ok) {
+          const list = await decksRes.json();
+          decks = Array.isArray(list)
+            ? list.map((d: { _id: string; name: string }) => ({ _id: d._id, name: d.name }))
+            : [];
+        }
+      } finally {
+        loadingEditData = false;
+      }
+    })();
+  });
+
+  /** Load full deck details when analyse popup is open (for prompt deck lists). */
+  $effect(() => {
+    const needDecks =
+      (analyseMatchPopupOpen || analysePopupGameIndex != null) && match && (p1DeckId || p2DeckId);
+    if (!needDecks) return;
+    const ids = [p1DeckId, p2DeckId].filter(Boolean) as string[];
+    const missing = ids.filter((deckId) => !deckDetails[deckId]);
+    if (missing.length === 0) return;
+    (async () => {
+      const responses = await Promise.all(
+        missing.map((deckId) => fetch(`${apiUrl}/decks/${deckId}`))
+      );
+      const next = { ...deckDetails };
+      for (let i = 0; i < missing.length; i++) {
+        if (responses[i].ok) {
+          const deckJson = await responses[i].json();
+          next[missing[i]] = deckJson;
+        }
+      }
+      deckDetails = next;
+    })();
   });
 
   async function onStageChange(stage: string) {
@@ -568,7 +608,7 @@
       const res = await fetch(`${apiUrl}/matches/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ matchWinner: winnerId || undefined }),
+        body: JSON.stringify({ matchWinner: winnerId ?? null }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -658,7 +698,7 @@
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         <div class="loading-skeleton__line"></div>
       </div>
-      <p class="muted" style="margin-top: var(--space-md);">Loading match…</p>
+      <p class="muted match-page__loading-text">Loading match…</p>
     </div>
   {:else if error && !match}
     <div class="card" role="alert">
@@ -667,10 +707,7 @@
     </div>
   {:else if match}
     <div class="card stack">
-      <div
-        class="matchcard tack"
-        style="margin: -18px -18px 0; padding: 18px 18px 12px; border-radius: var(--radius-lg) var(--radius-lg) 0 0;"
-      >
+      <div class="matchcard tack">
         <div class="matchcard__top matchcard__top--row muted">
           <span class="matchcard__top-inner">{formatDate(match.playedAt)} ·</span>
           <span class="matchcard__top-inner">{match.stage ?? '–'}</span>
@@ -681,68 +718,74 @@
             {/if}
           {/if}
 
-          <div class="matchcard__top-actions">
-            {#if editingMatchCard}
-              <button
-                type="button"
-                class="matchcard__edit-done btn btn--sm"
-                onclick={() => (editingMatchCard = false)}
-                aria-label="Done editing"
-              >
-                Done
-              </button>
-            {:else}
-              <button
-                type="button"
-                class="matchcard__edit-done btn btn--sm"
-                onclick={() => (editingMatchCard = true)}
-                aria-label="Edit match"
-              >
-                <IconEdit size={18} className="matchcard__edit-icon" />
-                Edit
-              </button>
-            {/if}
-
-            <button
-              type="button"
-              class="btn btn--danger btn--icon"
-              onclick={openDeleteMatchModal}
-              disabled={deleting}
-              aria-label="Delete match"
-              title="Delete match"
-            >
-              {#if deleting}
-                Deleting…
+          {#if canEditMatch}
+            <div class="matchcard__top-actions">
+              {#if editingMatchCard}
+                <button
+                  type="button"
+                  class="matchcard__edit-done btn btn--sm"
+                  onclick={() => (editingMatchCard = false)}
+                  aria-label="Done editing"
+                >
+                  Done
+                </button>
               {:else}
-                <IconTrash size={18} className="icon-trash" />
-                Delete
+                <button
+                  type="button"
+                  class="matchcard__edit-done btn btn--sm"
+                  onclick={() => (editingMatchCard = true)}
+                  aria-label="Edit match"
+                >
+                  <IconEdit size={18} className="matchcard__edit-icon" />
+                  Edit
+                </button>
               {/if}
-            </button>
-          </div>
+
+              <button
+                type="button"
+                class="btn btn--danger btn--icon"
+                onclick={openDeleteMatchModal}
+                disabled={deleting}
+                aria-label="Delete match"
+                title="Delete match"
+              >
+                {#if deleting}
+                  Deleting…
+                {:else}
+                  <IconTrash size={18} className="icon-trash" />
+                  Delete
+                {/if}
+              </button>
+            </div>
+          {/if}
         </div>
-        {#if editingMatchCard}
-          <MatchCardEdit
-            p1Id={p1Id ?? undefined}
-            p2Id={p2Id ?? undefined}
-            p1DeckColor={match.p1DeckColor ?? ''}
-            p2DeckColor={match.p2DeckColor ?? ''}
-            {p1DeckId}
-            {p2DeckId}
-            p1DeckDisplayName={getDeckDisplayName(match.p1Deck)}
-            p2DeckDisplayName={getDeckDisplayName(match.p2Deck)}
-            p1PlayerName={displayPlayerName(match.p1, 'Player 1')}
-            p2PlayerName={displayPlayerName(match.p2, 'Player 2')}
-            players={playersForSelect}
-            {decks}
-            {showP1DeckSelect}
-            {showP2DeckSelect}
-            {updatingPlayer}
-            {updatingDeckColor}
-            {updatingDeck}
-            {onPlayerChange}
-            {onDeckColorChange}
-            {onDeckChange}
-          />
+        {#if canEditMatch && editingMatchCard}
+          {#if loadingEditData}
+            <p class="muted match-page__edit-loading">Loading players and decks…</p>
+          {:else}
+            <MatchCardEdit
+              p1Id={p1Id ?? undefined}
+              p2Id={p2Id ?? undefined}
+              p1DeckColor={match.p1DeckColor ?? ''}
+              p2DeckColor={match.p2DeckColor ?? ''}
+              {p1DeckId}
+              {p2DeckId}
+              p1DeckDisplayName={getDeckDisplayName(match.p1Deck)}
+              p2DeckDisplayName={getDeckDisplayName(match.p2Deck)}
+              p1PlayerName={displayPlayerName(match.p1, 'Player 1')}
+              p2PlayerName={displayPlayerName(match.p2, 'Player 2')}
+              players={playersForSelect}
+              {decks}
+              {showP1DeckSelect}
+              {showP2DeckSelect}
+              {updatingPlayer}
+              {updatingDeckColor}
+              {updatingDeck}
+              {onPlayerChange}
+              {onDeckColorChange}
+              {onDeckChange}
+            />
+          {/if}
         {:else}
           <!-- Read-only match card -->
           <div class="matchcard__row">
@@ -818,7 +861,7 @@
 
             {#if match.notes}
               <div>
-                <dt class="muted" style="font-size: 0.85rem;">Notes</dt>
+                <dt class="muted match-page__dl-label">Notes</dt>
                 <dd>{match.notes}</dd>
               </div>
             {/if}
@@ -826,14 +869,13 @@
         {/if}
       </div>
 
-      <dl class="stack" style="margin-top: 12px;">
-        {#if editingMatchCard}
+      {#if canEditMatch && editingMatchCard}
+        <dl class="stack">
           <div class="dl-row">
-            <dt class="muted" style="font-size: 0.85rem;">Stage</dt>
+            <dt class="muted">Stage</dt>
             <dd>
               <select
-                class="input"
-                style="min-width: 140px;"
+                class="input match-page__input-stage"
                 value={match.stage ?? 'Casual'}
                 disabled={updatingStage}
                 onchange={(e) => onStageChange(e.currentTarget.value)}
@@ -847,12 +889,11 @@
           </div>
           {#if match.stage === 'Tournament'}
             <div class="dl-row">
-              <dt class="muted" style="font-size: 0.85rem;">Tournament</dt>
+              <dt class="muted match-page__dl-label">Tournament</dt>
               <dd>
                 <input
                   type="text"
-                  class="input"
-                  style="min-width: 160px;"
+                  class="input match-page__input-tournament"
                   value={match.tournamentName ?? ''}
                   disabled={updatingTournamentName}
                   onchange={(e) => onTournamentNameChange(e.currentTarget.value)}
@@ -862,12 +903,11 @@
               </dd>
             </div>
             <div class="dl-row">
-              <dt class="muted" style="font-size: 0.85rem;">Round</dt>
+              <dt class="muted match-page__dl-label">Round</dt>
               <dd>
                 <input
                   type="number"
-                  class="input"
-                  style="width: 4rem;"
+                  class="input match-page__input-round"
                   min="1"
                   value={match.round ?? ''}
                   disabled={updatingRound}
@@ -882,67 +922,97 @@
             </div>
           {/if}
           <div class="dl-row">
-            <dt class="muted" style="font-size: 0.85rem;">Winner</dt>
+            <dt class="muted match-page__winner-dt">
+              <IconCrown size={14} className="match-page__meta-icon" />
+              <span>Winner</span>
+            </dt>
             <dd>
-              <select
-                class="input"
-                style="min-width: 160px;"
-                value={matchWinnerId ?? ''}
-                disabled={updatingMatchWinner}
-                onchange={(e) => onMatchWinnerChange(e.currentTarget.value || undefined)}
-                aria-label="Match winner"
-              >
-                <option value="">–</option>
-                {#if p1Id}
-                  <option value={p1Id}>{displayPlayerName(match.p1, 'Player 1')}</option>
-                {/if}
-                {#if p2Id}
-                  <option value={p2Id}>{displayPlayerName(match.p2, 'Player 2')}</option>
-                {/if}
-              </select>
+              <div class="match-page__winner-block" role="group" aria-label="Match winner">
+                <div class="match-page__toggle" role="group" aria-label="Choose winner">
+                  {#if p1Id}
+                    <button
+                      type="button"
+                      class="match-page__toggle-btn"
+                      class:match-page__toggle-btn--active={matchWinnerId === p1Id}
+                      disabled={updatingMatchWinner}
+                      onclick={() => onMatchWinnerChange(p1Id)}
+                      aria-pressed={matchWinnerId === p1Id}
+                      aria-label={displayPlayerName(match.p1, 'Player 1') + ' wins'}
+                    >
+                      {displayPlayerName(match.p1, 'Player 1')}
+                    </button>
+                  {/if}
+                  <button
+                    type="button"
+                    class="match-page__toggle-btn"
+                    class:match-page__toggle-btn--active={!matchWinnerId || matchWinnerId === ''}
+                    disabled={updatingMatchWinner}
+                    onclick={() => onMatchWinnerChange(undefined)}
+                    aria-pressed={!matchWinnerId || matchWinnerId === ''}
+                    aria-label="No winner yet"
+                  >
+                    –
+                  </button>
+                  {#if p2Id}
+                    <button
+                      type="button"
+                      class="match-page__toggle-btn"
+                      class:match-page__toggle-btn--active={matchWinnerId === p2Id}
+                      disabled={updatingMatchWinner}
+                      onclick={() => onMatchWinnerChange(p2Id)}
+                      aria-pressed={matchWinnerId === p2Id}
+                      aria-label={displayPlayerName(match.p2, 'Player 2') + ' wins'}
+                    >
+                      {displayPlayerName(match.p2, 'Player 2')}
+                    </button>
+                  {/if}
+                </div>
+              </div>
             </dd>
           </div>
-        {/if}
-      </dl>
+        </dl>
+      {/if}
     </div>
 
-    <div class="stack" style="gap: 12px; margin-top: 12px;">
-      <div
-        class="row"
-        style="align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;"
-      >
-        <h3 style="margin: 0;">Games</h3>
-        {#if editingGames}
-          <button
-            type="button"
-            class="btn btn--sm"
-            onclick={() => (editingGames = false)}
-            aria-label="Done editing"
-          >
-            Done
-          </button>
-        {:else}
-          <button
-            type="button"
-            class="btn btn--sm"
-            onclick={() => (editingGames = true)}
-            aria-label="Edit starter and winner for all games"
-            title="Edit starter and winner"
-          >
-            <IconEdit size={16} className="icon-inline" />
-            <span style="margin-left: 4px;">Edit</span>
-          </button>
+    <div class="stack match-page__games-stack">
+      <div class="row match-page__games-header">
+        <h3 class="match-page__games-title">Games</h3>
+        {#if canEditMatch}
+          {#if editingGames}
+            <button
+              type="button"
+              class="btn btn--sm"
+              onclick={() => (editingGames = false)}
+              aria-label="Done editing"
+            >
+              Done
+            </button>
+          {:else}
+            <button
+              type="button"
+              class="btn btn--sm"
+              onclick={() => (editingGames = true)}
+              aria-label="Edit starter and winner for all games"
+              title="Edit starter and winner"
+            >
+              <IconEdit size={16} className="icon-inline" />
+              <span class="match-page__btn-icon-label">Edit</span>
+            </button>
+          {/if}
         {/if}
         {#if match.games?.length}
           <button
             type="button"
             class="btn btn--sm btn--icon"
-            onclick={() => { analysePopupGameIndex = null; analyseMatchPopupOpen = true; }}
+            onclick={() => {
+              analysePopupGameIndex = null;
+              analyseMatchPopupOpen = true;
+            }}
             aria-label="Analyse match with AI"
             title="Analyse match"
           >
             <IconSparkle size={16} className="icon-inline" />
-            <span style="margin-left: 4px;">Analyse</span>
+            <span class="match-page__btn-icon-label">Analyse</span>
           </button>
         {/if}
       </div>
@@ -963,20 +1033,23 @@
           p2DisplayName={displayPlayerName(match.p2, 'Player 2')}
           p1Id={p1Id ?? undefined}
           p2Id={p2Id ?? undefined}
-          isEditing={editingGames}
+          isEditing={canEditMatch && editingGames}
           isUpdating={updatingGameIndex === i}
           isDeleting={deletingGameIndex === i}
           {onGameChange}
           {onDeleteGame}
           onEditDone={() => (editingGames = false)}
           onShowEvents={(idx) => (eventsPopupGameIndex = idx)}
-          onAnalyse={(idx) => { analyseMatchPopupOpen = false; analysePopupGameIndex = idx; }}
+          onAnalyse={(idx) => {
+            analyseMatchPopupOpen = false;
+            analysePopupGameIndex = idx;
+          }}
         />
       {/each}
     {/if}
 
-    {#if match.games != null}
-      <div class="row" style="margin-top: 12px; gap: 12px; flex-wrap: wrap;">
+    {#if canEditMatch && match.games != null}
+      <div class="row match-page__add-game-row">
         <button type="button" class="btn" disabled={addingGame} onclick={onAddGame}>
           {addingGame ? 'Adding…' : '+ Add game'}
         </button>
@@ -1083,9 +1156,21 @@
     <!-- Analyse popup (single game or full match) -->
     <GameAnalysePopup
       open={analyseMatchPopupOpen || analysePopupGameIndex != null}
-      title={analyseMatchPopupOpen ? 'Analyse match' : (analysePopupGameIndex != null ? `Analyse game ${analysePopupGameIndex + 1}` : '')}
-      getPromptText={() => analyseMatchPopupOpen ? getAnalyseMatchPrompt() : (analysePopupGameIndex != null ? getAnalysePromptForGame(analysePopupGameIndex) : '')}
-      onClose={() => { analysePopupGameIndex = null; analyseMatchPopupOpen = false; }}
+      title={analyseMatchPopupOpen
+        ? 'Analyse match'
+        : analysePopupGameIndex != null
+          ? `Analyse game ${analysePopupGameIndex + 1}`
+          : ''}
+      getPromptText={() =>
+        analyseMatchPopupOpen
+          ? getAnalyseMatchPrompt()
+          : analysePopupGameIndex != null
+            ? getAnalysePromptForGame(analysePopupGameIndex)
+            : ''}
+      onClose={() => {
+        analysePopupGameIndex = null;
+        analyseMatchPopupOpen = false;
+      }}
     />
   {/if}
 </div>
@@ -1281,5 +1366,108 @@
     padding: 16px 0;
     margin: 0;
     text-align: center;
+  }
+
+  .match-page__loading-text {
+    margin-top: var(--space-md);
+  }
+
+  .match-page__edit-loading {
+    padding: 8px 0;
+  }
+
+  .match-page__dl-label {
+    font-size: 0.85rem;
+  }
+
+  .match-page__input-stage {
+    min-width: 140px;
+  }
+
+  .match-page__input-tournament {
+    min-width: 160px;
+  }
+
+  .match-page__input-round {
+    width: 4rem;
+  }
+
+  .match-page__games-stack {
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .match-page__games-header {
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .match-page__games-title {
+    margin: 0;
+  }
+
+  .match-page__btn-icon-label {
+    margin-left: 4px;
+  }
+
+  .match-page__add-game-row {
+    margin-top: 12px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .match-page__winner-dt {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+
+  .match-page__meta-icon {
+    flex-shrink: 0;
+    color: var(--muted);
+  }
+
+  .match-page__toggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--glass-bg);
+  }
+
+  .match-page__toggle-btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+    border-right: 1px solid var(--border);
+    min-width: 0;
+  }
+
+  .match-page__toggle-btn:last-child {
+    border-right: none;
+  }
+
+  .match-page__toggle-btn:hover:not(:disabled) {
+    background: var(--glass-bg-strong);
+  }
+
+  .match-page__toggle-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .match-page__toggle-btn--active {
+    background: var(--glass-bg-strong);
+    color: var(--fg);
+    font-weight: 600;
   }
 </style>

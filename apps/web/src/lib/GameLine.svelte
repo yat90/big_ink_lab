@@ -25,7 +25,7 @@
     onEditStart?: () => void;
     onEditDone: () => void;
     onShowEvents?: (index: number) => void;
-    onAnalyse?: (index: number) => void;ø
+    onAnalyse?: (index: number) => void;
   };
 
   let {
@@ -103,11 +103,10 @@
   </div>
 
   <div class="game-line__actions">
-  
     {#if onShowEvents}
       <button
         type="button"
-        class="btn btn--icon game-line__events-btn"
+        class="btn btn--primary btn--sm game-line__events-btn"
         onclick={() => onShowEvents(index)}
         aria-label="View game {index + 1} events"
         title="View events"
@@ -116,10 +115,19 @@
         <span class="game-line__icon-label">Events</span>
       </button>
     {/if}
+    {#if !gameWinnerId(game)}
+      <a
+        href="/matches/{matchId}/lore?game={index}"
+        class="btn btn--primary btn--sm game-line__continue-btn"
+      >
+        <IconPlay size={24} className="game-line__icon icon-play" />
+        <span class="game-line__icon-label">Continue</span>
+      </a>
+    {/if}
     {#if onAnalyse}
       <button
         type="button"
-        class="btn btn--icon game-line__analyse-btn"
+        class="btn btn--primary btn--sm game-line__analyse-btn"
         onclick={() => onAnalyse(index)}
         aria-label="Analyse game {index + 1} with AI"
         title="Analyse with AI"
@@ -128,84 +136,128 @@
         <span class="game-line__icon-label">Analyse</span>
       </button>
     {/if}
-    {#if !gameWinnerId(game)}
-      <a
-        href="/matches/{matchId}/lore?game={index}"
-        class="btn btn--primary game-line__continue-btn"
-      >
-        <IconPlay size={18} className="game-line__icon icon-play" />
-        <span class="game-line__icon-label">Continue</span>
-      </a>
-    {/if}
-    {#if isEditing}
-      <button
-        type="button"
-        class="btn btn--icon game-line__delete-btn"
-        disabled={isDeleting}
-        onclick={() => onDeleteGame(index)}
-        aria-label="Delete game {index + 1}"
-        title="Delete game"
-      >
-        {#if isDeleting}
-          Removing…
-        {:else}
-          <IconTrash size={18} className="game-line__icon icon-trash" />
-          <span class="game-line__icon-label">Delete</span>
-        {/if}
-      </button>
-    {/if}
   </div>
 
   {#if isEditing}
+    {@const currentStarterId =
+      typeof game.starter === 'object' && game.starter != null
+        ? (game.starter as { _id?: string })._id
+        : (game.starter ?? '')}
+    {@const currentWinnerId =
+      typeof game.winner === 'object' && game.winner != null
+        ? (game.winner as { _id?: string })._id
+        : (game.winner ?? '')}
     <div class="game-line__meta-row">
-      <label class="label" style="margin: 0; align-items: center; gap: 6px;">
-        <span class="muted" style="font-size: 0.85rem;">Starter</span>
-        <select
-          class="input"
-          style="min-width: 120px;"
-          value={typeof game.starter === 'object' && game.starter != null
-            ? (game.starter as { _id?: string })._id
-            : (game.starter ?? '')}
-          disabled={isUpdating}
-          onchange={(e) => onGameChange(index, { starter: e.currentTarget.value || undefined })}
-          aria-label="Who started this game"
-        >
-          <option value="">–</option>
+      <div class="game-line__meta-block" role="group" aria-label="Starter">
+        <div class="game-line__meta-title">
+          <IconPlay size={14} className="game-line__meta-icon" />
+          <span class="muted">Starter</span>
+        </div>
+        <div class="game-line__toggle" role="group" aria-label="Choose starter">
           {#if p1Id}
-            <option value={p1Id}>{p1DisplayName}</option>
+            <button
+              type="button"
+              class="game-line__toggle-btn"
+              class:game-line__toggle-btn--active={currentStarterId === p1Id}
+              disabled={isUpdating}
+              onclick={() => onGameChange(index, { starter: p1Id })}
+              aria-pressed={currentStarterId === p1Id}
+              aria-label={p1DisplayName + ' started'}
+            >
+              {p1DisplayName}
+            </button>
           {/if}
+          <button
+            type="button"
+            class="game-line__toggle-btn"
+            class:game-line__toggle-btn--active={currentStarterId === ''}
+            disabled={isUpdating}
+            onclick={() => onGameChange(index, { starter: undefined })}
+            aria-pressed={currentStarterId === ''}
+            aria-label="No starter"
+          >
+            –
+          </button>
           {#if p2Id}
-            <option value={p2Id}>{p2DisplayName}</option>
+            <button
+              type="button"
+              class="game-line__toggle-btn"
+              class:game-line__toggle-btn--active={currentStarterId === p2Id}
+              disabled={isUpdating}
+              onclick={() => onGameChange(index, { starter: p2Id })}
+              aria-pressed={currentStarterId === p2Id}
+              aria-label={p2DisplayName + ' started'}
+            >
+              {p2DisplayName}
+            </button>
           {/if}
-        </select>
-      </label>
-      <label class="label" style="margin: 0; align-items: center; gap: 6px;">
-        <span class="muted" style="font-size: 0.85rem;">Winner</span>
-        <select
-          class="input"
-          style="min-width: 140px;"
-          value={typeof game.winner === 'object' && game.winner != null
-            ? (game.winner as { _id?: string })._id
-            : (game.winner ?? '')}
-          disabled={isUpdating}
-          onchange={(e) => {
-            const winnerId = e.currentTarget.value || undefined;
-            onGameChange(index, {
-              winner: winnerId,
-              status: (winnerId ? 'done' : 'in_progress') as GameStatus,
-            });
-          }}
-        >
-          <option value="">–</option>
+        </div>
+      </div>
+      <div class="game-line__meta-block" role="group" aria-label="Winner">
+        <div class="game-line__meta-title">
+          <IconCrown size={14} className="game-line__meta-icon" />
+          <span class="muted">Winner</span>
+        </div>
+        <div class="game-line__toggle" role="group" aria-label="Choose winner">
           {#if p1Id}
-            <option value={p1Id}>{p1DisplayName}</option>
+            <button
+              type="button"
+              class="game-line__toggle-btn"
+              class:game-line__toggle-btn--active={currentWinnerId === p1Id}
+              disabled={isUpdating}
+              onclick={() => onGameChange(index, { winner: p1Id, status: 'done' as GameStatus })}
+              aria-pressed={currentWinnerId === p1Id}
+              aria-label={p1DisplayName + ' wins'}
+            >
+              {p1DisplayName}
+            </button>
           {/if}
+          <button
+            type="button"
+            class="game-line__toggle-btn"
+            class:game-line__toggle-btn--active={currentWinnerId === ''}
+            disabled={isUpdating}
+            onclick={() =>
+              onGameChange(index, { winner: undefined, status: 'in_progress' as GameStatus })}
+            aria-pressed={currentWinnerId === ''}
+            aria-label="No winner yet"
+          >
+            –
+          </button>
           {#if p2Id}
-            <option value={p2Id}>{p2DisplayName}</option>
+            <button
+              type="button"
+              class="game-line__toggle-btn"
+              class:game-line__toggle-btn--active={currentWinnerId === p2Id}
+              disabled={isUpdating}
+              onclick={() => onGameChange(index, { winner: p2Id, status: 'done' as GameStatus })}
+              aria-pressed={currentWinnerId === p2Id}
+              aria-label={p2DisplayName + ' wins'}
+            >
+              {p2DisplayName}
+            </button>
           {/if}
-        </select>
-      </label>
+        </div>
+      </div>
     </div>
+  {/if}
+
+  {#if isEditing}
+    <button
+      type="button"
+      class="btn btn--icon game-line__delete-btn"
+      disabled={isDeleting}
+      onclick={() => onDeleteGame(index)}
+      aria-label="Delete game {index + 1}"
+      title="Delete game"
+    >
+      {#if isDeleting}
+        Removing…
+      {:else}
+        <IconTrash size={18} className="game-line__icon icon-trash" />
+        <span class="game-line__icon-label">Delete</span>
+      {/if}
+    </button>
   {/if}
 </div>
 
@@ -216,7 +268,7 @@
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     border-radius: var(--radius);
-    padding: 8px 8px 24px 8px;
+    padding: 14px 8px 8px 8px;
     margin-top: 14px;
   }
   .game-line__counter {
@@ -228,28 +280,26 @@
   }
   .game-line__counter-number {
     font-size: 1.2rem;
-    font-weight: 700;
+    font-weight: 800;
     color: var(--fg);
     position: absolute;
-    transform: translate(-45%, -25%);
+    transform: translate(-40%, -20%);
     border-radius: var(--radius);
     border: 1px solid var(--glass-border);
-    background: rgba(168, 85, 247, 0.95);
+    background: rgba(155, 65, 239, 0.8);
     opacity: 1;
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    padding: 4px 14px;
+    padding: 2px 8px;
   }
   .game-line__actions {
-    /* position: absolute; */
-    /* right: 8px;
-    bottom: -24px; */
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: space-between;
+    width: 100%;
     gap: 8px;
-    justify-content: flex-end;
-    padding:0;
+    padding: 0;
     margin: 0;
   }
   .game-line__actions .btn,
@@ -257,35 +307,19 @@
     font-size: 0.85rem;
     padding: 2px 20px;
     color: var(--fg);
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+    background: rgba(0, 0, 0, 0.1);
     border-radius: var(--radius);
     opacity: 1;
   }
-  .game-line__delete-btn,
-  .game-line__actions .game-line__delete-btn {
-    height: 24px;
-    padding-top: 0;
-    padding-bottom: 0;
+  .game-line__delete-btn {
+    margin-top: 24px;
     color: var(--danger);
     opacity: 1;
+    width: 100%;
   }
-  .game-line__delete-btn:hover,
-  .game-line__actions .game-line__delete-btn:hover {
+  .game-line__delete-btn:hover {
     background-color: var(--danger);
     color: white;
-  }
-  .game-line__edit-btn,
-  .game-line__actions .game-line__edit-btn {
-    transition:
-      background 0.15s ease,
-      border-color 0.15s ease;
-  }
-  .game-line__edit-btn:hover,
-  .game-line__actions .game-line__edit-btn:hover {
-    background: var(--glass-bg-strong);
-    border-color: var(--border-strong);
   }
 
   .game-line__icon-label {
@@ -293,8 +327,84 @@
     padding-left: 6px;
   }
 
-  .game-line__icon-label:hover {
-    text-decoration: underline;
+
+  .game-line__meta-icon {
+    flex-shrink: 0;
+    color: var(--muted);
+  }
+
+  .game-line__meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 16px 24px;
+    margin-top: 12px;
+  }
+
+  .game-line__meta-block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .game-line__meta-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+
+  .game-line__toggle {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--glass-bg);
+  }
+
+  .game-line__toggle-btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border: none;
+    background: transparent;
+    color: var(--fg);
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+    border-right: 1px solid var(--border);
+    min-width: 0;
+  }
+
+  .game-line__toggle-btn:last-child {
+    border-right: none;
+  }
+
+  .game-line__toggle-btn:hover:not(:disabled) {
+    background: var(--glass-bg-strong);
+  }
+
+  .game-line__toggle-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .game-line__toggle-btn--active {
+    background: var(--glass-bg-strong);
+    color: var(--fg);
+    font-weight: 600;
+  }
+
+  @media (max-width: 639px) {
+    .game-line__actions .game-line__icon-label {
+      display: none;
+    }
+    .game-line__actions .btn--icon {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
   }
 
   .game-line__body {

@@ -129,6 +129,12 @@
   const p2Id = $derived(
     match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2)
   );
+  /** Current user's linked player id; set after loading /auth/me. */
+  let myPlayerId = $state<string | null>(null);
+  /** True if the current user is p1 or p2 and can edit (track lore, sync, add games). */
+  const canEditMatch = $derived(
+    !!myPlayerId && (myPlayerId === p1Id || myPlayerId === p2Id)
+  );
   const gameOverWinnerName = $derived(
     gameOverWinnerId === p1Id ? p1Name : gameOverWinnerId === p2Id ? p2Name : 'Winner'
   );
@@ -297,7 +303,7 @@
   }
 
   async function syncLocalDrafts() {
-    if (syncInFlight || saving || !match?.games?.length) return;
+    if (!canEditMatch || syncInFlight || saving || !match?.games?.length) return;
     const draftsToSync = readLocalDrafts();
     if (Object.keys(draftsToSync).length === 0) {
       hasPendingLocalSync = false;
@@ -374,13 +380,20 @@
     let disposed = false;
     const loadMatch = async () => {
       try {
-        const res = await fetch(`${apiUrl}/matches/${id}`);
-        if (!res.ok) {
+        const [matchRes, meRes] = await Promise.all([
+          fetch(`${apiUrl}/matches/${id}`),
+          fetch(`${apiUrl}/auth/me`),
+        ]);
+        if (meRes?.ok) {
+          const me = await meRes.json();
+          myPlayerId = me?.player?._id ?? null;
+        }
+        if (!matchRes.ok) {
           error = 'Match not found';
           loading = false;
           return;
         }
-        match = await res.json();
+        match = await matchRes.json();
         const maxIndex = (match?.games?.length ?? 1) - 1;
         if (gameIndex > maxIndex) gameIndex = maxIndex;
       } catch {
@@ -403,7 +416,7 @@
 
     refreshPendingLocalSyncFlag();
     syncInterval = setInterval(() => {
-      void syncLocalDrafts();
+      if (canEditMatch) void syncLocalDrafts();
     }, SCORE_SYNC_INTERVAL_MS);
     pruneChangesInterval = setInterval(() => {
       clearChangesAfterInactivity();
@@ -439,9 +452,9 @@
     }
   });
 
-  /** Show "choose starter" prompt when current game has no starter and not dismissed. Skip in quick play (no players). */
+  /** Show "choose starter" prompt when current game has no starter and not dismissed. Skip in quick play (no players). Only for participants. */
   $effect(() => {
-    if (!match || games.length === 0) return;
+    if (!match || games.length === 0 || !canEditMatch) return;
     if (!p1Id || !p2Id) return; /* quick play: skip */
     const cur = games[gameIndex];
     const hasStarter =
@@ -457,7 +470,7 @@
   }
 
   async function chooseStarter(playerId: string) {
-    if (starterSaving) return;
+    if (!canEditMatch || starterSaving) return;
     starter = playerId;
     addStartEventToCurrentDraft(playerId);
     starterSaving = true;
@@ -522,7 +535,7 @@
   }
 
   async function saveAsDone() {
-    if (!match?.games?.length) return;
+    if (!canEditMatch || !match?.games?.length) return;
     const cur = match.games[gameIndex];
     if (cur?.status === 'done') return;
     const draft = readLocalDrafts()[String(gameIndex)];
@@ -593,6 +606,7 @@
   }
 
   async function goToNextGame() {
+    if (!canEditMatch) return;
     showGameOverPrompt = false;
     gameOverWinnerId = null;
     // save match with a new game
@@ -627,6 +641,7 @@
   }
 
   async function closeGameAndLeave() {
+    if (!canEditMatch) return;
     showCloseGamePrompt = false;
     persistCurrentGameLocally();
     await save();
@@ -634,7 +649,7 @@
   }
 
   async function save() {
-    if (!match?.games?.length) return;
+    if (!canEditMatch || !match?.games?.length) return;
     const clampedP1 = Math.min(LORE_MAX, Math.max(0, p1Lore));
     const clampedP2 = Math.min(LORE_MAX, Math.max(0, p2Lore));
     saving = true;
@@ -704,7 +719,7 @@
         >
           <IconClock size={20} />
         </button>
-        {#if hasPendingLocalSync}
+        {#if canEditMatch && hasPendingLocalSync}
           <span
             class="lore-sync-badge"
             title="Offline-safe: score saved locally, synced every minute."
@@ -721,12 +736,14 @@
         class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p2Id}
       >
         <div class="lore-panel__center">
-          <button
-            type="button"
-            class="lore-panel__btn lore-panel__btn--dec"
-            onclick={decP2}
-            aria-label="Decrease Lore">−</button
-          >
+          {#if canEditMatch}
+            <button
+              type="button"
+              class="lore-panel__btn lore-panel__btn--dec"
+              onclick={decP2}
+              aria-label="Decrease Lore">−</button
+            >
+          {/if}
           <span class="lore-panel__value">
             <span
               class="lore-panel__delta"
@@ -736,29 +753,33 @@
             >
               {#if p2DeltaLastSecond !== 0}
                 {p2DeltaLastSecond > 0 ? '+' : ''}{p2DeltaLastSecond}
-              {/if}
+            {/if}
             </span>
             <span class="lore-panel__number">{p2Lore}</span>
           </span>
-          <button
-            type="button"
-            class="lore-panel__btn lore-panel__btn--inc"
-            onclick={incP2}
-            aria-label="Increase Lore">+</button
-          >
+          {#if canEditMatch}
+            <button
+              type="button"
+              class="lore-panel__btn lore-panel__btn--inc"
+              onclick={incP2}
+              aria-label="Increase Lore">+</button
+            >
+          {/if}
         </div>
       </div>
 
       <div class="lore-divider">
         <span class="lore-divider__name lore-divider__name--p2" aria-hidden="true">{p2Name}</span>
-        <button
-          type="button"
-          class="lore-divider__menu"
-          aria-label="Menu"
-          onclick={() => (showCloseGamePrompt = true)}
-        >
-          <IconMenu size={18} />
-        </button>
+        {#if canEditMatch}
+          <button
+            type="button"
+            class="lore-divider__menu"
+            aria-label="Menu"
+            onclick={() => (showCloseGamePrompt = true)}
+          >
+            <IconMenu size={18} />
+          </button>
+        {/if}
         <span class="lore-divider__name lore-divider__name--p1" aria-hidden="true">{p1Name}</span>
       </div>
 
@@ -768,12 +789,14 @@
         class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p1Id}
       >
         <div class="lore-panel__center">
-          <button
-            type="button"
-            class="lore-panel__btn lore-panel__btn--dec"
-            onclick={decP1}
-            aria-label="Decrease Lore">−</button
-          >
+          {#if canEditMatch}
+            <button
+              type="button"
+              class="lore-panel__btn lore-panel__btn--dec"
+              onclick={decP1}
+              aria-label="Decrease Lore">−</button
+            >
+          {/if}
           <span class="lore-panel__value">
             <span
               class="lore-panel__delta"
@@ -783,16 +806,18 @@
             >
               {#if p1DeltaLastSecond !== 0}
                 {p1DeltaLastSecond > 0 ? '+' : ''}{p1DeltaLastSecond}
-              {/if}
+            {/if}
             </span>
             <span class="lore-panel__number">{p1Lore}</span>
           </span>
-          <button
-            type="button"
-            class="lore-panel__btn lore-panel__btn--inc"
-            onclick={incP1}
-            aria-label="Increase Lore">+</button
-          >
+          {#if canEditMatch}
+            <button
+              type="button"
+              class="lore-panel__btn lore-panel__btn--inc"
+              onclick={incP1}
+              aria-label="Increase Lore">+</button
+            >
+          {/if}
         </div>
       </div>
     </div>
@@ -922,7 +947,9 @@
         <p class="lore-modal__text muted">Go to the next game?</p>
         <div class="lore-modal__actions">
           <a href="/matches/{id}" class="btn btn--primary">Back to match</a>
-          <button type="button" class="btn" onclick={() => goToNextGame()}>Next Game</button>
+          {#if canEditMatch}
+            <button type="button" class="btn" onclick={() => goToNextGame()}>Next Game</button>
+          {/if}
         </div>
       </div>
     </div>
