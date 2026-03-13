@@ -2,13 +2,14 @@
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-
-  type Player = { _id: string; name: string; team: string };
+  import { getAuthToken } from '$lib/auth';
+  import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
 
   let deckList = $state('');
   let notes = $state('');
   let playerId = $state('');
-  let players = $state<Player[]>([]);
+  let selectedPlayerLabel = $state('—');
+  let playerPickerOpen = $state(false);
   let loading = $state(false);
   let error = $state('');
 
@@ -16,12 +17,28 @@
 
   onMount(async () => {
     try {
-      const res = await fetch(`${apiUrl}/players`);
-      if (res.ok) players = await res.json();
+      const res = await fetch(`${apiUrl}/auth/me`, {
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
+      });
+      if (res.ok) {
+        const me = await res.json();
+        if (me?.player?._id) {
+          playerId = me.player._id;
+          const p = me.player as { name?: string; team?: string };
+          selectedPlayerLabel = p.name
+            ? `${p.name}${p.team ? ` · ${p.team}` : ''}`
+            : '—';
+        }
+      }
     } catch {
       /* ignore */
     }
   });
+
+  function onPlayerSelect(id: string, player?: { name: string; team?: string }) {
+    playerId = id;
+    selectedPlayerLabel = player ? `${player.name}${player.team ? ` · ${player.team}` : ''}` : '—';
+  }
 
   async function onSubmit(e: Event) {
     e.preventDefault();
@@ -74,15 +91,24 @@
           style="resize: vertical; font-family: ui-monospace, monospace;"
         ></textarea>
       </label>
-      <label class="label" for="player">
+      <div class="label">
         Player <span class="hint">(optional)</span>
-        <select id="player" class="input" bind:value={playerId} aria-label="Player">
-          <option value="">—</option>
-          {#each players as p}
-            <option value={p._id}>{p.name}{#if p.team} · {p.team}{/if}</option>
-          {/each}
-        </select>
-      </label>
+        <button
+          type="button"
+          class="input deck-new__player-btn"
+          onclick={() => (playerPickerOpen = true)}
+          aria-label="Choose player"
+        >
+          <span class="deck-new__player-label">{selectedPlayerLabel}</span>
+        </button>
+      </div>
+      <PlayerPickerModal
+        bind:open={playerPickerOpen}
+        title="Select player"
+        forLabel="this deck"
+        onSelect={onPlayerSelect}
+        onClose={() => (playerPickerOpen = false)}
+      />
       <label class="label" for="notes">
         Notes <span class="hint">(optional)</span>
         <textarea
@@ -108,3 +134,13 @@
     </form>
   </div>
 </div>
+
+<style>
+  .deck-new__player-btn {
+    text-align: left;
+    cursor: pointer;
+  }
+  .deck-new__player-label {
+    color: var(--fg);
+  }
+</style>

@@ -10,6 +10,11 @@ export class FindMatchesQueryDto extends PaginationQueryDto {
   @IsMongoId()
   player?: string;
 
+  /** Filter matches where this deck was used (p1Deck or p2Deck). */
+  @IsOptional()
+  @IsMongoId()
+  deck?: string;
+
   /** Filter matches played on or after this date (ISO date string, e.g. YYYY-MM-DD). */
   @IsOptional()
   @IsDateString()

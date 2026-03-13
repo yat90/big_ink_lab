@@ -24,6 +24,14 @@ export class Deck extends Document {
 
   @Prop({ type: Types.ObjectId, ref: 'Player', required: false })
   player?: Types.ObjectId;
+
+  /** Set on create and every update. */
+  @Prop({ type: Date, default: () => new Date() })
+  lastEditedAt: Date;
+
+  /** User who last created or updated the deck. */
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
+  lastEditedBy?: Types.ObjectId;
 }
 
 export const DeckSchema = SchemaFactory.createForClass(Deck);

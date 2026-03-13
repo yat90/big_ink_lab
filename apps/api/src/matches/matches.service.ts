@@ -15,7 +15,7 @@ export class MatchesService {
   ) {}
 
   async findAll(query: FindMatchesQueryDto = {}): Promise<{ data: Match[]; total: number }> {
-    const { stage, sort = 'newest', page = 1, limit = 10, fromDate, toDate, player } = query;
+    const { stage, sort = 'newest', page = 1, limit = 10, fromDate, toDate, player, deck } = query;
     const filter: Record<string, unknown> = {};
 
     if (stage && Object.values(Stage).includes(stage as Stage)) {
@@ -25,6 +25,17 @@ export class MatchesService {
     if (player?.trim()) {
       const playerId = player.trim();
       filter.$or = [{ p1: playerId }, { p2: playerId }];
+    }
+
+    if (deck?.trim()) {
+      const deckId = deck.trim();
+      const deckCondition = { $or: [{ p1Deck: deckId }, { p2Deck: deckId }] };
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, deckCondition];
+        delete filter.$or;
+      } else {
+        Object.assign(filter, deckCondition);
+      }
     }
 
     const dateFilter: { $gte?: Date; $lte?: Date } = {};

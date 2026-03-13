@@ -8,10 +8,13 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { PaginatedResponse, createPaginatedResponse } from '../common/dto/paginated-response.dto';
 import { DEFAULT_PAGE_SIZE } from '../constants';
+import type { JwtPayload } from '../auth/jwt.strategy';
 import { FindDecksQueryDto } from './dto/find-decks-query.dto';
 import { Deck } from './schemas/deck.schema';
 import { DecksService } from './decks.service';
@@ -55,14 +58,23 @@ export class DecksController {
 
   /** Creates a new deck from deck list and optional metadata. */
   @Post()
-  async create(@Body() dto: Partial<Deck>): Promise<Deck> {
-    return this.decksService.create(dto);
+  async create(
+    @Req() req: Request & { user?: JwtPayload },
+    @Body() dto: Partial<Deck>,
+  ): Promise<Deck> {
+    const userId = req.user?.sub;
+    return this.decksService.create(dto, userId);
   }
 
   /** Updates an existing deck by id. */
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: Partial<Deck>): Promise<Deck> {
-    const deck = await this.decksService.update(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Req() req: Request & { user?: JwtPayload },
+    @Body() dto: Partial<Deck>,
+  ): Promise<Deck> {
+    const userId = req.user?.sub;
+    const deck = await this.decksService.update(id, dto, userId);
     if (!deck) throw new NotFoundException('Deck not found');
     return deck;
   }

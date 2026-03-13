@@ -3,6 +3,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  server: {
+    port: Number(process.env.VITE_PORT) || 5173,
+  },
   plugins: [
     sveltekit(),
     VitePWA({

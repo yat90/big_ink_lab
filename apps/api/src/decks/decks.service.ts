@@ -69,7 +69,12 @@ export class DecksService {
   }
 
   async findOne(id: string): Promise<Deck | null> {
-    return this.deckModel.findById(id).populate('player').populate('cards.card').exec();
+    return this.deckModel
+      .findById(id)
+      .populate('player')
+      .populate('cards.card')
+      .populate('lastEditedBy', 'name email')
+      .exec();
   }
 
   /** Find or create a Card document from Lorcast data. */
@@ -94,7 +99,7 @@ export class DecksService {
     return card;
   }
 
-  async create(dto: Partial<Deck>): Promise<Deck> {
+  async create(dto: Partial<Deck>, userId?: string): Promise<Deck> {
     if (dto.deckList == null) {
       throw new BadRequestException('Deck list is required');
     }
@@ -118,6 +123,7 @@ export class DecksService {
         ? dto.name.trim()
         : generateLorcanaDeckName();
 
+    const now = new Date();
     const created = await this.deckModel.create({
       name,
       deckList: dto.deckList ?? '',
@@ -125,19 +131,24 @@ export class DecksService {
       notes: dto.notes ?? '',
       player: dto.player ?? undefined,
       cards: cardRefs,
+      lastEditedAt: now,
+      lastEditedBy: userId && Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : undefined,
     });
 
-    await created.populate(['player', 'cards.card']);
+    await created.populate(['player', 'cards.card', 'lastEditedBy']);
     return created as unknown as Deck;
   }
 
-  async update(id: string, dto: Partial<Deck>): Promise<Deck | null> {
+  async update(id: string, dto: Partial<Deck>, userId?: string): Promise<Deck | null> {
     const update: Partial<Deck> = {
       name: dto.name ?? '',
       deckList: dto.deckList ?? '',
       deckColor: dto.deckColor ?? undefined,
       notes: dto.notes ?? '',
       player: dto.player ?? undefined,
+      lastEditedAt: new Date(),
+      lastEditedBy:
+        userId && Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : undefined,
     };
 
     if (dto.deckList != null) {
@@ -157,6 +168,7 @@ export class DecksService {
       .findByIdAndUpdate(id, { $set: update }, { new: true })
       .populate('player')
       .populate('cards.card')
+      .populate('lastEditedBy', 'name email')
       .exec();
     return updated ?? null;
   }
