@@ -61,13 +61,17 @@ export class AnalyticsService {
     if (deckIds.size === 0) return [];
     const decks = await this.deckModel
       .find({ _id: { $in: Array.from(deckIds).map((id) => new Types.ObjectId(id)) } })
-      .select('name')
+      .select('name deckColor')
       .lean()
       .exec();
-    return decks.map((d) => ({
-      _id: (d._id as Types.ObjectId).toString(),
-      name: (d as { name: string }).name ?? '',
-    }));
+    return decks.map((d) => {
+      const doc = d as { name: string; deckColor?: string };
+      return {
+        _id: (d._id as Types.ObjectId).toString(),
+        name: doc.name ?? '',
+        deckColor: doc.deckColor ?? null,
+      };
+    });
   }
 
   private buildDateFilter(fromDate?: string, toDate?: string): Record<string, unknown> {
@@ -103,12 +107,13 @@ export class AnalyticsService {
 
     const matches = await this.matchModel
       .find(matchFilter)
-      .select('p1 p2 matchWinner p1DeckColor p2DeckColor games stage')
+      .select('p1 p2 matchWinner p1Deck p2Deck p1DeckColor p2DeckColor games stage')
       .sort({ playedAt: -1 })
       .limit(query.limit ?? PLAY_STYLE_DEFAULT_LIMIT)
       .lean()
       .exec();
 
+    const deckIdGames: Record<string, number> = {};
     const deckColorAgg: Record<
       string,
       {
@@ -163,6 +168,17 @@ export class AnalyticsService {
         const starterId = (game.starter as Types.ObjectId)?.toString?.();
         const won = gameWinnerId === playerId;
         const lore = isP1 ? game.p1Lore : game.p2Lore;
+        const myDeckRef = isP1 ? match.p1Deck : match.p2Deck;
+        let myDeckId: string | undefined;
+        if (myDeckRef) {
+          myDeckId =
+            typeof myDeckRef === 'string'
+              ? myDeckRef
+              : (myDeckRef as Types.ObjectId).toString?.() ?? String(myDeckRef);
+        }
+        if (myDeckId) {
+          deckIdGames[myDeckId] = (deckIdGames[myDeckId] ?? 0) + 1;
+        }
 
         if (myDeck) {
           deckColorAgg[myDeck].gamesPlayed += 1;
@@ -239,6 +255,18 @@ export class AnalyticsService {
       deckColorStats
         .filter((d) => d.gamesPlayed >= MIN_GAMES_FOR_BEST_PERFORMING)
         .sort((a, b) => b.gameWinRate - a.gameWinRate)[0]?.deckColor ?? null;
+    const topDeckEntry = Object.entries(deckIdGames).sort((a, b) => b[1] - a[1])[0];
+    const topDeckId = topDeckEntry?.[0];
+    const topDeckGames = topDeckEntry?.[1] ?? 0;
+    const topDeckMeta =
+      topDeckId && topDeckGames > 0 ? decksUsed.find((d) => d._id === topDeckId) : undefined;
+    const preferredDeck = topDeckMeta
+      ? {
+          _id: topDeckMeta._id,
+          name: topDeckMeta.name,
+          deckColor: topDeckMeta.deckColor ?? null,
+        }
+      : null;
 
     return {
       playerId,
@@ -258,6 +286,7 @@ export class AnalyticsService {
           ? Math.round((totalLoreWhenLosing / countLoreWhenLosing) * 10) / 10
           : null,
       preferredDeckColor,
+      preferredDeck,
       bestPerformingDeckColor,
       decksUsed,
     };

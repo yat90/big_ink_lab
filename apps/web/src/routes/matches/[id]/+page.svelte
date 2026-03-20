@@ -4,11 +4,17 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { type Game, type GameStatus, STAGE_OPTIONS } from '$lib/matches';
+  import type {
+    LorcanaMatch,
+    LorcanaMatchDeckRef,
+    LorcanaMatchPlayer,
+  } from '$lib/lorcana-match';
   import type { Deck } from '$lib/decks';
   import {
     AnalysePromptBuilder,
     AnalyseMatchPromptBuilder,
     formatDeckListForPrompt,
+    type DeckRef as AnalyseDeckRef,
     type GameSummaryForPrompt,
   } from '$lib/analyse-prompt';
   import GameLine from '$lib/GameLine.svelte';
@@ -22,25 +28,9 @@
 
   type Player = { _id: string; name: string; team: string };
   type DeckRef = { _id: string; name: string };
-  type Match = {
-    _id: string;
-    stage?: string;
-    tournamentName?: string;
-    playedAt?: string;
-    round?: number;
-    p1?: Player | string;
-    p2?: Player | string;
-    p1DeckColor?: string;
-    p2DeckColor?: string;
-    p1Deck?: DeckRef | string;
-    p2Deck?: DeckRef | string;
-    matchWinner?: Player | string;
-    games?: Game[];
-    notes?: string;
-  };
 
   const id = $page.params.id;
-  let match = $state<Match | null>(null);
+  let match = $state<LorcanaMatch | null>(null);
   let players = $state<Player[]>([]);
   let decks = $state<{ _id: string; name: string }[]>([]);
   /** Full deck data (with cards) for match decks, keyed by deck id. */
@@ -86,13 +76,13 @@
   const p2Id = $derived(
     match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2)
   );
-  function getPlayerTeam(p: Player | string | undefined): string {
+  function getPlayerTeam(p: Player | LorcanaMatchPlayer | string | undefined): string {
     if (!p || typeof p === 'string') return '';
     return (p.team ?? '').trim();
   }
   const showP1DeckSelect = $derived(!!p1Id && getPlayerTeam(match?.p1) === PREFERRED_TEAM);
   const showP2DeckSelect = $derived(!!p2Id && getPlayerTeam(match?.p2) === PREFERRED_TEAM);
-  function getDeckId(d: DeckRef | string | undefined): string {
+  function getDeckId(d: DeckRef | LorcanaMatchDeckRef | string | undefined): string {
     if (!d) return '';
     return typeof d === 'string' ? d : d._id;
   }
@@ -120,14 +110,14 @@
         : match.matchWinner)
   );
 
-  function playerName(p: Player | string | undefined): string {
+  function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
     if (!p) return '–';
     return typeof p === 'string' ? p : (p.name ?? '–');
   }
 
   /** Display name for UI: "Player 1" / "Player 2" when no player selected. */
   function displayPlayerName(
-    p: Player | string | undefined,
+    p: Player | LorcanaMatchPlayer | string | undefined,
     fallback: 'Player 1' | 'Player 2'
   ): string {
     const name = playerName(p);
@@ -270,11 +260,16 @@
   }
 
   /** Returns deck name and card list (for analyse prompt). Uses deckDetails when loaded. */
-  function getDeckList(deck: DeckRef | string | undefined): string {
-    return formatDeckListForPrompt(deck, getDeckId(deck), deckDetails, getDeckDisplayName);
+  function getDeckList(deck: DeckRef | LorcanaMatchDeckRef | string | undefined): string {
+    return formatDeckListForPrompt(
+      deck as AnalyseDeckRef | string | undefined,
+      getDeckId(deck),
+      deckDetails,
+      (d) => getDeckDisplayName(d as DeckRef | LorcanaMatchDeckRef | string | undefined),
+    );
   }
 
-  function getDeckDisplayName(deck: DeckRef | string | undefined): string {
+  function getDeckDisplayName(deck: DeckRef | LorcanaMatchDeckRef | string | undefined): string {
     if (!deck || typeof deck === 'string') return '—';
     return deck.name ?? '—';
   }
@@ -287,7 +282,7 @@
       : String(w);
   }
 
-  function gamesWon(m: Match, playerId: string): number {
+  function gamesWon(m: LorcanaMatch, playerId: string): number {
     const games = m.games ?? [];
     return games.filter((g) => gameWinnerId(g) === playerId).length;
   }

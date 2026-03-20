@@ -4,6 +4,15 @@ import { Stage } from '../../matches/schemas/stages.enum';
 export interface DeckUsed {
   _id: string;
   name: string;
+  /** Saved ink colors on the deck document, when set. */
+  deckColor?: string | null;
+}
+
+/** Deck the player used in the most completed games (match p1Deck/p2Deck), when known. */
+export interface PreferredDeckSummary {
+  _id: string;
+  name: string;
+  deckColor: string | null;
 }
 
 /** Per-deck-color stats in play-style summary. */
@@ -37,6 +46,8 @@ export interface PlayStyleSummary {
   avgLoreWhenWinning: number | null;
   avgLoreWhenLosing: number | null;
   preferredDeckColor: string | null;
+  /** Most-played deck by game count when matches record deck refs; null if only colors are known. */
+  preferredDeck: PreferredDeckSummary | null;
   bestPerformingDeckColor: string | null;
   decksUsed: DeckUsed[];
 }

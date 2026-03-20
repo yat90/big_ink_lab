@@ -92,6 +92,15 @@
               {#each DECK_COLOR_OPTIONS as oppDeck}
                 {@const cell = matrix?.[myDeck]?.[oppDeck]}
                 {@const winPct = cell ? Math.round((cell.won / cell.played) * 100) : null}
+                {@const unit = analysisMode === 'games' ? 'games' : 'matches'}
+                {@const countLabel =
+                  analysisMode === 'games'
+                    ? cell?.played != null && cell.played === 1
+                      ? 'game'
+                      : 'games'
+                    : cell?.played != null && cell.played === 1
+                      ? 'match'
+                      : 'matches'}
                 <td
                   class="matchup-matrix__cell"
                   class:matchup-matrix__cell--tinted={winPct != null}
@@ -100,9 +109,13 @@
                   {#if cell}
                     <span
                       class="matchup-matrix__cell-inner"
-                      title="{myDeck} vs {oppDeck}: {cell.won} wins, {cell.played - cell.won} losses"
+                      title="{myDeck} vs {oppDeck}: {winPct}% — {cell.won} of {cell.played} {unit} won"
                     >
-                      {winPct}%
+                      <span class="matchup-matrix__cell-pct">{winPct}%</span>
+                      <span class="matchup-matrix__cell-count">
+                        <span class="matchup-matrix__cell-count-num">{cell.played}</span>
+                        <span class="matchup-matrix__cell-count-label">{countLabel}</span>
+                      </span>
                     </span>
                   {:else}
                     <span class="muted" aria-hidden="true">–</span>
@@ -245,7 +258,39 @@
   }
 
   .matchup-matrix__cell-inner {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1rem;
+    line-height: 1.15;
     text-align: center;
+  }
+
+  .matchup-matrix__cell-pct {
+    font-weight: 700;
+  }
+
+  .matchup-matrix__cell-count {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.2em;
+    font-size: 0.62em;
+    font-weight: 500;
+    opacity: 0.62;
+    line-height: 1.2;
+  }
+
+  .matchup-matrix__cell-count-num {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  .matchup-matrix__cell-count-label {
+    font-weight: 500;
+    text-transform: lowercase;
+    letter-spacing: 0.01em;
   }
 </style>

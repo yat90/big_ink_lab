@@ -7,7 +7,6 @@
   import StatsOverviewTab from './StatsOverviewTab.svelte';
   import StatsMatchupsTab from './StatsMatchupsTab.svelte';
   import StatsPlayStyleTab from './StatsPlayStyleTab.svelte';
-  import StatsResultsTab from './StatsResultsTab.svelte';
 
   type MePlayer = { _id: string; name: string; team: string };
 
@@ -17,8 +16,7 @@
   const TABS: { id: TabId; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'matchups', label: 'Matchups' },
-    { id: 'play-style', label: 'Play style' },
-    { id: 'results', label: 'Results' },
+    { id: 'play-style', label: 'Play style' }, 
   ];
 
   let player = $state<MePlayer | null>(null);
@@ -44,7 +42,7 @@
       if (deckId?.trim()) params.set('deckId', deckId.trim());
       const statsRes = await fetch(
         `${apiUrl}/players/${player._id}${params.toString() ? `?${params}` : ''}`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (statsRes.ok) {
         const withStats = await statsRes.json();
@@ -104,45 +102,20 @@
     }
   }
 
-  function formatDate(s: string | undefined): string {
-    if (!s) return '–';
-    try {
-      return new Date(s).toLocaleDateString(undefined, { dateStyle: 'medium' });
-    } catch {
-      return s;
-    }
-  }
-
-  function formatRelativeDate(s: string | undefined): string {
-    if (!s) return '–';
-    try {
-      const d = new Date(s);
-      const now = new Date();
-      const diffMs = now.getTime() - d.getTime();
-      const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-      if (diffDays === 0) return 'Today';
-      if (diffDays === 1) return 'Yesterday';
-      if (diffDays < 7) return `${diffDays} days ago`;
-      if (diffDays < 14) return 'Last week';
-      return formatDate(s);
-    } catch {
-      return s ?? '–';
-    }
-  }
-
   const recentFormSummary = $derived(
     (() => {
       const list = matchAnalysis?.recentForm ?? [];
       if (list.length === 0) return null;
       const wins = list.filter((m) => m.matchWon).length;
       return { wins, losses: list.length - wins, total: list.length };
-    })(),
+    })()
   );
 
   const hasAnyStats = $derived(
-    (playerStats != null) ||
-    (playStyle != null && (playStyle.matchesAnalyzed > 0 || playStyle.gamesAnalyzed > 0)) ||
-    (matchAnalysis != null && (matchAnalysis.totals.matchesPlayed > 0 || (matchAnalysis.recentForm?.length ?? 0) > 0)),
+    playerStats != null ||
+      (playStyle != null && (playStyle.matchesAnalyzed > 0 || playStyle.gamesAnalyzed > 0)) ||
+      (matchAnalysis != null &&
+        (matchAnalysis.totals.matchesPlayed > 0 || (matchAnalysis.recentForm?.length ?? 0) > 0))
   );
 
   onMount(loadStatistics);
@@ -156,7 +129,8 @@
   <div class="card stack stats-page__card">
     <h1 class="stats-page__title">My statistics</h1>
     <p class="stats-page__intro muted">
-      Your performance, play style, and matchup data in one place. Use the tabs to switch between categories.
+      Your performance, play style, and matchup data in one place. Use the tabs to switch between
+      categories.
     </p>
 
     {#if loading}
@@ -167,82 +141,81 @@
       <p class="muted">Link a player to your account to see statistics.</p>
     {:else if !hasAnyStats}
       <p class="muted">No match data yet. Play some matches to see your statistics here.</p>
-    {:else}
-      <div class="stats-page__tabs" role="tablist" aria-label="Statistics categories">
-        {#each TABS as tab (tab.id)}
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            aria-controls="panel-{tab.id}"
-            id="tab-{tab.id}"
-            class="stats-page__tab"
-            class:stats-page__tab--active={activeTab === tab.id}
-            onclick={() => (activeTab = tab.id)}
-          >
-            {tab.label}
-          </button>
-        {/each}
-      </div>
-
-      <div class="stats-page__panels">
-        <!-- Overview -->
-        <div
-          id="panel-overview"
-          role="tabpanel"
-          aria-labelledby="tab-overview"
-          class="stats-page__panel"
-          hidden={activeTab !== 'overview'}
-        >
-        <StatsOverviewTab playerStats={playerStats} playStyle={playStyle} matchAnalysis={matchAnalysis} recentFormSummary={recentFormSummary} />
-          
-        </div>
-
-        <!-- Matchups -->
-        <div
-          id="panel-matchups"
-          role="tabpanel"
-          aria-labelledby="tab-matchups"
-          class="stats-page__panel"
-          hidden={activeTab !== 'matchups'}
-        >
-          <StatsMatchupsTab
-            playerStats={playerStats}
-            decksUsed={decksUsed}
-            bind:filterDeckId
-            bind:selectedMatrixMode={selectedMatrixMode}
-            bind:analyticsMatrixMode={analyticsMatrixMode}
-            matchAnalysis={matchAnalysis}
-            onDeckFilterChange={onDeckFilterChange}
-            onMatrixModeChange={(mode) => loadPlayerStats(mode, filterDeckId || undefined)}
-          />
-        </div>
-
-        <!-- Play style -->
-        <div
-          id="panel-play-style"
-          role="tabpanel"
-          aria-labelledby="tab-play-style"
-          class="stats-page__panel"
-          hidden={activeTab !== 'play-style'}
-        >
-         <StatsPlayStyleTab playStyle={playStyle} />
-        </div>
-
-        <!-- Results -->
-        <div
-          id="panel-results"
-          role="tabpanel"
-          aria-labelledby="tab-results"
-          class="stats-page__panel"
-          hidden={activeTab !== 'results'}
-        >
-         <StatsResultsTab matchAnalysis={matchAnalysis} formatRelativeDate={formatRelativeDate} />
-        </div>
-      </div>
     {/if}
   </div>
 </div>
+
+{#if !loading && !error && player && hasAnyStats}
+  <div class="page stats-page">
+    <div class="stats-page__tabs" role="tablist" aria-label="Statistics categories">
+      {#each TABS as tab (tab.id)}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === tab.id}
+          aria-controls="panel-{tab.id}"
+          id="tab-{tab.id}"
+          class="stats-page__tab"
+          class:stats-page__tab--active={activeTab === tab.id}
+          onclick={() => (activeTab = tab.id)}
+        >
+          {tab.label}
+        </button>
+      {/each}
+    </div>
+  </div>
+
+  <div class="stats-page__panels">
+    <!-- Overview -->
+    <div
+      id="panel-overview"
+      role="tabpanel"
+      aria-labelledby="tab-overview"
+      class="stats-page__panel"
+      hidden={activeTab !== 'overview'}
+    >
+      <StatsOverviewTab
+        {playerStats}
+        {playStyle}
+        {matchAnalysis}
+        {recentFormSummary}
+        playerId={player._id}
+      />
+    </div>
+
+    <!-- Matchups -->
+    <div
+      id="panel-matchups"
+      role="tabpanel"
+      aria-labelledby="tab-matchups"
+      class="stats-page__panel"
+      hidden={activeTab !== 'matchups'}
+    >
+      <StatsMatchupsTab
+        {playerStats}
+        {decksUsed}
+        bind:filterDeckId
+        bind:selectedMatrixMode
+        bind:analyticsMatrixMode
+        {matchAnalysis}
+        {onDeckFilterChange}
+        onMatrixModeChange={(mode) => loadPlayerStats(mode, filterDeckId || undefined)}
+      />
+    </div>
+
+    <!-- Play style -->
+    <div
+      id="panel-play-style"
+      role="tabpanel"
+      aria-labelledby="tab-play-style"
+      class="stats-page__panel"
+      hidden={activeTab !== 'play-style'}
+    >
+      <StatsPlayStyleTab {playStyle} />
+    </div>
+    
+  </div>
+{/if}
 
 <style>
   .stats-page {
@@ -275,6 +248,10 @@
   }
 
   .stats-page__tabs {
+    margin-top: var(--space-md);
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-xs);
@@ -286,13 +263,15 @@
   .stats-page__tab {
     padding: var(--space-sm) var(--space-md);
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 1.05rem;
     color: var(--muted);
     background: none;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    transition: color 0.15s ease, background 0.15s ease;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
   }
 
   .stats-page__tab:hover {
@@ -314,242 +293,119 @@
   .stats-page__panel {
     min-width: 0;
     max-width: 100%;
+    margin-bottom: var(--space-lg);
+
   }
 
   .stats-page__panel[hidden] {
     display: none;
   }
 
-  /* Tab content styles – :global so they apply inside tab components */
-  .stats-page :global(.stats-page__glance) {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-lg);
-    padding: var(--space-md) 0;
-    margin-bottom: var(--space-lg);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .stats-page :global(.stats-page__glance-item) {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-  }
-
-  .stats-page :global(.stats-page__glance-value) {
-    font-size: 1.35rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-
-  .stats-page :global(.stats-page__glance-label) {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-
-  .stats-page :global(.stats-page__glance-item--form .stats-page__glance-value) {
-    display: flex;
-    gap: var(--space-sm);
-  }
-
-  .stats-page :global(.stats-page__form-wins) {
-    color: var(--color-success, #16a34a);
-    font-weight: 700;
-  }
-
-  .stats-page :global(.stats-page__form-losses) {
-    color: var(--color-error, #dc2626);
-    font-weight: 700;
-  }
-
-  .stats-page :global(.stats-page__subtitle) {
-    margin: 0 0 var(--space-sm) 0;
-    font-size: 1.05rem;
-    font-weight: 700;
-  }
-
-  .stats-page :global(.stats-page__hint) {
-    margin: 0 0 var(--space-sm) 0;
-    font-size: 0.875rem;
-  }
-
-  .stats-page :global(.stats-page__row) {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-md) var(--space-lg);
-  }
-
-  .stats-page :global(.stats-page__item) {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-  }
-
-  .stats-page :global(.stats-page__value) {
-    font-size: 1.25rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-
-  .stats-page :global(.stats-page__label) {
-    font-size: 0.85rem;
-    font-weight: 500;
-  }
-
-  .stats-page :global(.stats-page__block) {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-    margin-top: var(--space-md);
-  }
-
-  .stats-page :global(.stats-page__overview-block) {
-    margin-top: var(--space-md);
-  }
-
-  .stats-page :global(.stats-page__description) {
-    margin: 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
-  }
-
-  .stats-page :global(.stats-page__delta) {
-    margin: 0;
-    font-size: 0.9rem;
-  }
-
-  .stats-page :global(.stats-page__matrix-block) {
-    margin-top: var(--space-lg);
+  /* Shared with tab components (scoped markup lives in child Svelte files). */
+  :global(.stats-page__block) {
     min-width: 0;
+  }
+
+  :global(.stats-page__block:has(.stats-page__table--wide)) {
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .stats-page :global(.stats-page__table) {
-    width: 100%;
-    max-width: 24rem;
-    border-collapse: collapse;
+  :global(.stats-page__block + .stats-page__block) {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border);
+  }
+
+  :global(.stats-page__subtitle) {
+    margin: 0 0 var(--space-md) 0;
     font-size: 0.95rem;
-  }
-
-  .stats-page :global(.stats-page__table--wide) {
-    max-width: none;
-  }
-
-  .stats-page :global(.stats-page__table th),
-  .stats-page :global(.stats-page__table td) {
-    border: 1px solid var(--border);
-    padding: var(--space-sm) var(--space-md);
-    text-align: left;
-  }
-
-  .stats-page :global(.stats-page__table thead th) {
     font-weight: 700;
-    background: var(--glass-bg-strong, rgba(0, 0, 0, 0.06));
+    letter-spacing: -0.02em;
+    color: var(--fg);
   }
 
-  .stats-page :global(.stats-page__table th:not(.stats-page__row-header)) {
-    text-align: center;
+  :global(.stats-page__hint) {
+    margin: 0 0 var(--space-md) 0;
+    font-size: 0.875rem;
+    line-height: 1.45;
   }
 
-  .stats-page :global(.stats-page__table td) {
-    text-align: center;
-    font-variant-numeric: tabular-nums;
+  :global(.stats-page__table) {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--glass-bg);
   }
 
-  .stats-page :global(.stats-page__row-header) {
-    font-weight: 600;
+  :global(.stats-page__table thead th) {
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    background: rgba(168, 85, 247, 0.09);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  :global(.stats-page__table thead th:first-child) {
     text-align: left;
   }
 
-  .stats-page :global(.stats-page__recent-list) {
-    margin: 0;
-    padding: 0;
-    list-style: none;
+  :global(.stats-page__table--wide thead th:not(:first-child)) {
+    text-align: right;
   }
 
-  .stats-page :global(.stats-page__recent-item) {
+  :global(.stats-page__table:not(.stats-page__table--wide) thead th:not(:first-child)) {
+    text-align: center;
+  }
+
+  :global(.stats-page__table tbody th),
+  :global(.stats-page__table tbody td) {
+    padding: var(--space-sm) var(--space-md);
     border-bottom: 1px solid var(--border);
-    font-size: 0.9rem;
+    vertical-align: middle;
   }
 
-  .stats-page :global(.stats-page__recent-item:last-child) {
+  :global(.stats-page__table tbody tr:last-child th),
+  :global(.stats-page__table tbody tr:last-child td) {
     border-bottom: none;
   }
 
-  .stats-page :global(.stats-page__recent-link) {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    padding: var(--space-sm) 0;
-    text-decoration: none;
-    color: inherit;
-    border-radius: 6px;
-    margin: 0 calc(-1 * var(--space-sm));
-    padding-left: var(--space-sm);
-    padding-right: var(--space-sm);
-    transition: background 0.15s ease;
-  }
-
-  .stats-page :global(.stats-page__recent-link:hover) {
-    background: var(--glass-bg-strong, rgba(0, 0, 0, 0.05));
-  }
-
-  .stats-page :global(.stats-page__recent-matchup) {
-    flex: 1;
-    min-width: 0;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-
-  .stats-page :global(.stats-page__recent-deck-color) {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-
-  .stats-page :global(.stats-page__recent-vs) {
-    color: var(--muted);
-    font-weight: 500;
-    margin: 0 0.15rem;
-  }
-
-  .stats-page :global(.stats-page__recent-score) {
-    color: var(--fg);
+  :global(.stats-page__table tbody th[scope='row']) {
+    text-align: left;
     font-weight: 600;
+    color: var(--fg);
   }
 
-  .stats-page :global(.stats-page__recent-meta) {
-    flex-shrink: 0;
+  :global(.stats-page__table--wide tbody td) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--fg);
   }
 
-  .stats-page :global(.stats-page__recent-date) {
-    flex-shrink: 0;
-    font-size: 0.85rem;
+  :global(.stats-page__table:not(.stats-page__table--wide) tbody td) {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--fg);
   }
 
-  .stats-page :global(.stats-page__recent-result) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 4px;
-    font-weight: 700;
-    font-size: 0.8rem;
+  @media (hover: hover) {
+    :global(.stats-page__table tbody tr:hover th),
+    :global(.stats-page__table tbody tr:hover td) {
+      background: rgba(255, 255, 255, 0.045);
+    }
   }
 
-  .stats-page :global(.stats-page__recent-result.won) {
-    background: var(--color-success-bg, rgba(34, 197, 94, 0.2));
-    color: var(--color-success, #16a34a);
-  }
-
-  .stats-page :global(.stats-page__recent-result.lost) {
-    background: var(--color-error-bg, rgba(239, 68, 68, 0.2));
-    color: var(--color-error, #dc2626);
+  :global(.stats-page__row-header) {
+    font-weight: 600;
   }
 </style>

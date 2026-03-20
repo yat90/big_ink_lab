@@ -38,13 +38,3 @@
     emptyText="No matchup data yet."
   />
 {/if}
-{#if matchAnalysis?.deckColorMatrix && Object.keys(matchAnalysis.deckColorMatrix).length > 0}
-  <div class="stats-page__matrix-block">
-    <MatchupStatistics
-      matrix={matchAnalysis.deckColorMatrix}
-      bind:analysisMode={analyticsMatrixMode}
-      title="Your deck vs opponent deck"
-      emptyText="No matchup data yet."
-    />
-  </div>
-{/if}

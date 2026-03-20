@@ -2,28 +2,16 @@
   import { onMount } from 'svelte';
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
-  import { type Game, STAGE_OPTIONS } from '$lib/matches';
+  import { STAGE_OPTIONS } from '$lib/matches';
+  import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
 
-  type Player = { _id: string; name: string; team: string };
-  type Match = {
-    _id: string;
-    stage?: string;
-    tournamentName?: string;
-    round?: number;
-    playedAt?: string;
-    p1?: Player | string;
-    p2?: Player | string;
-    p1DeckColor?: string;
-    p2DeckColor?: string;
-    matchWinner?: Player | string;
-    games?: Game[];
-  };
+  type Player = { _id: string; name: string; team?: string };
 
-  let matches = $state<Match[]>([]);
+  let matches = $state<LorcanaMatch[]>([]);
   let loading = $state(true);
   let error = $state('');
 
@@ -40,7 +28,7 @@
 
   const apiUrl = config.apiUrl ?? '/api';
 
-  function playerName(p: Player | string | undefined): string {
+  function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
     if (!p) return '–';
     return typeof p === 'string' ? p : (p.name ?? '–');
   }
@@ -54,13 +42,13 @@
     }
   }
 
-  function matchWinnerId(m: Match): string | undefined {
+  function matchWinnerId(m: LorcanaMatch): string | undefined {
     const w = m.matchWinner;
     if (!w) return undefined;
     return typeof w === 'object' && w !== null ? w._id : w;
   }
 
-  function gameWinnerId(g: Game): string | undefined {
+  function gameWinnerId(g: { winner?: unknown }): string | undefined {
     const w = g.winner;
     if (w == null) return undefined;
     return typeof w === 'object' && w !== null && '_id' in w
@@ -68,7 +56,7 @@
       : String(w);
   }
 
-  function gamesWon(match: Match, playerId: string): number {
+  function gamesWon(match: LorcanaMatch, playerId: string): number {
     const games = match.games ?? [];
     return games.filter((g) => gameWinnerId(g) === playerId).length;
   }

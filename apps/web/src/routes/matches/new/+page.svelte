@@ -23,6 +23,7 @@
   let deckPickerRole = $state<'p1' | 'p2'>('p1');
   let stage = $state('Casual');
   let tournamentName = $state('');
+  let tournamentNames = $state<string[]>([]);
   function nowForDatetimeLocal(): string {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
@@ -135,6 +136,22 @@
     if (p1 && p2 === p1) {
       p2 = '';
     }
+  });
+
+  async function fetchTournamentNames() {
+    try {
+      const res = await fetch(`${apiUrl}/matches/tournaments`);
+      if (res.ok) {
+        const data = await res.json();
+        tournamentNames = data.tournamentNames ?? [];
+      }
+    } catch {
+      tournamentNames = [];
+    }
+  }
+
+  $effect(() => {
+    if (stage === 'Tournament') void fetchTournamentNames();
   });
 
   async function fetchPlayers() {
@@ -276,42 +293,26 @@
           class="input"
           bind:value={tournamentName}
           placeholder="Tournament name"
+          list={tournamentNames.length > 0 ? 'new-match-tournament-datalist' : undefined}
+          autocomplete="off"
         />
-        <div class="formgrid">
-          <label class="label" for="round">Round</label>
-          <input
-            id="round"
-            type="number"
-            class="input"
-            min="1"
-            bind:value={round}
-            placeholder="Round number"
-          />
-          <label class="label" for="matchWinner">Winner</label>
-          <select id="matchWinner" class="input" bind:value={matchWinner}>
-            <option value="">–</option>
-            {#each winnerOptions as pl}
-              <option value={pl._id}
-                >{pl.name}{#if pl.team}
-                  – {pl.team}{/if}</option
-              >
+        {#if tournamentNames.length > 0}
+          <datalist id="new-match-tournament-datalist">
+            {#each tournamentNames as name (name)}
+              <option value={name}></option>
             {/each}
-          </select>
-        </div>
-      {:else}
-        <label class="label" for="matchWinner">Winner</label>
-        <select id="matchWinner" class="input" bind:value={matchWinner}>
-          <option value="">–</option>
-          {#each winnerOptions as pl}
-            <option value={pl._id}
-              >{pl.name}{#if pl.team}
-                – {pl.team}{/if}</option
-            >
-          {/each}
-        </select>
+          </datalist>
+        {/if}
+        <label class="label" for="round">Round</label>
+        <input
+          id="round"
+          type="number"
+          class="input"
+          min="1"
+          bind:value={round}
+          placeholder="Round number"
+        />
       {/if}
-      <label class="label" for="notes">Notes</label>
-      <input id="notes" type="text" class="input" bind:value={notes} placeholder="Optional" />
     </section>
 
     <!-- Player 1 -->
@@ -423,6 +424,25 @@
       <DeckColorSelect id="p2DeckColor" bind:value={p2DeckColor} ariaLabel="P2 deck color" />
     </section>
 
+    <section
+      class="card stack new-match__card new-match__outcome-card"
+      aria-labelledby="outcome-card-title"
+    >
+      <h3 id="outcome-card-title" class="card__title new-match__card-title">Outcome</h3>
+      <label class="label" for="matchWinner">Winner</label>
+      <select id="matchWinner" class="input" bind:value={matchWinner}>
+        <option value="">–</option>
+        {#each winnerOptions as pl}
+          <option value={pl._id}
+            >{pl.name}{#if pl.team}
+              – {pl.team}{/if}</option
+          >
+        {/each}
+      </select>
+      <label class="label" for="notes">Notes</label>
+      <input id="notes" type="text" class="input" bind:value={notes} placeholder="Optional" />
+    </section>
+
     {#if error}
       <p class="alert" role="alert" aria-live="assertive">{error}</p>
     {/if}
@@ -497,6 +517,7 @@
     .new-match__form .new-match__card:first-of-type {
       grid-column: 1 / -1;
     }
+    .new-match__form .new-match__outcome-card,
     .new-match__form .new-match__add-player-row,
     .new-match__form .new-match__add-player-card,
     .new-match__form .alert,

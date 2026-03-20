@@ -1,5 +1,11 @@
 /** Shared types for My statistics page and tab components. */
 
+export type PreferredDeckSummary = {
+  _id: string;
+  name: string;
+  deckColor: string | null;
+};
+
 export type PlayStyleSummary = {
   playerId: string;
   matchesAnalyzed: number;
@@ -20,8 +26,10 @@ export type PlayStyleSummary = {
   avgLoreWhenWinning: number | null;
   avgLoreWhenLosing: number | null;
   preferredDeckColor: string | null;
+  /** Present when API can infer most-played deck from match deck refs. */
+  preferredDeck?: PreferredDeckSummary | null;
   bestPerformingDeckColor: string | null;
-  decksUsed: { _id: string; name: string }[];
+  decksUsed: { _id: string; name: string; deckColor?: string | null }[];
 };
 
 export type RecentMatchResult = {
