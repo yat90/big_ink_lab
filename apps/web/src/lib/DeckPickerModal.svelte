@@ -23,6 +23,8 @@
     open = $bindable(false),
     title = 'Select deck',
     forLabel = '',
+    /** When set, list is filtered to this player's decks (e.g. the selected P1/P2). Falls back to your linked player from /auth/me if empty. */
+    filterPlayerId = '',
     onSelect,
     onClose,
   }: {
@@ -30,7 +32,8 @@
     title?: string;
     /** Who the deck will be assigned to (e.g. "Player 1"). Shown as headline. */
     forLabel?: string;
-    onSelect: (deckId: string) => void;
+    filterPlayerId?: string;
+    onSelect: (deckId: string) => void | Promise<void>;
     onClose: () => void;
   } = $props();
 
@@ -103,8 +106,8 @@
     loadDecks();
   }
 
-  function selectDeck(deckId: string) {
-    onSelect(deckId);
+  async function selectDeck(deckId: string) {
+    await Promise.resolve(onSelect(deckId));
     onClose();
   }
 
@@ -112,13 +115,19 @@
     if (open) fetchPlayers();
   });
 
-  /** When modal opens, fetch current user's player and preset the Player filter. */
+  /** When modal opens, preset Player filter: explicit player id, else your linked player from /auth/me. */
   $effect(() => {
     if (!open) {
       presetReady = false;
       return;
     }
     presetReady = false;
+    const explicit = (filterPlayerId ?? '').trim();
+    if (explicit) {
+      filterPlayer = explicit;
+      presetReady = true;
+      return;
+    }
     const token = getAuthToken();
     if (token) {
       fetch(`${apiUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
@@ -132,6 +141,7 @@
           presetReady = true;
         });
     } else {
+      filterPlayer = '';
       presetReady = true;
     }
   });

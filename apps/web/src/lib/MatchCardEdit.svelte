@@ -189,6 +189,7 @@
     bind:open={deckPickerOpen}
     title="Select deck"
     forLabel={deckPickerRole === 'p1' ? p1PlayerName : p2PlayerName}
+    filterPlayerId={deckPickerRole === 'p1' ? (p1Id ?? '') : (p2Id ?? '')}
     onSelect={handleDeckSelect}
     onClose={() => (deckPickerOpen = false)}
   />

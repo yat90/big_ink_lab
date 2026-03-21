@@ -1,4 +1,4 @@
-import { IsOptional, IsDateString, IsMongoId } from 'class-validator';
+import { IsOptional, IsDateString, IsMongoId, IsString } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 export class FindMatchesQueryDto extends PaginationQueryDto {
@@ -24,4 +24,9 @@ export class FindMatchesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsDateString()
   toDate?: string;
+
+  /** When set, limits to Tournament stage and this tournament name. */
+  @IsOptional()
+  @IsString()
+  tournamentName?: string;
 }

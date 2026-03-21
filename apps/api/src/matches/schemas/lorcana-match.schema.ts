@@ -19,7 +19,7 @@ export class Match extends Document {
 	round?: number;
 
 	@Prop({ type: Types.ObjectId, ref: "Player" })
-	p1: Types.ObjectId;
+	p1: string;
 
 	@Prop({ type: String, enum: Object.values(DeckColor) })
 	p1DeckColor: DeckColor;
@@ -32,23 +32,23 @@ export class Match extends Document {
 
 	/** Optional deck reference (e.g. when player is from The Big Ink Theory). */
 	@Prop({ type: Types.ObjectId, ref: "Deck", required: false })
-	p1Deck?: Types.ObjectId;
+	p1Deck?: string;
 
 	@Prop({ type: Types.ObjectId, ref: "Player" })
-	p2: Types.ObjectId;
+	p2: string;
 
 	@Prop({ type: String, enum: Object.values(DeckColor) })
 	p2DeckColor: DeckColor;
 
 	/** Optional deck reference (e.g. when player is from The Big Ink Theory). */
 	@Prop({ type: Types.ObjectId, ref: "Deck", required: false })
-	p2Deck?: Types.ObjectId;
+	p2Deck?: string;
 
 	@Prop({ type: [GameSchema], default: [] })
 	games: Game[];
 
 	@Prop({ type: Types.ObjectId, ref: "Player" })
-	matchWinner: Types.ObjectId;
+	matchWinner: string;
 
 	@Prop({ default: "" })
 	notes: string;

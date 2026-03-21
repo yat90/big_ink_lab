@@ -174,6 +174,7 @@
             >
               {loreTrackerLoading ? 'Creating…' : 'Quick Match'}
             </button>
+            <a href="/tournaments/results" class="btn">Tournament results</a>
             <a href="/matches/new" class="btn btn--primary">New match</a>
           </div>
         </div>

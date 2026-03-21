@@ -18,6 +18,7 @@ import { AuthService } from '../auth/auth.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { GlobalMatchStats } from '../analytics/interfaces/analytics-response.interface';
 import { FindMatchesQueryDto } from './dto/find-matches-query.dto';
+import { TournamentBulkResultsDto } from './dto/tournament-bulk-results.dto';
 import { StatsQueryDto } from './dto/stats-query.dto';
 import { PaginatedResponse, createPaginatedResponse } from '../common/dto/paginated-response.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -62,6 +63,14 @@ export class MatchesController {
     return this.analyticsService.getGlobalMatchStats(stages, tournamentName, matrixMode);
   }
 
+  /** Aggregated list of tournaments (name, match count, last played). */
+  @Get('tournaments/summary')
+  async getTournamentSummaries(): Promise<
+    Array<{ tournamentName: string; matchCount: number; latestPlayedAt: Date | null }>
+  > {
+    return this.matchesService.getTournamentSummaries();
+  }
+
   /** Returns distinct tournament names for Tournament stage. */
   @Get('tournaments')
   async getTournamentNames(): Promise<{ tournamentNames: string[] }> {
@@ -78,6 +87,14 @@ export class MatchesController {
   @Post()
   async create(@Body() dto: Partial<Match>): Promise<Match> {
     return this.matchesService.create(dto);
+  }
+
+  /** Creates many tournament matches (one per round) with games and notes. */
+  @Post('tournaments/bulk-results')
+  async createTournamentBulkResults(
+    @Body() dto: TournamentBulkResultsDto
+  ): Promise<{ created: Match[]; failed: Array<{ round: number; message: string }> }> {
+    return this.matchesService.createTournamentBulkResults(dto);
   }
 
   /** Updates an existing match by id. Only participants (p1 or p2) may update. */

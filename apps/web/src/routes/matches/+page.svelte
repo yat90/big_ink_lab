@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
   import { STAGE_OPTIONS } from '$lib/matches';
@@ -18,7 +19,10 @@
   const PAGE_SIZE = 10;
 
   let filterStage = $state<string>('');
-  let filterTime = $state<string>('30'); // '' = all time, '7' | '30' | '90' = last N days
+  /** When set (e.g. from URL `?tournamentName=`), filters API by tournament name. */
+  let filterTournamentName = $state<string>('');
+  /** '' = all time (default so stage filters e.g. Tournament aren’t hidden by a tight window). */
+  let filterTime = $state<string>('');
   let filterPlayerId = $state<string>('');
   let filterPlayerName = $state<string>('');
   let playerPickerOpen = $state(false);
@@ -80,6 +84,7 @@
       // eslint-disable-next-line svelte/prefer-svelte-reactivity
       const params = new URLSearchParams();
       if (filterStage) params.set('stage', filterStage);
+      if (filterTournamentName.trim()) params.set('tournamentName', filterTournamentName.trim());
       if (filterPlayerId) params.set('player', filterPlayerId);
       if (range.fromDate) params.set('fromDate', range.fromDate);
       if (range.toDate) params.set('toDate', range.toDate);
@@ -112,6 +117,25 @@
     filterPlayerName = player ? player.name : '';
   }
 
+  function clearFilters() {
+    filterStage = '';
+    filterTime = '';
+    filterTournamentName = '';
+    filterPlayerId = '';
+    filterPlayerName = '';
+  }
+
+  $effect(() => {
+    const t = $page.url.searchParams.get('tournamentName');
+    const s = $page.url.searchParams.get('stage');
+    filterTournamentName = t ?? '';
+    if (s && STAGE_OPTIONS.includes(s as (typeof STAGE_OPTIONS)[number])) {
+      filterStage = s;
+    } else if (t) {
+      filterStage = 'Tournament';
+    }
+  });
+
   onMount(async () => {
     const token = getAuthToken();
     if (!token) return;
@@ -135,13 +159,13 @@
   $effect(() => {
     // Track filter deps so we reset page when they change
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [filterStage, filterTime, filterPlayerId];
+    const _ = [filterStage, filterTime, filterPlayerId, filterTournamentName];
     currentPage = 1;
   });
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [currentPage, filterStage, filterTime, filterPlayerId];
+    const _ = [currentPage, filterStage, filterTime, filterPlayerId, filterTournamentName];
     fetchMatches();
   });
 </script>
@@ -180,8 +204,9 @@
         Matches
         <span class="matches-header__count muted" aria-label="Total matches">({total})</span>
       </h2>
-      <div class="row" style="gap: var(--space-sm);">
+      <div class="row" style="gap: var(--space-sm); flex-wrap: wrap;">
         <a href="/matches/quick" class="btn">Quick match</a>
+        <a href="/tournaments/results" class="btn">Tournament results</a>
         <a href="/matches/new" class="btn btn--primary">New match</a>
       </div>
     </div>
@@ -229,9 +254,12 @@
           </select>
         </label>
       </div>
-      <p class="filters__count muted">
-        {total} total match{total === 1 ? '' : 'es'}
-      </p>
+      <div class="filters__footer">
+        <p class="filters__count muted">
+          {total} total match{total === 1 ? '' : 'es'}
+        </p>
+        <button type="button" class="btn" onclick={clearFilters}>Clear filters</button>
+      </div>
     </div>
 
     <PlayerPickerModal
@@ -245,18 +273,6 @@
     {#if matches.length === 0}
       <div class="card stack">
         <p class="card__sub">No matches match your filters.</p>
-        <button
-          type="button"
-          class="btn"
-          onclick={() => {
-            filterStage = '';
-            filterTime = '';
-            filterPlayerId = '';
-            filterPlayerName = '';
-          }}
-        >
-          Clear filters
-        </button>
       </div>
     {:else}
       <div class="stack">

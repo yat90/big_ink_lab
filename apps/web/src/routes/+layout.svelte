@@ -63,6 +63,7 @@
       if (p.startsWith('/decks')) return 'Decks';
       if (p === '/stats') return 'Statistics';
       if (p === '/matches/new') return 'New match';
+      if (p.startsWith('/tournaments')) return 'Tournament results';
       if (p.startsWith('/matches')) return 'Matches';
       return 'Big Ink Lab';
     })()

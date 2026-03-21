@@ -41,7 +41,7 @@ export class AnalyticsService {
   constructor(
     @InjectModel(Match.name) private readonly matchModel: Model<Match>,
     @InjectModel(Player.name) private readonly playerModel: Model<Player>,
-    @InjectModel(Deck.name) private readonly deckModel: Model<Deck>,
+    @InjectModel(Deck.name) private readonly deckModel: Model<Deck>
   ) {}
 
   /** Decks this player has used in at least one match (p1Deck or p2Deck). */
@@ -55,19 +55,19 @@ export class AnalyticsService {
     for (const m of matches) {
       const p1Str = m.p1?.toString?.();
       const p2Str = m.p2?.toString?.();
-      if (p1Str === playerId && m.p1Deck) deckIds.add((m.p1Deck as Types.ObjectId).toString());
-      if (p2Str === playerId && m.p2Deck) deckIds.add((m.p2Deck as Types.ObjectId).toString());
+      if (p1Str === playerId && m.p1Deck) deckIds.add(m.p1Deck);
+      if (p2Str === playerId && m.p2Deck) deckIds.add(m.p2Deck);
     }
     if (deckIds.size === 0) return [];
     const decks = await this.deckModel
-      .find({ _id: { $in: Array.from(deckIds).map((id) => new Types.ObjectId(id)) } })
+      .find({ _id: { $in: Array.from(deckIds) } })
       .select('name deckColor')
       .lean()
       .exec();
     return decks.map((d) => {
       const doc = d as { name: string; deckColor?: string };
       return {
-        _id: (d._id as Types.ObjectId).toString(),
+        _id: d._id.toString() as string ,
         name: doc.name ?? '',
         deckColor: doc.deckColor ?? null,
       };
@@ -89,10 +89,7 @@ export class AnalyticsService {
    * Returns play-style analysis for a player: preferred decks, stage mix,
    * starter vs non-starter performance, lore profile.
    */
-  async getPlayStyle(
-    playerId: string,
-    query: PlayStyleQueryDto = {},
-  ): Promise<PlayStyleSummary> {
+  async getPlayStyle(playerId: string, query: PlayStyleQueryDto = {}): Promise<PlayStyleSummary> {
     const [player, decksUsed] = await Promise.all([
       this.playerModel.findById(playerId).lean().exec(),
       this.getDecksUsed(playerId),
@@ -140,7 +137,6 @@ export class AnalyticsService {
     for (const match of matches) {
       const isP1 = match.p1?.toString() === playerId;
       const myDeck = (isP1 ? match.p1DeckColor : match.p2DeckColor) as string | undefined;
-      const oppDeck = (isP1 ? match.p2DeckColor : match.p1DeckColor) as string | undefined;
       if (myDeck) {
         if (!deckColorAgg[myDeck]) {
           deckColorAgg[myDeck] = {
@@ -174,7 +170,7 @@ export class AnalyticsService {
           myDeckId =
             typeof myDeckRef === 'string'
               ? myDeckRef
-              : (myDeckRef as Types.ObjectId).toString?.() ?? String(myDeckRef);
+              : ((myDeckRef as Types.ObjectId).toString?.() ?? String(myDeckRef));
         }
         if (myDeckId) {
           deckIdGames[myDeckId] = (deckIdGames[myDeckId] ?? 0) + 1;
@@ -216,21 +212,16 @@ export class AnalyticsService {
       }
     }
 
-    const totalGames =
-      Object.values(deckColorAgg).reduce((s, d) => s + d.gamesPlayed, 0) || 0;
-    const deckColorStats: DeckColorStats[] = Object.entries(deckColorAgg).map(
-      ([deckColor, d]) => ({
-        deckColor,
-        matchesPlayed: d.matchesPlayed,
-        matchesWon: d.matchesWon,
-        matchWinRate:
-          d.matchesPlayed > 0 ? Math.round((d.matchesWon / d.matchesPlayed) * 100) : 0,
-        gamesPlayed: d.gamesPlayed,
-        gamesWon: d.gamesWon,
-        gameWinRate:
-          d.gamesPlayed > 0 ? Math.round((d.gamesWon / d.gamesPlayed) * 100) : 0,
-      }),
-    );
+    const totalGames = Object.values(deckColorAgg).reduce((s, d) => s + d.gamesPlayed, 0) || 0;
+    const deckColorStats: DeckColorStats[] = Object.entries(deckColorAgg).map(([deckColor, d]) => ({
+      deckColor,
+      matchesPlayed: d.matchesPlayed,
+      matchesWon: d.matchesWon,
+      matchWinRate: d.matchesPlayed > 0 ? Math.round((d.matchesWon / d.matchesPlayed) * 100) : 0,
+      gamesPlayed: d.gamesPlayed,
+      gamesWon: d.gamesWon,
+      gameWinRate: d.gamesPlayed > 0 ? Math.round((d.gamesWon / d.gamesPlayed) * 100) : 0,
+    }));
     deckColorStats.sort((a, b) => b.gamesPlayed - a.gamesPlayed);
 
     const totalStageMatches = Object.values(stageCount).reduce((a, b) => a + b, 0);
@@ -249,8 +240,7 @@ export class AnalyticsService {
       gamesNotStarter > 0 ? Math.round((gamesWonNotStarter / gamesNotStarter) * 100) : 0;
     const starterAdvantageDelta = starterWinRate - nonStarterWinRate;
 
-    const preferredDeckColor =
-      deckColorStats.length > 0 ? deckColorStats[0].deckColor : null;
+    const preferredDeckColor = deckColorStats.length > 0 ? deckColorStats[0].deckColor : null;
     const bestPerformingDeckColor =
       deckColorStats
         .filter((d) => d.gamesPlayed >= MIN_GAMES_FOR_BEST_PERFORMING)
@@ -298,7 +288,7 @@ export class AnalyticsService {
    */
   async getMatchAnalysis(
     playerId: string,
-    query: { fromDate?: string; toDate?: string; recentCount?: number } = {},
+    query: { fromDate?: string; toDate?: string; recentCount?: number } = {}
   ): Promise<MatchAnalysisSummary> {
     const [player, decksUsed] = await Promise.all([
       this.playerModel.findById(playerId).lean().exec(),
@@ -340,7 +330,7 @@ export class AnalyticsService {
       const myDeck = (isP1 ? match.p1DeckColor : match.p2DeckColor) as string | undefined;
       const oppDeck = (isP1 ? match.p2DeckColor : match.p1DeckColor) as string | undefined;
       const matchWon = (match.matchWinner?.toString() ?? match.matchWinner) === playerId;
-      let gamesInMatch = 0;
+      const gamesInMatch = 0;
       let gamesWonInMatch = 0;
 
       for (const game of match.games ?? []) {
@@ -400,12 +390,10 @@ export class AnalyticsService {
         stage,
         matchesPlayed: d.matchesPlayed,
         matchesWon: d.matchesWon,
-        matchWinRate:
-          d.matchesPlayed > 0 ? Math.round((d.matchesWon / d.matchesPlayed) * 100) : 0,
+        matchWinRate: d.matchesPlayed > 0 ? Math.round((d.matchesWon / d.matchesPlayed) * 100) : 0,
         gamesPlayed: d.gamesPlayed,
         gamesWon: d.gamesWon,
-        gameWinRate:
-          d.gamesPlayed > 0 ? Math.round((d.gamesWon / d.gamesPlayed) * 100) : 0,
+        gameWinRate: d.gamesPlayed > 0 ? Math.round((d.gamesWon / d.gamesPlayed) * 100) : 0,
       };
     });
 
@@ -414,8 +402,7 @@ export class AnalyticsService {
       totals: {
         matchesPlayed: matches.length,
         matchesWon: totalMatchesWon,
-        matchWinRate:
-          matches.length > 0 ? Math.round((totalMatchesWon / matches.length) * 100) : 0,
+        matchWinRate: matches.length > 0 ? Math.round((totalMatchesWon / matches.length) * 100) : 0,
         gamesPlayed: totalGamesPlayed,
         gamesWon: totalGamesWon,
         gameWinRate:
@@ -436,7 +423,7 @@ export class AnalyticsService {
     matrix: Record<string, Record<string, { played: number; won: number }>>,
     myDeck: string,
     oppDeck: string,
-    won: number,
+    won: number
   ) {
     if (!matrix[myDeck]) matrix[myDeck] = {};
     if (!matrix[myDeck][oppDeck]) matrix[myDeck][oppDeck] = { played: 0, won: 0 };
@@ -446,7 +433,7 @@ export class AnalyticsService {
 
   /** Lightweight stats for a deck: total matches, wins, losses, win rate. */
   async getDeckStatsSummary(
-    deckId: string,
+    deckId: string
   ): Promise<{ totalMatches: number; wins: number; losses: number; winRate: number | null }> {
     const matches = await this.matchModel
       .find({
@@ -480,7 +467,7 @@ export class AnalyticsService {
       p1DeckColor?: string;
       p2DeckColor?: string;
     },
-    deckId: string,
+    deckId: string
   ): { won: boolean; opponentDeckColor: string | null } | null {
     const toId = (ref: unknown): string => {
       if (ref == null) return '';
@@ -608,7 +595,7 @@ export class AnalyticsService {
   async getGlobalMatchStats(
     stages?: string[],
     tournamentName?: string,
-    matrixMode: 'matches' | 'games' = 'matches',
+    matrixMode: 'matches' | 'games' = 'matches'
   ): Promise<GlobalMatchStats> {
     const filter: Record<string, unknown> = {};
     if (stages?.length && stages.every((s) => Object.values(Stage).includes(s as Stage))) {
@@ -689,7 +676,7 @@ export class AnalyticsService {
   /** Player stats + decks used (replaces PlayersService.getStats + getDecksUsed for GET /players/:id). */
   async getPlayerStats(
     playerId: string,
-    options: { deckId?: string; matrixMode?: 'matches' | 'games' } = {},
+    options: { deckId?: string; matrixMode?: 'matches' | 'games' } = {}
   ): Promise<{ stats: PlayerStatsDto; decksUsed: DeckUsed[] }> {
     const [player, decksUsed] = await Promise.all([
       this.playerModel.findById(playerId).lean().exec(),

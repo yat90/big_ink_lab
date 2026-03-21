@@ -21,6 +21,8 @@
     forLabel = '',
     /** Player ID to disable in the list (e.g. the other side's player). */
     excludePlayerId = '',
+    /** When true, pre-fill the Team filter from the logged-in user's player (e.g. P1). Set false for opponent (P2) so the list is not team-scoped. */
+    presetTeamFromMe = true,
     onSelect,
     onClose,
   }: {
@@ -28,6 +30,7 @@
     title?: string;
     forLabel?: string;
     excludePlayerId?: string;
+    presetTeamFromMe?: boolean;
     /** Second arg is the selected player's name/team when selecting from list; undefined when "No player". */
     onSelect: (playerId: string, player?: { name: string; team?: string }) => void;
     onClose: () => void;
@@ -87,13 +90,18 @@
     onClose();
   }
 
-  /** When modal opens, fetch current user's team and preset the Team filter. */
+  /** When modal opens, optionally fetch current user's team and preset the Team filter. */
   $effect(() => {
     if (!open) {
       presetReady = false;
       return;
     }
     presetReady = false;
+    if (!presetTeamFromMe) {
+      filterTeam = '';
+      presetReady = true;
+      return;
+    }
     const token = getAuthToken();
     if (token) {
       fetch(`${apiUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })

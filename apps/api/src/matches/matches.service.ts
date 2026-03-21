@@ -1,11 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Match } from './schemas/lorcana-match.schema';
-import { Deck } from '../decks/schemas/deck.schema';
 import { FindMatchesQueryDto } from './dto/find-matches-query.dto';
+import { TournamentBulkResultsDto } from './dto/tournament-bulk-results.dto';
 import { Stage } from './schemas/stages.enum';
+import { DeckColor } from './schemas/deck-color.enum';
 import { DecksService } from '../decks/decks.service';
+import { Game } from './schemas/game.interface';
 
 @Injectable()
 export class MatchesService {
@@ -15,11 +17,26 @@ export class MatchesService {
   ) {}
 
   async findAll(query: FindMatchesQueryDto = {}): Promise<{ data: Match[]; total: number }> {
-    const { stage, sort = 'newest', page = 1, limit = 10, fromDate, toDate, player, deck } = query;
+    const {
+      stage,
+      sort = 'newest',
+      page = 1,
+      limit = 10,
+      fromDate,
+      toDate,
+      player,
+      deck,
+      tournamentName,
+    } = query;
     const filter: Record<string, unknown> = {};
 
     if (stage && Object.values(Stage).includes(stage as Stage)) {
       filter.stage = stage;
+    }
+
+    if (tournamentName?.trim()) {
+      filter.stage = Stage.Tournament;
+      filter.tournamentName = tournamentName.trim();
     }
 
     if (player?.trim()) {
@@ -52,6 +69,8 @@ export class MatchesService {
     const sortOrder = sort === 'oldest' ? 1 : -1;
     const skip = (page - 1) * limit;
 
+    console.log(JSON.stringify(filter, null, 2));
+
     const [data, total] = await Promise.all([
       this.matchModel
         .find(filter)
@@ -71,7 +90,37 @@ export class MatchesService {
   }
 
   async create(dto: Partial<Match>): Promise<Match> {
-    const created = await this.matchModel.create(dto);
+    const toCreate = { ...dto } as Partial<Match>;
+    if (toCreate.games != null && toCreate.p1 && toCreate.p2) {
+      const autoWinner = this.matchWinnerFromGames(
+        toCreate.games as Array<{ winner?: Types.ObjectId }>,
+        toCreate.p1,
+        toCreate.p2
+      );
+      if (autoWinner !== undefined) {
+        toCreate.matchWinner = autoWinner as unknown as Match['matchWinner'];
+      }
+    }
+    if (toCreate.p1Deck != null && String(toCreate.p1Deck) !== '') {
+      const deck = await this.decksService.findOne(String(toCreate.p1Deck));
+      if (deck?.deckColor) {
+        toCreate.p1DeckColor = deck.deckColor as Match['p1DeckColor'];
+      }
+    }
+    if (toCreate.p2Deck != null && String(toCreate.p2Deck) !== '') {
+      const deck = await this.decksService.findOne(String(toCreate.p2Deck));
+      if (deck?.deckColor) {
+        toCreate.p2DeckColor = deck.deckColor as Match['p2DeckColor'];
+      }
+    }
+    const defaultColor = DeckColor.AmberAmethyst;
+    if (!toCreate.p1DeckColor) {
+      toCreate.p1DeckColor = defaultColor;
+    }
+    if (!toCreate.p2DeckColor) {
+      toCreate.p2DeckColor = defaultColor;
+    }
+    const created = await this.matchModel.create(toCreate);
     return created.populate('p1 p2 matchWinner p1Deck p2Deck') as Promise<Match>;
   }
 
@@ -103,7 +152,7 @@ export class MatchesService {
       const p2 = dto.p2 ?? existing?.p2;
       const autoWinner = this.matchWinnerFromGames(dto.games, p1, p2);
       if (autoWinner !== undefined) {
-        dto.matchWinner = autoWinner as Match['matchWinner'];
+        dto.matchWinner = autoWinner as unknown as Match['matchWinner'];
       }
     }
     // When a deck is set, copy its deckColor onto the match
@@ -129,6 +178,100 @@ export class MatchesService {
   async remove(id: string): Promise<boolean> {
     const result = await this.matchModel.findByIdAndDelete(id).exec();
     return !!result;
+  }
+
+  async getTournamentSummaries(): Promise<
+    Array<{ tournamentName: string; matchCount: number; latestPlayedAt: Date | null }>
+  > {
+    const rows = await this.matchModel
+      .aggregate([
+        {
+          $match: {
+            stage: Stage.Tournament,
+            tournamentName: { $nin: [null, ''], $exists: true },
+          },
+        },
+        {
+          $group: {
+            _id: '$tournamentName',
+            matchCount: { $sum: 1 },
+            latestPlayedAt: { $max: '$playedAt' },
+          },
+        },
+        { $sort: { latestPlayedAt: -1 } },
+      ])
+      .exec();
+    return rows.map((r) => ({
+      tournamentName: String(r._id),
+      matchCount: r.matchCount as number,
+      latestPlayedAt: (r.latestPlayedAt as Date | null) ?? null,
+    }));
+  }
+
+  async createTournamentBulkResults(dto: TournamentBulkResultsDto): Promise<{
+    created: Match[];
+    failed: Array<{ round: number; message: string }>;
+  }> {
+    const created: Match[] = [];
+    const failed: Array<{ round: number; message: string }> = [];
+    const playedAt = new Date(dto.playedAt);
+    if (Number.isNaN(playedAt.getTime())) {
+      throw new BadRequestException('Invalid playedAt');
+    }
+    const tournamentName = dto.tournamentName.trim();
+    for (const r of dto.rounds) {
+      try {
+        if (r.p1 === r.p2) {
+          failed.push({ round: r.round, message: 'Players must be different' });
+          continue;
+        }
+        let invalidWinner = false;
+        for (const g of r.games) {
+          if (g.winner !== r.p1 && g.winner !== r.p2) {
+            failed.push({
+              round: r.round,
+              message: 'Each game winner must be player 1 or 2',
+            });
+            invalidWinner = true;
+            break;
+          }
+        }
+        if (invalidWinner) {
+          continue;
+        }
+        const games = r.games.map((g) => ({
+          status: 'done' as const,
+          winner: g.winner,
+          starter: g.starter ? g.starter : undefined,
+          p1Lore:
+            g.p1Lore != null && !Number.isNaN(Number(g.p1Lore)) ? Number(g.p1Lore) : undefined,
+          p2Lore:
+            g.p2Lore != null && !Number.isNaN(Number(g.p2Lore)) ? Number(g.p2Lore) : undefined,
+          notes: g.notes?.trim() ? g.notes.trim() : undefined,
+        }));
+        const match = await this.create({
+          stage: Stage.Tournament,
+          tournamentName,
+          round: r.round,
+          p1: r.p1,
+          p2: r.p2,
+          p1Deck: r.p1Deck ? r.p1Deck : undefined,
+          p2Deck: r.p2Deck ? r.p2Deck : undefined,
+          p1DeckColor: (r.p1DeckColor as Match['p1DeckColor']) ?? undefined,
+          p2DeckColor: (r.p2DeckColor as Match['p2DeckColor']) ?? undefined,
+          notes: r.notes?.trim() ?? '',
+          playedAt,
+          games: games as unknown as Game[],
+        });
+        created.push(match);
+      } catch (e) {
+        failed.push({
+          round: r.round,
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }
+    return { created, failed };
   }
 
   async getDistinctTournamentNames(): Promise<{ tournamentNames: string[] }> {

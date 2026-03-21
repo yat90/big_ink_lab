@@ -467,6 +467,7 @@
     bind:open={deckPickerOpen}
     title="Select deck"
     forLabel={deckPickerRole === 'p1' ? p1PlayerDisplayName : p2PlayerDisplayName}
+    filterPlayerId={deckPickerRole === 'p1' ? p1 : p2}
     onSelect={handleDeckSelect}
     onClose={() => (deckPickerOpen = false)}
   />
@@ -491,7 +492,11 @@
   }
   .new-match__card {
     margin-bottom: var(--space-md, 1rem);
-    z-index:1;
+    z-index: 1;
+  }
+  /* Deck color dropdown extends past the card; raise stacking so it isn’t covered by the adjacent column. */
+  .new-match__card:has(:global(.deck-color-select__trigger--open)) {
+    z-index: 20;
   }
   .new-match__card-title {
     font-size: 1rem;
