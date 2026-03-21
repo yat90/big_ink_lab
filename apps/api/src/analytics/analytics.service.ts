@@ -67,7 +67,7 @@ export class AnalyticsService {
     return decks.map((d) => {
       const doc = d as { name: string; deckColor?: string };
       return {
-        _id: d._id.toString() as string ,
+        _id: d._id.toString() as string,
         name: doc.name ?? '',
         deckColor: doc.deckColor ?? null,
       };
@@ -326,17 +326,18 @@ export class AnalyticsService {
 
     for (let i = 0; i < matches.length; i++) {
       const match = matches[i];
-      const isP1 = match.p1?.toString() === playerId;
+      const isP1 = match.p1 === playerId;
       const myDeck = (isP1 ? match.p1DeckColor : match.p2DeckColor) as string | undefined;
       const oppDeck = (isP1 ? match.p2DeckColor : match.p1DeckColor) as string | undefined;
-      const matchWon = (match.matchWinner?.toString() ?? match.matchWinner) === playerId;
-      const gamesInMatch = 0;
+      const matchWon = match.matchWinner === playerId;
+      let gamesInMatch = 0;
       let gamesWonInMatch = 0;
 
       for (const game of match.games ?? []) {
         if (game.status !== 'done') continue;
         totalGamesPlayed += 1;
-        const won = (game.winner?.toString() ?? game.winner) === playerId;
+        gamesInMatch += 1;
+        const won = game.winner?.toString() === playerId;
         if (won) {
           totalGamesWon += 1;
           gamesWonInMatch += 1;

@@ -69,8 +69,6 @@ export class MatchesService {
     const sortOrder = sort === 'oldest' ? 1 : -1;
     const skip = (page - 1) * limit;
 
-    console.log(JSON.stringify(filter, null, 2));
-
     const [data, total] = await Promise.all([
       this.matchModel
         .find(filter)

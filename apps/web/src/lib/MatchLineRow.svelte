@@ -37,7 +37,6 @@
       {#if showBothDecks}
         <span class="match-line-row__deck-color" title={row.myDeckColor ?? ''}>
           <InkIcons deckColor={row.myDeckColor ?? ''} size="sm" />
-          {deckColorLabel(row.myDeckColor ?? '')}
         </span>
         <span class="match-line-row__vs">vs</span>
       {:else}
@@ -45,11 +44,13 @@
       {/if}
       <span class="match-line-row__deck-color" title={row.opponentDeckColor}>
         <InkIcons deckColor={row.opponentDeckColor} size="sm" />
-        {deckColorLabel(row.opponentDeckColor)}
       </span>
     </span>
     <span class="match-line-row__meta muted">
-      {row.stage} · <span class="match-line-row__score">{row.gamesWon}/{row.gamesPlayed}</span> games
+      {row.stage}
+    </span>
+    <span class="match-line-row__meta muted">
+      <span class="match-line-row__score">{row.gamesWon}/{row.gamesPlayed}</span> games
     </span>
     <span class="match-line-row__date muted">{DateDisplay.formatRelativeDate(row.playedAt)}</span>
   </a>
