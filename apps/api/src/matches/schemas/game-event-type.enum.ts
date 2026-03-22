@@ -3,4 +3,5 @@ export enum GameEventType {
   End = 'end',
   LoreIncreased = 'lore_increased',
   LoreDecreased = 'lore_decreased',
+  GameConceded = 'game_conceded',
 }

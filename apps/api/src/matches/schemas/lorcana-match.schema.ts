@@ -4,6 +4,8 @@ import { Game, GameSchema } from "./game.interface";
 import { Stage } from "./stages.enum";
 import { DeckColor } from "./deck-color.enum";
 
+const DECK_COLOR_SCHEMA_ENUM = [...Object.values(DeckColor), ""] as const;
+
 @Schema({ timestamps: true })
 export class Match extends Document {
 	@Prop({ type: String, enum: Object.values(Stage) })
@@ -21,8 +23,8 @@ export class Match extends Document {
 	@Prop({ type: Types.ObjectId, ref: "Player" })
 	p1: string;
 
-	@Prop({ type: String, enum: Object.values(DeckColor) })
-	p1DeckColor: DeckColor;
+	@Prop({ type: String, enum: DECK_COLOR_SCHEMA_ENUM })
+	p1DeckColor: DeckColor | "";
 
 	@Prop({ default: "" })
 	p1DeckName: string;
@@ -37,8 +39,8 @@ export class Match extends Document {
 	@Prop({ type: Types.ObjectId, ref: "Player" })
 	p2: string;
 
-	@Prop({ type: String, enum: Object.values(DeckColor) })
-	p2DeckColor: DeckColor;
+	@Prop({ type: String, enum: DECK_COLOR_SCHEMA_ENUM })
+	p2DeckColor: DeckColor | "";
 
 	/** Optional deck reference (e.g. when player is from The Big Ink Theory). */
 	@Prop({ type: Types.ObjectId, ref: "Deck", required: false })

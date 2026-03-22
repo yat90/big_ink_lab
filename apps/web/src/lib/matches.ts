@@ -1,5 +1,5 @@
 /** Stage options for match forms (must match API enum) */
-export const STAGE_OPTIONS = ['Tournament', 'Casual', 'Practice'] as const;
+export const STAGE_OPTIONS = ['Tournament', 'Casual', 'Practice', 'Online'] as const;
 
 /** Deck color options for match forms (must match API enum) */
 export const DECK_COLOR_OPTIONS = [
@@ -49,6 +49,7 @@ export const GameEventType = {
   End: 'end',
   LoreIncreased: 'lore_increased',
   LoreDecreased: 'lore_decreased',
+  GameConceded: 'game_conceded',
 } as const;
 
 export type GameEventTypeValue = (typeof GameEventType)[keyof typeof GameEventType];
@@ -67,6 +68,8 @@ export interface Game {
   winner?: string;
   /** Player ID who started the game (went first). */
   starter?: string;
-  /** Events (start, end, lore_increased, lore_decreased) for this game. */
+  /** Events (start, end, lore_increased, lore_decreased, game_conceded, …) for this game. */
   events?: GameEvent[];
+  /** Optional notes (e.g. import provenance). */
+  notes?: string;
 }

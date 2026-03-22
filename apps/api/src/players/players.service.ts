@@ -1,7 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Player } from '../matches/schemas/player.schema';
+
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 @Injectable()
 export class PlayersService {
@@ -37,6 +41,21 @@ export class PlayersService {
 
   async create(dto: Partial<Player>): Promise<Player> {
     return this.playerModel.create(dto);
+  }
+
+  /** Case-insensitive exact name match, or creates a player with that name. */
+  async findOrCreateByExactName(name: string): Promise<Player> {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Opponent name is empty.');
+    }
+    const existing = await this.playerModel
+      .findOne({ name: new RegExp(`^${escapeRegex(trimmed)}$`, 'i') })
+      .exec();
+    if (existing) {
+      return existing;
+    }
+    return this.playerModel.create({ name: trimmed, team: '' });
   }
 
   async update(id: string, dto: Partial<Pick<Player, 'name' | 'team'>>): Promise<Player | null> {

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -9,11 +10,18 @@ import {
   Post,
   Query,
   Req,
+  UnauthorizedException,
+  UploadedFile,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { Request } from 'express';
+import { memoryStorage } from 'multer';
 import { Match } from './schemas/lorcana-match.schema';
 import { MatchesService } from './matches.service';
+import { DuelsImportService } from './duels-import.service';
 import { AuthService } from '../auth/auth.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { GlobalMatchStats } from '../analytics/interfaces/analytics-response.interface';
@@ -41,6 +49,7 @@ function toPlayerId(p: unknown): string | null {
 export class MatchesController {
   constructor(
     private readonly matchesService: MatchesService,
+    private readonly duelsImportService: DuelsImportService,
     private readonly authService: AuthService,
     private readonly analyticsService: AnalyticsService,
   ) {}
@@ -75,6 +84,53 @@ export class MatchesController {
   @Get('tournaments')
   async getTournamentNames(): Promise<{ tournamentNames: string[] }> {
     return this.matchesService.getDistinctTournamentNames();
+  }
+
+  /** Creates an Online-stage match from duels.ink replay files (.gz per game or one .zip of .gz). Caller is P1. */
+  @Post('import-duels')
+  @UseInterceptors(
+    FilesInterceptor('files', 3, {
+      storage: memoryStorage(),
+    }),
+  )
+  async importDuels(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Req() req: Request & { user?: JwtPayload },
+  ): Promise<Match> {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
+    return this.duelsImportService.createMatchFromUploads(userId, files ?? []);
+  }
+
+  /**
+   * Bulk import: one `.zip` (or `.tar.gz`) with day folders and `.gz` games inside. Replays with
+   * `matchView` group into matches; replays without `matchView` become one match per game.
+   */
+  @Post('import-duels-bulk')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 150 * 1024 * 1024 },
+    }),
+  )
+  async importDuelsBulk(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: Request & { user?: JwtPayload },
+  ): Promise<{ matches: Match[] }> {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('No file uploaded.');
+    }
+    const matches = await this.duelsImportService.createMatchesFromBulkArchive(
+      userId,
+      file.buffer as Buffer,
+    );
+    return { matches };
   }
 
   /** Returns a single match by id. */

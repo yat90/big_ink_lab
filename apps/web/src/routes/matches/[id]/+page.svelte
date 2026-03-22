@@ -139,6 +139,7 @@
     if (type === 'lore_decreased') return 'Lore −';
     if (type === 'start') return 'Start';
     if (type === 'end') return 'End';
+    if (type === 'game_conceded') return 'Conceded';
     if (type === 'lore_update') return 'Lore change';
     return type;
   }
@@ -853,14 +854,13 @@
                 </span>
               </span>
             </div>
-
-            {#if match.notes}
-              <div>
-                <dt class="muted match-page__dl-label">Notes</dt>
-                <dd>{match.notes}</dd>
-              </div>
-            {/if}
           </div>
+          {#if match.notes}
+            <div class="match-page__matchcard-notes-row">
+              <span class="muted match-page__dl-label">Notes</span>
+              <p class="match-page__matchcard-notes-text">{match.notes}</p>
+            </div>
+          {/if}
         {/if}
       </div>
 
@@ -1201,6 +1201,20 @@
   }
   .matchcard__name_text {
     font-size: 1.5rem;
+  }
+
+  .match-page__matchcard-notes-row {
+    width: 100%;
+    margin-top: var(--space-md, 1rem);
+    padding-top: var(--space-md, 1rem);
+    border-top: 1px solid var(--glass-border);
+  }
+  .match-page__matchcard-notes-text {
+    margin: 0.35rem 0 0 0;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
   .matchcard__wins,

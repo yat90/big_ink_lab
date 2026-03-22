@@ -615,6 +615,7 @@ export class AnalyticsService {
       [Stage.Tournament]: 0,
       [Stage.Casual]: 0,
       [Stage.Practice]: 0,
+      [Stage.Online]: 0,
     };
     let totalGames = 0;
     let gamesWonByStarter = 0;

@@ -87,6 +87,48 @@ export class MatchesService {
     return this.matchModel.findById(id).populate('p1 p2 matchWinner p1Deck p2Deck').exec();
   }
 
+  /**
+   * Duels.ink `gameId` values already stored for this player (from `games.notes`:
+   * `duels.ink import · gameId …`).
+   */
+  async findDuelsGameIdsAlreadyImported(playerId: string, gameIds: string[]): Promise<Set<string>> {
+    if (gameIds.length === 0) return new Set();
+    const unique = [...new Set(gameIds)];
+    const matches = await this.matchModel
+      .find({ $or: [{ p1: playerId }, { p2: playerId }] })
+      .select('games')
+      .lean()
+      .exec();
+    const found = new Set<string>();
+    for (const m of matches) {
+      const games = (m as { games?: Array<{ notes?: string }> }).games ?? [];
+      for (const g of games) {
+        const n = (g.notes ?? '').trim();
+        if (!n) continue;
+        for (const id of unique) {
+          if (n.includes(`gameId ${id}`)) {
+            found.add(id);
+          }
+        }
+      }
+    }
+    return found;
+  }
+
+  /** True if a bulk duels import already created a match for this `matchView` id (match `notes`). */
+  async hasDuelsBulkMatchViewImport(playerId: string, matchViewId: string): Promise<boolean> {
+    const escaped = matchViewId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const doc = await this.matchModel
+      .findOne({
+        $or: [{ p1: playerId }, { p2: playerId }],
+        notes: { $regex: new RegExp(`matchView\\s+${escaped}`) },
+      })
+      .select('_id')
+      .lean()
+      .exec();
+    return doc != null;
+  }
+
   async create(dto: Partial<Match>): Promise<Match> {
     const toCreate = { ...dto } as Partial<Match>;
     if (toCreate.games != null && toCreate.p1 && toCreate.p2) {
@@ -112,10 +154,10 @@ export class MatchesService {
       }
     }
     const defaultColor = DeckColor.AmberAmethyst;
-    if (!toCreate.p1DeckColor) {
+    if (toCreate.p1DeckColor === undefined || toCreate.p1DeckColor === null) {
       toCreate.p1DeckColor = defaultColor;
     }
-    if (!toCreate.p2DeckColor) {
+    if (toCreate.p2DeckColor === undefined || toCreate.p2DeckColor === null) {
       toCreate.p2DeckColor = defaultColor;
     }
     const created = await this.matchModel.create(toCreate);
