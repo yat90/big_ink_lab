@@ -40,6 +40,13 @@ export class PlayersController {
     return createPaginatedResponse(data, total, page, limit);
   }
 
+  /** Returns distinct team names for filters (no pagination). */
+  @Get('teams')
+  async getTeamNames(): Promise<{ teams: string[] }> {
+    const teams = await this.playersService.findDistinctTeamNames();
+    return { teams };
+  }
+
   /** Returns a single player by id with stats and decks used. */
   @Get(':id')
   async findOne(

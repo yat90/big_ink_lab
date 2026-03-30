@@ -35,6 +35,15 @@ export class PlayersService {
     return { data, total };
   }
 
+  /** Distinct non-empty team names, trimmed and sorted for UI filters. */
+  async findDistinctTeamNames(): Promise<string[]> {
+    const raw = await this.playerModel.distinct<string>('team').exec();
+    return raw
+      .map((t) => (typeof t === 'string' ? t : String(t)).trim())
+      .filter((t) => t !== '')
+      .sort((a, b) => a.localeCompare(b));
+  }
+
   async findOne(id: string): Promise<Player | null> {
     return this.playerModel.findById(id).exec();
   }
