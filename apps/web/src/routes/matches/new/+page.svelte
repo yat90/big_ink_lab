@@ -1,14 +1,18 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { getAuthToken } from '$lib/auth';
   import { config } from '$lib/config';
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
   import DeckPickerModal from '$lib/DeckPickerModal.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
+  import TournamentPickerModal from '$lib/TournamentPickerModal.svelte';
   import { STAGE_OPTIONS } from '$lib/matches';
   import { onMount } from 'svelte';
 
   type Player = { _id: string; name: string; team: string };
+
+  type TournamentPick = { _id: string; name: string; date: string };
 
   let players = $state<Player[]>([]);
   let p1 = $state('');
@@ -22,19 +26,26 @@
   let deckPickerOpen = $state(false);
   let deckPickerRole = $state<'p1' | 'p2'>('p1');
   let stage = $state('Casual');
-  let tournamentName = $state('');
-  let tournamentNames = $state<string[]>([]);
   function nowForDatetimeLocal(): string {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
+  function isoToDatetimeLocal(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return nowForDatetimeLocal();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
   let playedAt = $state(nowForDatetimeLocal());
-  let round = $state<number | ''>('');
+  let round = $state('');
+  let tournaments = $state<TournamentPick[]>([]);
+  let tournamentId = $state('');
+  let tournamentsLoading = $state(false);
+  let tournamentsError = $state('');
+  let tournamentPickerOpen = $state(false);
   let p1DeckColor = $state('');
   let p2DeckColor = $state('');
-  let matchWinner = $state('');
-  let notes = $state('');
   let loading = $state(false);
   let error = $state('');
 
@@ -47,19 +58,6 @@
   const apiUrl = config.apiUrl ?? '/api';
 
   const BIG_INK_TEAM = 'The Big Ink Theory';
-  const playersForSelect = $derived(
-    [...players].sort((a, b) => {
-      const aPreferred = (a.team?.trim() ?? '') === BIG_INK_TEAM;
-      const bPreferred = (b.team?.trim() ?? '') === BIG_INK_TEAM;
-      if (aPreferred && !bPreferred) return -1;
-      if (!aPreferred && bPreferred) return 1;
-      return 0;
-    })
-  );
-
-  const winnerOptions = $derived(
-    [p1, p2].map((id) => players.find((pl) => pl._id === id)).filter((pl): pl is Player => !!pl)
-  );
 
   function getPlayerTeam(playerId: string): string {
     return (players.find((pl) => pl._id === playerId)?.team ?? '').trim();
@@ -127,31 +125,9 @@
   const p2DeckButtonLabel = $derived(p2DeckDisplayName || '—');
 
   $effect(() => {
-    if (matchWinner && !winnerOptions.some((pl) => pl._id === matchWinner)) {
-      matchWinner = '';
-    }
-  });
-
-  $effect(() => {
     if (p1 && p2 === p1) {
       p2 = '';
     }
-  });
-
-  async function fetchTournamentNames() {
-    try {
-      const res = await fetch(`${apiUrl}/matches/tournaments`);
-      if (res.ok) {
-        const data = await res.json();
-        tournamentNames = data.tournamentNames ?? [];
-      }
-    } catch {
-      tournamentNames = [];
-    }
-  }
-
-  $effect(() => {
-    if (stage === 'Tournament') void fetchTournamentNames();
   });
 
   async function fetchPlayers() {
@@ -182,6 +158,72 @@
     }
   }
 
+  async function ensureTournamentsLoaded() {
+    if (tournamentsLoading || tournaments.length > 0) return;
+    tournamentsError = '';
+    tournamentsLoading = true;
+    try {
+      const params = new URLSearchParams({ page: '1', limit: '100' });
+      const res = await fetch(`${apiUrl}/tournaments?${params}`);
+      if (!res.ok) {
+        tournamentsError = 'Could not load tournaments.';
+        return;
+      }
+      const json = await res.json();
+      const data: unknown[] = Array.isArray(json) ? json : (json?.data ?? []);
+      tournaments = data.map((row) => {
+        const r = row as Record<string, unknown>;
+        const id = String(r._id ?? '');
+        const name = String(r.name ?? 'Tournament');
+        let dateStr = '';
+        const raw = r.date;
+        if (typeof raw === 'string') dateStr = raw;
+        else if (raw instanceof Date) dateStr = raw.toISOString();
+        else if (raw != null) dateStr = new Date(String(raw)).toISOString();
+        return { _id: id, name, date: dateStr || new Date(0).toISOString() };
+      });
+    } catch {
+      tournamentsError = 'Could not load tournaments.';
+    } finally {
+      tournamentsLoading = false;
+    }
+  }
+
+  function formatTournamentOptionLabel(t: TournamentPick): string {
+    if (!t.date) return t.name;
+    try {
+      const d = new Date(t.date);
+      if (Number.isNaN(d.getTime())) return t.name;
+      const short = d.toLocaleDateString(undefined, { dateStyle: 'medium' });
+      return `${t.name} (${short})`;
+    } catch {
+      return t.name;
+    }
+  }
+
+  function handleTournamentPickerSelect(id: string) {
+    tournamentId = id;
+    const t = tournaments.find((x) => x._id === id);
+    if (t?.date) playedAt = isoToDatetimeLocal(t.date);
+  }
+
+  const tournamentButtonLabel = $derived.by(() => {
+    if (tournamentsLoading) return 'Loading…';
+    if (!tournamentId.trim()) return 'Select tournament (optional)';
+    const t = tournaments.find((x) => x._id === tournamentId);
+    return t ? formatTournamentOptionLabel(t) : 'Select tournament (optional)';
+  });
+
+  $effect(() => {
+    if (stage !== 'Tournament') {
+      tournamentId = '';
+      tournamentPickerOpen = false;
+      return;
+    }
+    if (!browser) return;
+    void ensureTournamentsLoaded();
+  });
+
   onMount(async () => {
     await fetchPlayers();
     await preselectMyPlayer();
@@ -196,7 +238,11 @@
       const res = await fetch(`${apiUrl}/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newPlayerName.trim(), team: newPlayerTeam.trim() }),
+        body: JSON.stringify({
+          name: newPlayerName.trim(),
+          team: newPlayerTeam.trim(),
+          isGuest: false,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -232,13 +278,13 @@
         p2DeckColor: p2DeckColor || undefined,
         p1Deck: p1DeckId.trim() || undefined,
         p2Deck: p2DeckId.trim() || undefined,
-        matchWinner: matchWinner || undefined,
-        notes: notes.trim(),
         games: [],
       };
       if (stage === 'Tournament') {
-        body.tournamentName = tournamentName.trim();
-        body.round = round === '' ? undefined : Number(round);
+        const tid = tournamentId.trim();
+        if (tid) body.tournament = tid;
+        const r = round.trim();
+        if (r) body.round = r;
       }
       const res = await fetch(`${apiUrl}/matches`, {
         method: 'POST',
@@ -270,7 +316,6 @@
 
     <!-- Match base info -->
     <section class="card stack new-match__card" aria-labelledby="match-card-title">
-      <h3 id="match-card-title" class="card__title new-match__card-title">Match</h3>
       <div class="formgrid">
         <label class="label" for="stage">
           Stage
@@ -286,37 +331,34 @@
         </label>
       </div>
       {#if stage === 'Tournament'}
-        <label class="label" for="tournamentName">Tournament name</label>
-        <input
-          id="tournamentName"
-          type="text"
-          class="input"
-          bind:value={tournamentName}
-          placeholder="Tournament name"
-          list={tournamentNames.length > 0 ? 'new-match-tournament-datalist' : undefined}
-          autocomplete="off"
-        />
-        {#if tournamentNames.length > 0}
-          <datalist id="new-match-tournament-datalist">
-            {#each tournamentNames as name (name)}
-              <option value={name}></option>
-            {/each}
-          </datalist>
+        <label class="label" for="match-tournament">Tournament</label>
+        <button
+          id="match-tournament"
+          type="button"
+          class="input new-match__select-btn"
+          onclick={() => (tournamentPickerOpen = true)}
+          disabled={tournamentsLoading}
+          title="Click to choose tournament"
+        >
+          {tournamentButtonLabel}
+        </button>
+        {#if tournamentsError}
+          <p class="alert" role="alert">{tournamentsError}</p>
         {/if}
         <label class="label" for="round">Round</label>
         <input
           id="round"
-          type="number"
+          type="text"
           class="input"
-          min="1"
+          autocomplete="off"
           bind:value={round}
-          placeholder="Round number"
+          placeholder="e.g. 1, 2, top 8, final"
         />
       {/if}
     </section>
 
     <!-- Player 1 -->
-    <section class="card stack new-match__card" aria-labelledby="p1-card-title">
+    <section class="card stack new-match__card new-match__card--player" aria-labelledby="p1-card-title">
       <h3 id="p1-card-title" class="card__title new-match__card-title">Player 1</h3>
       <label class="label" for="p1">Player</label>
       <button
@@ -345,7 +387,7 @@
     </section>
 
     <!-- Player 2 -->
-    <section class="card stack new-match__card" aria-labelledby="p2-card-title">
+    <section class="card stack new-match__card new-match__card--player" aria-labelledby="p2-card-title">
       <h3 id="p2-card-title" class="card__title new-match__card-title">Player 2</h3>
       <label class="label" for="p2">Player</label>
       <button
@@ -424,25 +466,6 @@
       <DeckColorSelect id="p2DeckColor" bind:value={p2DeckColor} ariaLabel="P2 deck color" />
     </section>
 
-    <section
-      class="card stack new-match__card new-match__outcome-card"
-      aria-labelledby="outcome-card-title"
-    >
-      <h3 id="outcome-card-title" class="card__title new-match__card-title">Outcome</h3>
-      <label class="label" for="matchWinner">Winner</label>
-      <select id="matchWinner" class="input" bind:value={matchWinner}>
-        <option value="">–</option>
-        {#each winnerOptions as pl}
-          <option value={pl._id}
-            >{pl.name}{#if pl.team}
-              – {pl.team}{/if}</option
-          >
-        {/each}
-      </select>
-      <label class="label" for="notes">Notes</label>
-      <input id="notes" type="text" class="input" bind:value={notes} placeholder="Optional" />
-    </section>
-
     {#if error}
       <p class="alert" role="alert" aria-live="assertive">{error}</p>
     {/if}
@@ -470,6 +493,16 @@
     filterPlayerId={deckPickerRole === 'p1' ? p1 : p2}
     onSelect={handleDeckSelect}
     onClose={() => (deckPickerOpen = false)}
+  />
+  <TournamentPickerModal
+    bind:open={tournamentPickerOpen}
+    title="Select tournament"
+    tournaments={tournaments}
+    loading={tournamentsLoading}
+    error={tournamentsError}
+    selectedId={tournamentId}
+    onSelect={handleTournamentPickerSelect}
+    onClose={() => (tournamentPickerOpen = false)}
   />
 </div>
 
@@ -517,12 +550,16 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: var(--space-md, 1rem);
-      align-items: start;
+      align-items: stretch;
+    }
+    /** P1 / P2 share one row — stretch so both cards match the taller column. */
+    .new-match__form .new-match__card--player {
+      height: 100%;
+      min-height: 0;
     }
     .new-match__form .new-match__card:first-of-type {
       grid-column: 1 / -1;
     }
-    .new-match__form .new-match__outcome-card,
     .new-match__form .new-match__add-player-row,
     .new-match__form .new-match__add-player-card,
     .new-match__form .alert,

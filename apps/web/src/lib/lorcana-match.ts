@@ -5,12 +5,23 @@ export type LorcanaMatchPlayer = { _id: string; name: string; team?: string };
 export type LorcanaMatchDeckRef = { _id: string; name?: string };
 
 /** Lorcana match document shape (list, detail, and analytics-derived rows). */
+export type LorcanaTournamentRef = {
+  _id: string;
+  name?: string;
+  date?: string;
+  location?: string;
+  url?: string;
+  /** Card pool / format, e.g. "Set 11", "Infinity". */
+  meta?: string;
+};
+
 export type LorcanaMatch = {
   _id: string;
   stage?: string;
-  tournamentName?: string;
+  tournament?: LorcanaTournamentRef | string;
   playedAt?: string;
-  round?: number;
+  /** Swiss index ("1", "2") or label ("top 8", "final"). */
+  round?: string;
   p1?: LorcanaMatchPlayer | string;
   p2?: LorcanaMatchPlayer | string;
   p1DeckColor?: string;
@@ -57,6 +68,35 @@ export function recentFormToLorcanaMatch(
     matchWinner: r.matchWon ? viewerPlayerId : STATS_RECENT_FORM_OPPONENT_ID,
     games,
   };
+}
+
+/** Normalizes API round (string or legacy BSON number) for filters and equality. */
+export function getMatchRoundKey(round: unknown): string | null {
+  if (round == null || round === '') return null;
+  const s = String(round).trim();
+  return s === '' ? null : s;
+}
+
+/**
+ * Display suffix for lists/cards: plain digits → `R3`; other labels unchanged (e.g. `top 8`).
+ */
+export function formatMatchRoundLabel(round: string | number | null | undefined): string {
+  const key = getMatchRoundKey(round);
+  if (key == null) return '';
+  if (/^\d+$/.test(key)) return `R${key}`;
+  return key;
+}
+
+/**
+ * Label for match list/detail meta lines: uses populated {@link LorcanaMatch.tournament} name when
+ * present, otherwise {@link LorcanaMatch.stage} (e.g. Casual, Tournament).
+ */
+export function matchStageOrTournamentLabel(m: LorcanaMatch): string {
+  const t = m.tournament;
+  if (t && typeof t === 'object' && t.name?.trim()) {
+    return t.name.trim();
+  }
+  return m.stage ?? '–';
 }
 
 export function getLorcanaMatchPlayerId(

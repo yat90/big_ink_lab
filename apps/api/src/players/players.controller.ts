@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, NotFoundException, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  Param,
+  ParseBoolPipe,
+  Patch,
+  Post,
+  Query,
+  NotFoundException,
+  UseGuards,
+} from '@nestjs/common';
 import { Player } from '../matches/schemas/player.schema';
 import { PlayersService } from './players.service';
 import { AnalyticsService } from '../analytics/analytics.service';
@@ -36,14 +48,17 @@ export class PlayersController {
       limit,
       query.name,
       query.team,
+      query.includeGuests === true,
     );
     return createPaginatedResponse(data, total, page, limit);
   }
 
   /** Returns distinct team names for filters (no pagination). */
   @Get('teams')
-  async getTeamNames(): Promise<{ teams: string[] }> {
-    const teams = await this.playersService.findDistinctTeamNames();
+  async getTeamNames(
+    @Query('includeGuests', new DefaultValuePipe(false), ParseBoolPipe) includeGuests: boolean,
+  ): Promise<{ teams: string[] }> {
+    const teams = await this.playersService.findDistinctTeamNames(includeGuests);
     return { teams };
   }
 

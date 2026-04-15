@@ -6,6 +6,11 @@
   import { getAuthToken } from '$lib/auth';
   import { STAGE_OPTIONS } from '$lib/matches';
   import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
+  import {
+    formatMatchRoundLabel,
+    getMatchRoundKey,
+    matchStageOrTournamentLabel,
+  } from '$lib/lorcana-match';
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import IconUpload from '$lib/icons/IconUpload.svelte';
@@ -21,8 +26,8 @@
   const PAGE_SIZE = 10;
 
   let filterStage = $state<string>('');
-  /** When set (e.g. from URL `?tournamentName=`), filters API by tournament name. */
-  let filterTournamentName = $state<string>('');
+  /** When set (from URL `?tournamentId=`), filters matches linked to that tournament entity. */
+  let filterTournamentId = $state<string>('');
   /** '' = all time (default so stage filters e.g. Tournament aren’t hidden by a tight window). */
   let filterTime = $state<string>('');
   let filterPlayerId = $state<string>('');
@@ -123,7 +128,7 @@
       // eslint-disable-next-line svelte/prefer-svelte-reactivity
       const params = new URLSearchParams();
       if (filterStage) params.set('stage', filterStage);
-      if (filterTournamentName.trim()) params.set('tournamentName', filterTournamentName.trim());
+      if (filterTournamentId.trim()) params.set('tournamentId', filterTournamentId.trim());
       if (filterPlayerId) params.set('player', filterPlayerId);
       if (range.fromDate) params.set('fromDate', range.fromDate);
       if (range.toDate) params.set('toDate', range.toDate);
@@ -159,18 +164,18 @@
   function clearFilters() {
     filterStage = '';
     filterTime = '';
-    filterTournamentName = '';
+    filterTournamentId = '';
     filterPlayerId = '';
     filterPlayerName = '';
   }
 
   $effect(() => {
-    const t = $page.url.searchParams.get('tournamentName');
+    const tid = $page.url.searchParams.get('tournamentId');
     const s = $page.url.searchParams.get('stage');
-    filterTournamentName = t ?? '';
+    filterTournamentId = tid ?? '';
     if (s && STAGE_OPTIONS.includes(s as (typeof STAGE_OPTIONS)[number])) {
       filterStage = s;
-    } else if (t) {
+    } else if (tid) {
       filterStage = 'Tournament';
     }
   });
@@ -292,13 +297,13 @@
   $effect(() => {
     // Track filter deps so we reset page when they change
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [filterStage, filterTime, filterPlayerId, filterTournamentName];
+    const _ = [filterStage, filterTime, filterPlayerId, filterTournamentId];
     currentPage = 1;
   });
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _ = [currentPage, filterStage, filterTime, filterPlayerId, filterTournamentName];
+    const _ = [currentPage, filterStage, filterTime, filterPlayerId, filterTournamentId];
     fetchMatches();
   });
 </script>
@@ -340,7 +345,7 @@
     <div class="card" role="alert" aria-live="assertive">
       <p class="alert">{error}</p>
     </div>
-  {:else if matches.length === 0 && !filterStage && !filterTime && !filterPlayerId}
+  {:else if matches.length === 0 && !filterStage && !filterTime && !filterPlayerId && !filterTournamentId}
     <div class="card stack">
       <h2 class="card__title">No matches yet</h2>
       <p class="card__sub">Create your first match or import replays from duels.ink.</p>
@@ -412,7 +417,7 @@
       </h2>
       <div class="row" style="gap: var(--space-sm); flex-wrap: wrap;">
         <a href="/matches/quick" class="btn">Quick match</a>
-        <a href="/tournaments/results" class="btn">Tournament results</a>
+        <a href="/tournaments" class="btn">Tournaments</a>
         {#if myPlayerId}
           <details
             bind:this={duelsImportMenu}
@@ -535,9 +540,8 @@
             style="text-decoration: none; color: inherit;"
           >
             <div class="matchcard__top muted">
-              {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName}
-                · {match.tournamentName}{/if}{#if (match.stage === 'Tournament' || match.tournamentName) && match.round != null}
-                · R{match.round}{/if}
+              {formatDate(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
+                · {formatMatchRoundLabel(match.round)}{/if}
             </div>
             <div class="matchcard__row">
               <div

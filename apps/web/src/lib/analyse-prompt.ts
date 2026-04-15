@@ -1,4 +1,5 @@
 import type { Deck } from '$lib/decks';
+import { formatMatchRoundLabel } from './lorcana-match';
 
 /** Deck reference as stored on match (id + name). */
 export type DeckRef = { _id: string; name: string };
@@ -66,7 +67,6 @@ export function formatDeckListForPrompt(
  */
 export interface AnalysePromptInput {
   stage: string;
-  tournamentName: string;
   round: string | number;
   p1Name: string;
   p2Name: string;
@@ -99,7 +99,6 @@ export interface GameSummaryForPrompt {
  */
 export interface AnalyseMatchPromptInput {
   stage: string;
-  tournamentName: string;
   round: string | number;
   p1Name: string;
   p2Name: string;
@@ -120,7 +119,6 @@ export class AnalysePromptBuilder {
   build(): string {
     const {
       stage,
-      tournamentName,
       round,
       p1Name,
       p2Name,
@@ -138,8 +136,12 @@ export class AnalysePromptBuilder {
         ? events.map((e) => `${e.time} ${e.typeLabel} (${e.playerLabel})`).join('\n')
         : 'No events recorded.';
 
+    const roundPart =
+      round != null && round !== '' && String(round) !== '–'
+        ? ` · ${formatMatchRoundLabel(round)}`
+        : '';
     return `Analyse this Lorcana match game.
-Match: ${stage} ${tournamentName} ${round}
+Match: ${stage}${roundPart}
 
 Player 1: ${p1Name} 
 DeckList: ${p1DeckList}
@@ -174,7 +176,6 @@ export class AnalyseMatchPromptBuilder {
   build(): string {
     const {
       stage,
-      tournamentName,
       round,
       p1Name,
       p2Name,
@@ -184,9 +185,13 @@ export class AnalyseMatchPromptBuilder {
       matchWinner,
     } = this.input;
 
+    const roundPart =
+      round != null && round !== '' && String(round) !== '–'
+        ? ` · ${formatMatchRoundLabel(round)}`
+        : '';
     const matchHeader = [
       `Analyse this Lorcana match (${games.length} game${games.length === 1 ? '' : 's'}).`,
-      `Match: ${stage} ${tournamentName} ${round}`,
+      `Match: ${stage}${roundPart}`,
       matchWinner ? `Result: ${matchWinner}` : '',
     ]
       .filter(Boolean)

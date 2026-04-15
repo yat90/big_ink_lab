@@ -63,7 +63,10 @@
       if (p.startsWith('/decks')) return 'Decks';
       if (p === '/stats') return 'Statistics';
       if (p === '/matches/new') return 'New match';
-      if (p.startsWith('/tournaments')) return 'Tournament results';
+      if (p === '/tournaments') return 'Tournaments';
+      if (p === '/tournaments/new') return 'New tournament';
+      if (p === '/tournaments/results') return 'Tournament results';
+      if (/^\/tournaments\/[a-f\d]{24}$/i.test(p)) return 'Tournament';
       if (p.startsWith('/matches')) return 'Matches';
       return 'Big Ink Lab';
     })()

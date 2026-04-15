@@ -1,24 +1,27 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
-  IsInt,
+  IsBoolean,
+  IsIn,
   IsMongoId,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
 export class TournamentBulkGameDto {
-  @IsMongoId()
-  winner: string;
+  @IsIn(['p1', 'p2'])
+  winnerSide: 'p1' | 'p2';
 
   @IsOptional()
-  @IsMongoId()
-  starter?: string;
+  @IsIn(['p1', 'p2'])
+  starterSide?: 'p1' | 'p2';
 
   @IsOptional()
   @IsNumber()
@@ -38,28 +41,35 @@ export class TournamentBulkGameDto {
 }
 
 export class TournamentBulkRoundDto {
-  @IsInt()
-  @Min(1)
-  @Type(() => Number)
-  round: number;
+  @Transform(({ value }) =>
+    value === null || value === undefined || value === ''
+      ? value
+      : String(value).trim(),
+  )
+  @IsString()
+  @IsNotEmpty()
+  round: string;
 
-  @IsMongoId()
-  p1: string;
-
-  @IsMongoId()
-  p2: string;
-
+  /** When true, creates a match with no games and no winner (intentional draw). Requires opponentName. */
   @IsOptional()
-  @IsMongoId()
-  p1Deck?: string;
+  @IsBoolean()
+  intentionalDraw?: boolean;
+
+  /** Opponent display name; API resolves to an existing player or creates a guest player. */
+  @ValidateIf((o: TournamentBulkRoundDto) => !o.intentionalDraw)
+  @Transform(({ value }) =>
+    value === null || value === undefined || value === ''
+      ? value
+      : String(value).trim(),
+  )
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  opponentName?: string;
 
   @IsOptional()
   @IsMongoId()
   p2Deck?: string;
-
-  @IsOptional()
-  @IsString()
-  p1DeckColor?: string;
 
   @IsOptional()
   @IsString()
@@ -69,21 +79,36 @@ export class TournamentBulkRoundDto {
   @IsString()
   notes?: string;
 
+  @ValidateIf((o: TournamentBulkRoundDto) => !o.intentionalDraw)
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => TournamentBulkGameDto)
-  games: TournamentBulkGameDto[];
+  games?: TournamentBulkGameDto[];
 }
 
 export class TournamentBulkResultsDto {
-  @IsString()
-  @IsNotEmpty()
-  tournamentName: string;
+  /** Matches are linked to this tournament; default time comes from the entity when `playedAt` is omitted. */
+  @IsMongoId()
+  tournamentId: string;
 
+  /** Optional; when omitted with `tournamentId`, defaults to the tournament entity date. */
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  playedAt: string;
+  playedAt?: string;
+
+  /** Same player 1 (and deck / color) for every match in this bulk create. */
+  @IsMongoId()
+  p1: string;
+
+  @IsOptional()
+  @IsMongoId()
+  p1Deck?: string;
+
+  @IsOptional()
+  @IsString()
+  p1DeckColor?: string;
 
   @IsArray()
   @ArrayMinSize(1)

@@ -67,25 +67,13 @@ export class MatchesController {
   @Get('stats')
   async getStats(@Query() query: StatsQueryDto): Promise<GlobalMatchStats> {
     const stages = Array.isArray(query.stage) ? query.stage : query.stage ? [query.stage] : undefined;
-    const tournamentName = query.tournamentName?.trim() || undefined;
+    const tournamentId = query.tournamentId?.trim() || undefined;
     const matrixMode = query.matrixMode === 'games' ? 'games' : 'matches';
-    return this.analyticsService.getGlobalMatchStats(stages, tournamentName, matrixMode);
+    return this.analyticsService.getGlobalMatchStats(stages, matrixMode, tournamentId);
   }
 
-  /** Aggregated list of tournaments (name, match count, last played). */
-  @Get('tournaments/summary')
-  async getTournamentSummaries(): Promise<
-    Array<{ tournamentName: string; matchCount: number; latestPlayedAt: Date | null }>
-  > {
-    return this.matchesService.getTournamentSummaries();
-  }
-
-  /** Returns distinct tournament names for Tournament stage. */
-  @Get('tournaments')
-  async getTournamentNames(): Promise<{ tournamentNames: string[] }> {
-    return this.matchesService.getDistinctTournamentNames();
-  }
-
+ 
+ 
   /** Creates an Online-stage match from duels.ink replay files (.gz per game or one .zip of .gz). Caller is P1. */
   @Post('import-duels')
   @UseInterceptors(
@@ -149,7 +137,7 @@ export class MatchesController {
   @Post('tournaments/bulk-results')
   async createTournamentBulkResults(
     @Body() dto: TournamentBulkResultsDto
-  ): Promise<{ created: Match[]; failed: Array<{ round: number; message: string }> }> {
+  ): Promise<{ created: Match[]; failed: Array<{ round: string; message: string }> }> {
     return this.matchesService.createTournamentBulkResults(dto);
   }
 

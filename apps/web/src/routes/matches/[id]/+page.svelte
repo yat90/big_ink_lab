@@ -9,6 +9,11 @@
     LorcanaMatchDeckRef,
     LorcanaMatchPlayer,
   } from '$lib/lorcana-match';
+  import {
+    formatMatchRoundLabel,
+    getMatchRoundKey,
+    matchStageOrTournamentLabel,
+  } from '$lib/lorcana-match';
   import type { Deck } from '$lib/decks';
   import {
     AnalysePromptBuilder,
@@ -62,7 +67,6 @@
   let updatingMatchWinner = $state(false);
   let updatingPlayer = $state<'p1' | 'p2' | null>(null);
   let updatingStage = $state(false);
-  let updatingTournamentName = $state(false);
   let updatingRound = $state(false);
   /** True when the player header is stuck at the top (sticky). */
   let playerHeaderStuck = $state(false);
@@ -197,7 +201,6 @@
     }));
     return AnalysePromptBuilder.createGamePrompt({
       stage: match.stage ?? '–',
-      tournamentName: match.tournamentName ?? '–',
       round: match.round ?? '–',
       p1Name,
       p2Name,
@@ -249,7 +252,6 @@
 
     return AnalyseMatchPromptBuilder.createMatchPrompt({
       stage: match.stage ?? '–',
-      tournamentName: match.tournamentName ?? '–',
       round: match.round ?? '–',
       p1Name,
       p2Name,
@@ -422,35 +424,13 @@
     }
   }
 
-  async function onTournamentNameChange(tournamentName: string) {
-    if (!match) return;
-    updatingTournamentName = true;
-    error = '';
-    try {
-      const res = await fetch(`${apiUrl}/matches/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tournamentName: tournamentName.trim() || undefined }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Update failed';
-        return;
-      }
-      match = await res.json();
-    } catch {
-      error = 'Could not reach API.';
-    } finally {
-      updatingTournamentName = false;
-    }
-  }
-
-  async function onRoundChange(round: number | '') {
+  async function onRoundChange(round: string) {
     if (!match) return;
     updatingRound = true;
     error = '';
     try {
-      const value = round === '' ? undefined : Number(round);
+      const trimmed = round.trim();
+      const value = trimmed === '' ? null : trimmed;
       const res = await fetch(`${apiUrl}/matches/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -706,12 +686,9 @@
       <div class="matchcard tack">
         <div class="matchcard__top matchcard__top--row muted">
           <span class="matchcard__top-inner">{formatDate(match.playedAt)} ·</span>
-          <span class="matchcard__top-inner">{match.stage ?? '–'}</span>
-          {#if match.tournamentName}
-            <span class="matchcard__top-inner">· {match.tournamentName}</span>
-            {#if match.round != null}
-              <span class="matchcard__top-inner">· R{match.round}</span>
-            {/if}
+          <span class="matchcard__top-inner">{matchStageOrTournamentLabel(match)}</span>
+          {#if getMatchRoundKey(match.round) != null}
+            <span class="matchcard__top-inner">· {formatMatchRoundLabel(match.round)}</span>
           {/if}
 
           {#if canEditMatch}
@@ -760,6 +737,7 @@
             <p class="muted match-page__edit-loading">Loading players and decks…</p>
           {:else}
             <MatchCardEdit
+              linkedPlayerId={myPlayerId ?? undefined}
               p1Id={p1Id ?? undefined}
               p2Id={p2Id ?? undefined}
               p1DeckColor={match.p1DeckColor ?? ''}
@@ -884,33 +862,15 @@
           </div>
           {#if match.stage === 'Tournament'}
             <div class="dl-row">
-              <dt class="muted match-page__dl-label">Tournament</dt>
-              <dd>
-                <input
-                  type="text"
-                  class="input match-page__input-tournament"
-                  value={match.tournamentName ?? ''}
-                  disabled={updatingTournamentName}
-                  onchange={(e) => onTournamentNameChange(e.currentTarget.value)}
-                  placeholder="Name"
-                  aria-label="Tournament name"
-                />
-              </dd>
-            </div>
-            <div class="dl-row">
               <dt class="muted match-page__dl-label">Round</dt>
               <dd>
                 <input
-                  type="number"
+                  type="text"
                   class="input match-page__input-round"
-                  min="1"
                   value={match.round ?? ''}
                   disabled={updatingRound}
-                  onchange={(e) => {
-                    const v = e.currentTarget.value;
-                    onRoundChange(v === '' ? '' : Number(v));
-                  }}
-                  placeholder="–"
+                  onchange={(e) => onRoundChange(e.currentTarget.value)}
+                  placeholder="e.g. 1, top 8, final"
                   aria-label="Round"
                 />
               </dd>
@@ -1313,19 +1273,8 @@
     flex-wrap: wrap;
   }
 
-  .btn--icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-
   .btn--icon .icon-trash {
     flex-shrink: 0;
-  }
-
-  .btn--icon:not(:has(.icon-trash)) {
-    gap: 0;
   }
 
   .game-events-modal__card {
@@ -1393,12 +1342,10 @@
     min-width: 140px;
   }
 
-  .match-page__input-tournament {
-    min-width: 160px;
-  }
-
   .match-page__input-round {
-    width: 4rem;
+    min-width: 12rem;
+    width: 100%;
+    max-width: 22rem;
   }
 
   .match-page__games-stack {

@@ -595,15 +595,16 @@ export class AnalyticsService {
   /** Global match stats (replaces MatchesService.getGlobalStats). */
   async getGlobalMatchStats(
     stages?: string[],
-    tournamentName?: string,
-    matrixMode: 'matches' | 'games' = 'matches'
+    matrixMode: 'matches' | 'games' = 'matches',
+    tournamentId?: string,
   ): Promise<GlobalMatchStats> {
     const filter: Record<string, unknown> = {};
     if (stages?.length && stages.every((s) => Object.values(Stage).includes(s as Stage))) {
       filter.stage = { $in: stages };
     }
-    if (tournamentName) {
-      filter.tournamentName = tournamentName;
+    const tid = tournamentId?.trim();
+    if (tid && Types.ObjectId.isValid(tid)) {
+      filter.tournament = new Types.ObjectId(tid);
     }
     const matches = await this.matchModel
       .find(filter)

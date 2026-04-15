@@ -23,6 +23,11 @@
   --primary-glow: var(--ink-glow);
   --danger: var(--big);
   --danger-hover: var(--big-hover);
+  --danger-deep: #991b1b;
+  --danger-soft: rgba(220, 38, 38, 0.14);
+  --danger-border: rgba(248, 113, 113, 0.4);
+  --danger-glow: rgba(220, 38, 38, 0.42);
+  --danger-focus-ring: #f87171;
   --ok: #22c55e;
   --ok-glow: rgba(34, 197, 94, 0.25);
 
@@ -274,6 +279,76 @@ a {
   color: white;
 }
 
+.desktop-nav__dropdown {
+  position: relative;
+  /* Extend hover hitbox so the pointer can reach the panel without leaving the dropdown. */
+  padding-bottom: 10px;
+  margin-bottom: -10px;
+}
+.desktop-nav__dropdown-panel {
+  position: absolute;
+  left: 0;
+  top: calc(100% - 2px);
+  min-width: 11rem;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.15s var(--ease),
+    transform 0.15s var(--ease),
+    visibility 0.15s;
+}
+.desktop-nav__dropdown:hover .desktop-nav__dropdown-panel,
+.desktop-nav__dropdown:focus-within .desktop-nav__dropdown-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.desktop-nav__dropdown-link {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--muted);
+  transition:
+    color var(--transition),
+    background var(--transition);
+}
+.desktop-nav__dropdown-link:hover {
+  color: var(--fg);
+  background: var(--glass-bg-strong);
+}
+.desktop-nav__dropdown-link--active {
+  color: white;
+  background: var(--ink);
+  box-shadow: 0 2px 8px var(--ink-glow);
+}
+.desktop-nav__dropdown-link--active:hover {
+  background: var(--ink-hover);
+  color: white;
+}
+
+.mobile-nav__drawer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mobile-nav__drawer-link--sub {
+  padding-left: 52px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
 /* Mobile: iOS-style glass navigation */
 .mobile-nav {
   width: 100%;
@@ -398,70 +473,6 @@ a {
 .mobile-nav__more-icon svg {
   width: 24px;
   height: 24px;
-}
-.mobile-nav__confirm-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 25;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-}
-.mobile-nav__confirm {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 30;
-  width: min(340px, calc(100vw - 32px));
-  padding: 24px;
-  background: var(--card);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-}
-.mobile-nav__confirm-title {
-  margin: 0 0 8px;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--fg);
-}
-.mobile-nav__confirm-text {
-  margin: 0 0 20px;
-  font-size: 1rem;
-  color: var(--muted);
-  line-height: 1.4;
-}
-.mobile-nav__confirm-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-.mobile-nav__confirm-btn {
-  padding: 10px 18px;
-  border-radius: var(--radius-sm);
-  font-size: 1rem;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background var(--transition),
-    color var(--transition);
-  border: none;
-}
-.mobile-nav__confirm-btn--cancel {
-  background: var(--glass-bg-strong);
-  color: var(--fg);
-}
-.mobile-nav__confirm-btn--cancel:hover {
-  background: var(--glass-bg);
-}
-.mobile-nav__confirm-btn--primary {
-  background: var(--ink);
-  color: white;
-}
-.mobile-nav__confirm-btn--primary:hover {
-  background: var(--ink-hover);
 }
 .mobile-nav__backdrop {
   position: fixed;
@@ -1073,6 +1084,10 @@ a {
   gap: 12px;
 }
 
+/**
+ * Buttons: default (glass), primary (ink gradient), danger (destructive), danger-outline (secondary destructive).
+ * Use .btn--danger for irreversible / high-impact deletes; .btn--danger-outline for remove-from-list actions.
+ */
 .btn {
   border: 1px solid var(--glass-border);
   background: var(--glass-bg);
@@ -1093,11 +1108,15 @@ a {
     background var(--transition),
     border-color var(--transition),
     transform var(--transition),
-    box-shadow var(--transition);
+    box-shadow var(--transition),
+    color var(--transition);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
 .btn:hover:not(:disabled) {
@@ -1117,32 +1136,85 @@ a {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn--sm {
-  padding: 4px 12px;
+  padding: 6px 12px;
   min-height: 44px;
+  font-size: 0.875rem;
 }
 
 .btn--primary {
   background: linear-gradient(135deg, var(--ink) 0%, #7c3aed 100%);
-  border-color: transparent;
-  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 4px 18px rgba(168, 85, 247, 0.28);
 }
 
 .btn--primary:hover:not(:disabled) {
-  background: var(--glass-bg-strong) !important;
-  border-color: var(--border-strong) !important;
+  background: linear-gradient(135deg, var(--ink-hover) 0%, #6d28d9 100%);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.16) inset,
+    0 6px 24px var(--primary-glow);
+}
+
+.btn--primary:focus-visible {
+  outline-color: #c084fc;
 }
 
 .btn--danger {
-  background: var(--danger);
-  border-color: transparent;
-  color: white;
+  background: var(--danger-border);
+  border: 2px solid rgba(248, 113, 113, 0.305);
+  color: #f9e4e4;
+  box-shadow: none;
 }
 
 .btn--danger:hover:not(:disabled) {
-  background: var(--danger-hover);
+  background: var(--danger-glow);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #fff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 6px 22px rgba(220, 38, 38, 0.55);
+}
+
+.btn--danger:focus-visible {
+  outline-color: var(--danger-focus-ring);
+}
+
+.btn--danger-outline {
+  background: transparent;
+  border: 2px solid var(--danger-border);
+  color: #fecaca;
+  box-shadow: none;
+}
+
+.btn--danger-outline:hover:not(:disabled) {
+  background: var(--danger-glow);
+  border-color: rgba(248, 113, 113, 0.55);
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+.btn--danger-outline:focus-visible {
+  outline-color: var(--danger-focus-ring);
+}
+
+.btn--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  padding-inline: 12px;
+}
+
+.btn--icon:not(:has(.icon-trash)) {
+  gap: 0;
 }
 
 .label {
@@ -1361,13 +1433,18 @@ a[class*='playercard']:active {
   gap: 2px 6px;
 }
 
-/* Mobile: move Edit/Delete buttons to second row */
+.matchcard__top-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+
+/* Mobile: Edit/Delete on their own row, aligned to the right edge */
 @media (max-width: 639px) {
   .matchcard__top-actions {
     flex-basis: 100%;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    justify-content: flex-end;
   }
 }
 
@@ -1648,4 +1725,43 @@ a[class*='playercard']:active {
   padding: 8px 14px;
   margin: -8px -14px;
   border-radius: var(--radius);
+}
+
+/* Shared page tablist (My statistics, tournament match browsing, …) */
+.app-tabs {
+  margin-top: var(--space-md);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-lg);
+}
+
+.app-tabs__tab {
+  padding: var(--space-sm) var(--space-md);
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+  font-family: inherit;
+}
+
+.app-tabs__tab:hover {
+  color: var(--fg);
+  background: var(--glass-bg-strong, rgba(0, 0, 0, 0.05));
+}
+
+.app-tabs__tab--active {
+  color: var(--fg);
+  background: var(--glass-bg-strong, rgba(0, 0, 0, 0.08));
 }

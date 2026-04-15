@@ -9,18 +9,21 @@ function escapeRegex(str: string): string {
 
 @Injectable()
 export class PlayersService {
-  constructor(
-    @InjectModel(Player.name) private readonly playerModel: Model<Player>,
-  ) {}
+  constructor(@InjectModel(Player.name) private readonly playerModel: Model<Player>) {}
 
   async findAll(
     page = 1,
     limit = 20,
     name?: string,
-    team?: string
+    team?: string,
+    /** When false (default), omit players with `isGuest: true`. */
+    includeGuests = false,
   ): Promise<{ data: Player[]; total: number }> {
     const skip = (page - 1) * limit;
     const filter: Record<string, unknown> = {};
+    if (!includeGuests) {
+      filter.isGuest = { $ne: true };
+    }
     if (name?.trim()) {
       filter.name = { $regex: name.trim(), $options: 'i' };
     }
@@ -36,8 +39,10 @@ export class PlayersService {
   }
 
   /** Distinct non-empty team names, trimmed and sorted for UI filters. */
-  async findDistinctTeamNames(): Promise<string[]> {
-    const raw = await this.playerModel.distinct<string>('team').exec();
+  async findDistinctTeamNames(includeGuests = false): Promise<string[]> {
+    const raw = await this.playerModel
+      .distinct<string>('team', includeGuests ? undefined : { isGuest: { $ne: true } })
+      .exec();
     return raw
       .map((t) => (typeof t === 'string' ? t : String(t)).trim())
       .filter((t) => t !== '')
@@ -48,8 +53,20 @@ export class PlayersService {
     return this.playerModel.findById(id).exec();
   }
 
+  async findByName(name: string): Promise<Player | null> {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      return null;
+    }
+    return this.playerModel.findOne({ name: new RegExp(`^${escapeRegex(trimmed)}$`, 'i') }).exec();
+  }
+
   async create(dto: Partial<Player>): Promise<Player> {
-    return this.playerModel.create(dto);
+    return this.playerModel.create({
+      isGuest: true,
+      team: '',
+      ...dto,
+    });
   }
 
   /** Case-insensitive exact name match, or creates a player with that name. */
@@ -64,7 +81,21 @@ export class PlayersService {
     if (existing) {
       return existing;
     }
-    return this.playerModel.create({ name: trimmed, team: '' });
+    return this.playerModel.create({ name: trimmed, team: '', isGuest: false });
+  }
+
+  /**
+   * Tournament bulk results: resolve opponent by exact name (case-insensitive).
+   * Reuses an existing player id when found; otherwise creates a guest player.
+   */
+  async resolveTournamentOpponentByName(name: string): Promise<Player> {
+    const trimmed = name.trim();
+    if (!trimmed) {
+      throw new BadRequestException('Opponent name is required.');
+    }
+    const existing = await this.findByName(trimmed);
+    if (existing) return existing;
+    return this.playerModel.create({ name: trimmed, team: '', isGuest: true });
   }
 
   async update(id: string, dto: Partial<Pick<Player, 'name' | 'team'>>): Promise<Player | null> {

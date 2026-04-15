@@ -1,9 +1,8 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { goto } from '$app/navigation';
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
-  import IconPlay from '$lib/icons/IconPlay.svelte';
+  import IconSparkle from '$lib/icons/IconSparkle.svelte';
   import IconMore from '$lib/icons/IconMore.svelte';
 
   interface Props {
@@ -12,43 +11,31 @@
   }
   let { menuOpen = false, onMoreClick }: Props = $props();
 
-  let showQuickMatchConfirm = $state(false);
-
+  const isDashboard = $derived($page.url.pathname === '/');
   const isMatches = $derived(
     $page.url.pathname.startsWith('/matches') &&
       $page.url.pathname !== '/matches/new' &&
       $page.url.pathname !== '/matches/quick'
   );
-  const isQuickMatch = $derived($page.url.pathname === '/matches/quick');
   const isStats = $derived($page.url.pathname === '/stats');
   const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
-
-  function openQuickMatchConfirm() {
-    showQuickMatchConfirm = true;
-  }
-
-  function closeQuickMatchConfirm() {
-    showQuickMatchConfirm = false;
-  }
-
-  function startQuickMatch() {
-    closeQuickMatchConfirm();
-    goto('/matches/quick');
-  }
-
-  $effect(() => {
-    if (!showQuickMatchConfirm) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeQuickMatchConfirm();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  });
+  const isStatsSection = $derived(isStats || isMyStatistics);
 </script>
 
 <div class="mobile-nav">
   <div class="mobile-nav__bar">
     <nav class="mobile-nav__pill" aria-label="Primary">
+      <a
+        href="/"
+        class="mobile-nav__item"
+        class:mobile-nav__item--active={isDashboard}
+        aria-current={isDashboard ? 'page' : undefined}
+      >
+        <span class="mobile-nav__item-icon" aria-hidden="true">
+          <IconSparkle size={24} />
+        </span>
+        <span class="mobile-nav__item-label">Dashboard</span>
+      </a>
       <a
         href="/matches"
         class="mobile-nav__item"
@@ -61,28 +48,16 @@
         <span class="mobile-nav__item-label">Matches</span>
       </a>
       <a
-        href="/me/statistics"
+        href="/stats"
         class="mobile-nav__item"
-        class:mobile-nav__item--active={isMyStatistics}
-        aria-current={isMyStatistics ? 'page' : undefined}
+        class:mobile-nav__item--active={isStatsSection}
+        aria-current={isStats ? 'page' : undefined}
       >
         <span class="mobile-nav__item-icon" aria-hidden="true">
           <IconBarChart size={24} />
         </span>
-        <span class="mobile-nav__item-label">My Stats</span>
+        <span class="mobile-nav__item-label">Statistics</span>
       </a>
-      <button
-        type="button"
-        class="mobile-nav__item"
-        class:mobile-nav__item--active={isQuickMatch}
-        aria-current={isQuickMatch ? 'page' : undefined}
-        onclick={openQuickMatchConfirm}
-      >
-        <span class="mobile-nav__item-icon" aria-hidden="true">
-          <IconPlay size={24} />
-        </span>
-        <span class="mobile-nav__item-label">Quick Match</span>
-      </button>
     </nav>
     <button
       type="button"
@@ -98,23 +73,3 @@
     </button>
   </div>
 </div>
-
-{#if showQuickMatchConfirm}
-  <div
-    class="mobile-nav__confirm-backdrop"
-    role="presentation"
-    onclick={closeQuickMatchConfirm}
-  ></div>
-  <div class="mobile-nav__confirm" role="dialog" aria-modal="true" aria-labelledby="quick-match-confirm-title">
-    <h3 id="quick-match-confirm-title" class="mobile-nav__confirm-title">Start quick match?</h3>
-    <p class="mobile-nav__confirm-text">Do you really want to start a new quick match?</p>
-    <div class="mobile-nav__confirm-actions">
-      <button type="button" class="mobile-nav__confirm-btn mobile-nav__confirm-btn--cancel" onclick={closeQuickMatchConfirm}>
-        Cancel
-      </button>
-      <button type="button" class="mobile-nav__confirm-btn mobile-nav__confirm-btn--primary" onclick={startQuickMatch}>
-        Start
-      </button>
-    </div>
-  </div>
-{/if}

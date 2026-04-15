@@ -10,7 +10,7 @@ export interface Game {
   p2Lore?: number;
   /** Game status: in progress or done. */
   status?: GameStatus;
-  /** Winner player ID (set when status is done). */
+  /** Winner player ID (set when status is done and winner is a player). */
   winner?: Types.ObjectId;
   /** Player who started the game (went first). */
   starter?: Types.ObjectId;

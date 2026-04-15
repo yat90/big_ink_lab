@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import logo from '../images/bigInkLab.png';
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
+  import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
@@ -18,6 +19,7 @@
   const isMatches = $derived(
     $page.url.pathname.startsWith('/matches') && $page.url.pathname !== '/matches/new'
   );
+  const isTournaments = $derived($page.url.pathname.startsWith('/tournaments'));
   const isPlayers = $derived(
     $page.url.pathname === '/players' || $page.url.pathname.startsWith('/players/')
   );
@@ -27,6 +29,7 @@
   const isStats = $derived($page.url.pathname === '/stats');
   const isMe = $derived($page.url.pathname === '/me');
   const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
+  const isStatsSection = $derived(isStats || isMyStatistics);
 </script>
 
 <nav class="desktop-nav" aria-label="Primary">
@@ -52,16 +55,39 @@
     <span class="desktop-nav__link-label">Matches</span>
   </a>
   <a
-    href="/stats"
+    href="/tournaments"
     class="desktop-nav__link"
-    class:desktop-nav__link--active={isStats}
-    aria-current={isStats ? 'page' : undefined}
+    class:desktop-nav__link--active={isTournaments}
+    aria-current={isTournaments ? 'page' : undefined}
   >
     <span class="desktop-nav__link-icon" aria-hidden="true">
-      <IconBarChart size={28} />
+      <IconCrownOutline size={26} />
     </span>
-    <span class="desktop-nav__link-label">Statistics</span>
+    <span class="desktop-nav__link-label">Tournaments</span>
   </a>
+  <div class="desktop-nav__dropdown">
+    <a
+      href="/stats"
+      class="desktop-nav__link"
+      class:desktop-nav__link--active={isStatsSection}
+      aria-current={isStats && !isMyStatistics ? 'page' : undefined}
+    >
+      <span class="desktop-nav__link-icon" aria-hidden="true">
+        <IconBarChart size={28} />
+      </span>
+      <span class="desktop-nav__link-label">Statistics</span>
+    </a>
+    <div class="desktop-nav__dropdown-panel" role="group" aria-label="Statistics submenu">
+      <a
+        href="/me/statistics"
+        class="desktop-nav__dropdown-link"
+        class:desktop-nav__dropdown-link--active={isMyStatistics}
+        aria-current={isMyStatistics ? 'page' : undefined}
+      >
+        My statistics
+      </a>
+    </div>
+  </div>
   <a
     href="/decks"
     class="desktop-nav__link"
@@ -95,18 +121,6 @@
       <IconUser size={28} />
     </span>
     <span class="desktop-nav__link-label">Me</span>
-  </a>
-  <a
-    href="/me/statistics"
-    class="desktop-nav__link"
-    class:desktop-nav__link--active={isMyStatistics}
-    aria-current={isMyStatistics ? 'page' : undefined}
-    title="My statistics"
-  >
-    <span class="desktop-nav__link-icon" aria-hidden="true">
-      <IconBarChart size={28} />
-    </span>
-    <span class="desktop-nav__link-label">My Statistics</span>
   </a>
   <button type="button" class="desktop-nav__link" onclick={logout} title="Logout">
     <span class="desktop-nav__link-icon" aria-hidden="true">

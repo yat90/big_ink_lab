@@ -2,8 +2,8 @@
   import { page } from '$app/stores';
   import logo from '../images/bigInkLab.png';
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
+  import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
-  import IconPlay from '$lib/icons/IconPlay.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
@@ -23,8 +23,9 @@
       $page.url.pathname !== '/matches/new' &&
       $page.url.pathname !== '/matches/quick'
   );
-  const isQuickMatch = $derived($page.url.pathname === '/matches/quick');
+  const isTournaments = $derived($page.url.pathname.startsWith('/tournaments'));
   const isStats = $derived($page.url.pathname === '/stats');
+  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
   const isDecks = $derived(
     $page.url.pathname === '/decks' || $page.url.pathname.startsWith('/decks/')
   );
@@ -32,7 +33,6 @@
     $page.url.pathname === '/players' || $page.url.pathname.startsWith('/players/')
   );
   const isMe = $derived($page.url.pathname === '/me');
-  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
 
   $effect(() => {
     if (!open) return;
@@ -80,16 +80,16 @@
       Matches
     </a>
     <a
-      href="/matches/quick"
+      href="/tournaments"
       class="mobile-nav__drawer-link"
-      class:mobile-nav__drawer-link--active={isQuickMatch}
-      aria-current={isQuickMatch ? 'page' : undefined}
+      class:mobile-nav__drawer-link--active={isTournaments}
+      aria-current={isTournaments ? 'page' : undefined}
       onclick={closeMenu}
     >
       <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconPlay size={24} />
+        <IconCrownOutline size={24} />
       </span>
-      Quick Match
+      Tournaments
     </a>
     <a
       href="/decks"
@@ -103,18 +103,29 @@
       </span>
       Decks
     </a>
-    <a
-      href="/stats"
-      class="mobile-nav__drawer-link"
-      class:mobile-nav__drawer-link--active={isStats}
-      aria-current={isStats ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconBarChart size={24} />
-      </span>
-      Statistics
-    </a>
+    <div class="mobile-nav__drawer-group" role="group" aria-label="Statistics">
+      <a
+        href="/stats"
+        class="mobile-nav__drawer-link"
+        class:mobile-nav__drawer-link--active={isStats}
+        aria-current={isStats ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconBarChart size={24} />
+        </span>
+        Statistics
+      </a>
+      <a
+        href="/me/statistics"
+        class="mobile-nav__drawer-link mobile-nav__drawer-link--sub"
+        class:mobile-nav__drawer-link--active={isMyStatistics}
+        aria-current={isMyStatistics ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        My statistics
+      </a>
+    </div>
     <a
       href="/players"
       class="mobile-nav__drawer-link"
@@ -139,18 +150,6 @@
         <IconUser size={24} />
       </span>
       Me
-    </a>
-    <a
-      href="/me/statistics"
-      class="mobile-nav__drawer-link mobile-nav__drawer-link--bottom"
-      class:mobile-nav__drawer-link--active={isMyStatistics}
-      aria-current={isMyStatistics ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconBarChart size={24} />
-      </span>
-      My Statistics
     </a>
     <button
       type="button"

@@ -8,10 +8,12 @@ import { PlayersModule } from '../players/players.module';
 import { MatchesController } from './matches.controller';
 import { MatchesService } from './matches.service';
 import { DuelsImportService } from './duels-import.service';
+import { TournamentsModule } from '../tournaments/tournaments.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Match.name, schema: MatchSchema }]),
+    TournamentsModule,
     AuthModule,
     DecksModule,
     AnalyticsModule,

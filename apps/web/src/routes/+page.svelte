@@ -4,6 +4,11 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
+  import {
+    formatMatchRoundLabel,
+    getMatchRoundKey,
+    matchStageOrTournamentLabel,
+  } from '$lib/lorcana-match';
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
 
@@ -12,6 +17,15 @@
   type GlobalStats = {
     totalMatches: number;
     totalGames: number;
+  };
+
+  type DashboardTournament = {
+    _id: string;
+    name: string;
+    date: string;
+    location?: string;
+    url?: string;
+    meta?: string;
   };
 
   let stats = $state<GlobalStats | null>(null);
@@ -23,6 +37,8 @@
   let loreTrackerLoading = $state(false);
   /** Current user's linked player id (for Quick Match P1). */
   let myPlayerId = $state<string | null>(null);
+  let pastTournaments = $state<DashboardTournament[]>([]);
+  let upcomingTournaments = $state<DashboardTournament[]>([]);
 
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -72,6 +88,23 @@
     }
   }
 
+  function formatTournamentDay(iso: string | undefined): string {
+    if (!iso) return '–';
+    try {
+      return new Date(iso).toLocaleDateString('de-DE', { dateStyle: 'medium' });
+    } catch {
+      return iso;
+    }
+  }
+
+  function localCalendarDay(): string {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
   function matchWinnerId(m: LorcanaMatch): string | undefined {
     const w = m.matchWinner;
     if (!w) return undefined;
@@ -105,11 +138,13 @@
           /* ignore */
         }
       }
-      const [statsRes, playersRes, decksRes, matchesRes] = await Promise.all([
+      const day = localCalendarDay();
+      const [statsRes, playersRes, decksRes, matchesRes, twRes] = await Promise.all([
         fetch(`${apiUrl}/matches/stats`),
         fetch(`${apiUrl}/players`),
         fetch(`${apiUrl}/decks`),
         fetch(`${apiUrl}/matches?sort=newest`),
+        fetch(`${apiUrl}/tournaments/dashboard/window?day=${encodeURIComponent(day)}`),
       ]);
       if (statsRes.ok) {
         const data = await statsRes.json();
@@ -126,6 +161,29 @@
       if (matchesRes.ok) {
         const matches = await matchesRes.json();
         recentMatches = Array.isArray(matches) ? matches.slice(0, 5) : [];
+      }
+      if (twRes.ok) {
+        const tw = (await twRes.json()) as {
+          past?: DashboardTournament[];
+          upcoming?: DashboardTournament[];
+        };
+        const mapRow = (r: {
+          _id?: string;
+          name?: string;
+          date?: string;
+          location?: string;
+          url?: string;
+          meta?: string;
+        }) => ({
+          _id: String(r._id ?? ''),
+          name: String(r.name ?? ''),
+          date: String(r.date ?? ''),
+          location: r.location,
+          url: r.url,
+          meta: r.meta,
+        });
+        pastTournaments = (tw.past ?? []).map(mapRow).filter((r) => r._id);
+        upcomingTournaments = (tw.upcoming ?? []).map(mapRow).filter((r) => r._id);
       }
     } catch {
       error = 'Could not load dashboard.';
@@ -174,8 +232,63 @@
             >
               {loreTrackerLoading ? 'Creating…' : 'Quick Match'}
             </button>
-            <a href="/tournaments/results" class="btn">Tournament results</a>
+            <a href="/tournaments" class="btn">Tournaments</a>
+            <a href="/tournaments/new" class="btn">New tournament</a>
             <a href="/matches/new" class="btn btn--primary">New match</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card stack dashboard__tournaments">
+        <div class="row" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <h3 class="dashboard__section-title" style="margin: 0;">Tournaments</h3>
+          <div class="row" style="gap: 8px; flex-wrap: wrap;">
+            <a href="/tournaments/new" class="btn btn--sm" style="font-size: 0.9rem;">New</a>
+            <a href="/tournaments" class="btn btn--sm" style="font-size: 0.9rem;">All</a>
+          </div>
+        </div>
+        <p class="card__sub muted" style="margin: 0 0 var(--space-sm) 0;">
+          Last two tournaments before <strong>{localCalendarDay()}</strong> (local) and the next two on or after that
+          day (UTC midnight boundary).
+        </p>
+        <div class="dashboard__tournaments-grid">
+          <div class="dashboard__tournaments-col">
+            <h4 class="dashboard__tournaments-col-title muted">Earlier</h4>
+            {#if pastTournaments.length === 0}
+              <p class="muted dashboard__tournaments-empty">None</p>
+            {:else}
+              <ul class="dashboard__tournaments-list">
+                {#each pastTournaments as t (t._id)}
+                  <li>
+                    <a href="/tournaments/{t._id}" class="dashboard__tournaments-link">
+                      <span class="dashboard__tournaments-name">{t.name}</span>
+                      <span class="muted dashboard__tournaments-date">
+                        {formatTournamentDay(t.date)}{#if t.meta?.trim()} · {t.meta.trim()}{/if}
+                      </span>
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+          <div class="dashboard__tournaments-col">
+            <h4 class="dashboard__tournaments-col-title muted">Upcoming</h4>
+            {#if upcomingTournaments.length === 0}
+              <p class="muted dashboard__tournaments-empty">None</p>
+            {:else}
+              <ul class="dashboard__tournaments-list">
+                {#each upcomingTournaments as t (t._id)}
+                  <li>
+                    <a href="/tournaments/{t._id}" class="dashboard__tournaments-link">
+                      <span class="dashboard__tournaments-name">{t.name}</span>
+                      <span class="muted dashboard__tournaments-date">
+                        {formatTournamentDay(t.date)}{#if t.meta?.trim()} · {t.meta.trim()}{/if}
+                      </span>
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
           </div>
         </div>
       </div>
@@ -223,7 +336,8 @@
                 style="text-decoration: none; color: inherit;"
               >
                 <div class="matchcard__top muted">
-                  {formatDate(match.playedAt)} · {match.stage ?? '–'}{#if match.tournamentName} · {match.tournamentName}{/if}{#if (match.stage === 'Tournament' || match.tournamentName) && match.round != null} · R{match.round}{/if}
+                  {formatDate(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
+                    · {formatMatchRoundLabel(match.round)}{/if}
                 </div>
                 <div class="matchcard__row">
                   <div
@@ -364,5 +478,71 @@
   .btn--sm {
     padding: 6px 12px;
     min-height: 44px;
+  }
+
+  .dashboard__tournaments {
+    padding: 14px;
+  }
+  @media (min-width: 640px) {
+    .dashboard__tournaments {
+      padding: var(--space-lg);
+    }
+  }
+
+  .dashboard__tournaments-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
+  @media (max-width: 480px) {
+    .dashboard__tournaments-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .dashboard__tournaments-col-title {
+    margin: 0 0 var(--space-xs) 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .dashboard__tournaments-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .dashboard__tournaments-link {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-decoration: none;
+    color: inherit;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.12));
+    transition: background 0.15s var(--ease, ease);
+  }
+  .dashboard__tournaments-link:hover {
+    background: var(--glass-bg-strong, rgba(255, 255, 255, 0.06));
+  }
+
+  .dashboard__tournaments-name {
+    font-weight: 600;
+    font-size: 0.9375rem;
+  }
+
+  .dashboard__tournaments-date {
+    font-size: 0.8125rem;
+  }
+
+  .dashboard__tournaments-empty {
+    margin: 0;
+    font-size: 0.875rem;
   }
 </style>

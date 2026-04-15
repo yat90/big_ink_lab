@@ -7,6 +7,8 @@
   type DeckOption = { _id: string; name: string };
 
   type Props = {
+    /** When set and matches {@link p1Id} or {@link p2Id}, that seat is read-only (linked account player). */
+    linkedPlayerId?: string;
     p1Id: string | undefined;
     p2Id: string | undefined;
     p1DeckColor: string;
@@ -32,6 +34,7 @@
   };
 
   let {
+    linkedPlayerId = '',
     p1Id,
     p2Id,
     p1DeckColor,
@@ -95,6 +98,9 @@
   const p2PlayerDisplayName = $derived(
     p2Id ? players.find((p) => p._id === p2Id)?.name ?? 'Player 2' : 'Player 2',
   );
+
+  const lockP1Player = $derived(!!linkedPlayerId && linkedPlayerId === p1Id);
+  const lockP2Player = $derived(!!linkedPlayerId && linkedPlayerId === p2Id);
 </script>
 
 <div class="matchcard__edit">
@@ -103,16 +109,20 @@
     <div class="matchcard__edit-fields">
       <div class="matchcard__edit-field">
         <span class="matchcard__edit-field-label">Player</span>
-        <button
-          type="button"
-          class="input matchcard__player-select matchcard__deck-select-btn"
-          disabled={updatingPlayer === 'p1'}
-          onclick={() => openPlayerPicker('p1')}
-          aria-label="Player 1"
-          title="Click to choose player"
-        >
-          {p1PlayerDisplayName}
-        </button>
+        {#if lockP1Player}
+          <p class="matchcard__edit-readonly" title="Your linked player profile">{p1PlayerDisplayName}</p>
+        {:else}
+          <button
+            type="button"
+            class="input matchcard__player-select matchcard__deck-select-btn"
+            disabled={updatingPlayer === 'p1'}
+            onclick={() => openPlayerPicker('p1')}
+            aria-label="Player 1"
+            title="Click to choose player"
+          >
+            {p1PlayerDisplayName}
+          </button>
+        {/if}
       </div>
       {#if showP1DeckSelect}
         <div class="matchcard__edit-field">
@@ -146,16 +156,20 @@
     <div class="matchcard__edit-fields">
       <div class="matchcard__edit-field">
         <span class="matchcard__edit-field-label">Player</span>
-        <button
-          type="button"
-          class="input matchcard__player-select matchcard__deck-select-btn"
-          disabled={updatingPlayer === 'p2'}
-          onclick={() => openPlayerPicker('p2')}
-          aria-label="Player 2"
-          title="Click to choose player"
-        >
-          {p2PlayerDisplayName}
-        </button>
+        {#if lockP2Player}
+          <p class="matchcard__edit-readonly" title="Your linked player profile">{p2PlayerDisplayName}</p>
+        {:else}
+          <button
+            type="button"
+            class="input matchcard__player-select matchcard__deck-select-btn"
+            disabled={updatingPlayer === 'p2'}
+            onclick={() => openPlayerPicker('p2')}
+            aria-label="Player 2"
+            title="Click to choose player"
+          >
+            {p2PlayerDisplayName}
+          </button>
+        {/if}
       </div>
       {#if showP2DeckSelect}
         <div class="matchcard__edit-field">
@@ -243,5 +257,18 @@
   .matchcard__deck-select-btn {
     text-align: left;
     cursor: pointer;
+  }
+  .matchcard__edit-readonly {
+    margin: 0;
+    min-width: 160px;
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--glass-bg, rgba(255, 255, 255, 0.06));
+    font: inherit;
+    font-weight: 600;
+    color: var(--fg);
+    line-height: 1.3;
   }
 </style>

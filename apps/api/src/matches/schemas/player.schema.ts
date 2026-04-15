@@ -8,6 +8,10 @@ export class Player extends Document {
 
   @Prop({ required: false, default: '' })
   team: string;
+
+  /** New players default to guest unless explicitly set false (e.g. roster signup). */
+  @Prop({ required: false, default: true })
+  isGuest: boolean;
 }
 
 export const PlayerSchema = SchemaFactory.createForClass(Player);

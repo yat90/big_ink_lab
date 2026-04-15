@@ -245,7 +245,7 @@
   {#if isEditing}
     <button
       type="button"
-      class="btn btn--icon game-line__delete-btn"
+      class="btn btn--danger btn--icon game-line__delete-btn"
       disabled={isDeleting}
       onclick={() => onDeleteGame(index)}
       aria-label="Delete game {index + 1}"
@@ -313,13 +313,7 @@
   }
   .game-line__delete-btn {
     margin-top: 24px;
-    color: var(--danger);
-    opacity: 1;
     width: 100%;
-  }
-  .game-line__delete-btn:hover {
-    background-color: var(--danger);
-    color: white;
   }
 
   .game-line__icon-label {

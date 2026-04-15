@@ -5,10 +5,8 @@
   import { config } from '$lib/config';
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
   import DeckPickerModal from '$lib/DeckPickerModal.svelte';
-  import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
-  import { onMount } from 'svelte';
-
-  type Player = { _id: string; name: string; team: string };
+  import { onMount, tick } from 'svelte';
+  import IconTrash from '../../../lib/icons/IconTrash.svelte';
 
   type GameRow = {
     winnerSide: '' | 'p1' | 'p2';
@@ -18,53 +16,51 @@
     notes: string;
   };
   type RoundRow = {
-    round: number;
-    p2: string;
-    p2DeckId: string;
-    p2DeckDisplayName: string;
+    round: string;
+    /** When true, this round is skipped when creating matches (intentional draw). */
+    intentionalDraw: boolean;
+    /** Opponent name; API resolves to existing player or creates a guest. */
+    opponentName: string;
     p2DeckColor: string;
     notes: string;
     games: GameRow[];
   };
 
-  type PlayerPickerCtx = { scope: 'event-p1' } | { scope: 'round-p2'; roundIndex: number };
-  type DeckPickerCtx = { scope: 'event-p1' } | { scope: 'round-p2'; roundIndex: number };
-  type AddPlayerCtx = null | { kind: 'event-p1' } | { kind: 'round-p2'; roundIndex: number };
-
   const apiUrl = config.apiUrl ?? '/api';
-  const BIG_INK_TEAM = 'The Big Ink Theory';
+  /** UI cap for round tabs (scrolls horizontally when many). */
+  const MAX_ROUNDS = 20;
+  /** Same as match lore tracker: first to 20 wins; if both ≥20, higher lore wins (ties → P1). */
+  const GAME_LORE_WIN = 20;
 
-  let tournamentName = $state('');
-  let playedAt = $state('');
-  let tournamentNames = $state<string[]>([]);
-  let players = $state<Player[]>([]);
-  /** You — one choice for the whole event. */
+  /** Tournament is fixed via `?tournamentId=` (e.g. from tournament detail “Add results”). */
+  const tournamentIdFromUrl = $derived($page.url.searchParams.get('tournamentId')?.trim() ?? '');
+
+  type TournamentInfo = {
+    name: string;
+    date: string;
+    location?: string;
+    url?: string;
+    meta?: string;
+  };
+
+  /** Loaded from `GET /tournaments/:id`; `null` while the initial fetch is in flight. */
+  let tournamentInfo = $state<TournamentInfo | null>(null);
+  /** Linked player id from /auth/me (current user only — no picker). */
   let eventP1 = $state('');
+  /** Display name from /auth/me for “Playing as …” and opponent name checks. */
+  let myPlayerName = $state('');
   let p1DeckId = $state('');
   let p1DeckDisplayName = $state('');
   /** Shared across all rounds (same as your deck). */
   let p1DeckColor = $state('');
-  let rounds = $state<RoundRow[]>([emptyRound(1)]);
+  let rounds = $state<RoundRow[]>([emptyRound('1'), emptyRound('2'), emptyRound('3')]);
+  /** Index of the round shown in the tab panel. */
+  let activeRoundIndex = $state(0);
   let loading = $state(false);
   let error = $state('');
   let resultMessage = $state('');
 
-  let playerPickerOpen = $state(false);
-  let playerPickerContext = $state<PlayerPickerCtx | null>(null);
   let deckPickerOpen = $state(false);
-  let deckPickerContext = $state<DeckPickerCtx | null>(null);
-
-  let addPlayerContext = $state<AddPlayerCtx>(null);
-  let newPlayerName = $state('');
-  let newPlayerTeam = $state('');
-  let addPlayerLoading = $state(false);
-  let addPlayerError = $state('');
-
-  function nowForDatetimeLocal(): string {
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  }
 
   function emptyGame(): GameRow {
     return {
@@ -76,37 +72,20 @@
     };
   }
 
-  function emptyRound(n: number): RoundRow {
+  function emptyRound(label: string): RoundRow {
     return {
-      round: n,
-      p2: '',
-      p2DeckId: '',
-      p2DeckDisplayName: '',
+      round: label,
+      intentionalDraw: false,
+      opponentName: '',
       p2DeckColor: '',
       notes: '',
       games: [emptyGame()],
     };
   }
 
-  function getPlayerTeam(playerId: string): string {
-    return (players.find((pl) => pl._id === playerId)?.team ?? '').trim();
-  }
-
-  const eventP1Label = $derived(
-    eventP1 ? (players.find((pl) => pl._id === eventP1)?.name ?? 'You') : '—'
-  );
-
   function roundP2Label(r: RoundRow): string {
-    if (!r.p2) return 'Opponent';
-    return players.find((pl) => pl._id === r.p2)?.name ?? 'Opponent';
-  }
-
-  function showEventP1DeckSelect(): boolean {
-    return !!eventP1 && getPlayerTeam(eventP1) === BIG_INK_TEAM;
-  }
-
-  function showRoundP2DeckSelect(r: RoundRow): boolean {
-    return !!r.p2 && getPlayerTeam(r.p2) === BIG_INK_TEAM;
+    const t = r.opponentName.trim();
+    return t || 'Opponent';
   }
 
   async function fetchDeck(deckId: string): Promise<{ name: string; deckColor: string } | null> {
@@ -123,200 +102,151 @@
     return null;
   }
 
-  async function fetchPlayers() {
-    try {
-      const res = await fetch(`${apiUrl}/players?limit=200`);
-      if (res.ok) {
-        const json = await res.json();
-        players = Array.isArray(json) ? json : (json?.data ?? []);
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
-  async function fetchTournamentNames() {
-    try {
-      const res = await fetch(`${apiUrl}/matches/tournaments`);
-      if (res.ok) {
-        const data = await res.json();
-        tournamentNames = data.tournamentNames ?? [];
-      }
-    } catch {
-      tournamentNames = [];
-    }
-  }
-
-  /** Preselect You from the logged-in user's linked player (same as new match). */
-  async function preselectMyPlayer() {
+  /** Set P1 from the logged-in user's linked player only. */
+  async function loadLinkedPlayer() {
     const token = getAuthToken();
-    if (!token) return;
+    if (!token) {
+      eventP1 = '';
+      myPlayerName = '';
+      return;
+    }
     try {
       const res = await fetch(`${apiUrl}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
-        const id = data?.player?._id;
-        if (id && typeof id === 'string' && !eventP1) {
+        const p = data?.player as { _id?: string; name?: string } | null | undefined;
+        const id = p?._id;
+        if (id && typeof id === 'string') {
           eventP1 = id;
+          myPlayerName = typeof p.name === 'string' ? p.name.trim() : '';
+        } else {
+          eventP1 = '';
+          myPlayerName = '';
         }
+      } else {
+        eventP1 = '';
+        myPlayerName = '';
       }
     } catch {
-      /* ignore */
+      eventP1 = '';
+      myPlayerName = '';
     }
   }
 
-  onMount(async () => {
-    playedAt = nowForDatetimeLocal();
-    const q = $page.url.searchParams.get('tournamentName');
-    if (q) tournamentName = decodeURIComponent(q);
-    await Promise.all([fetchPlayers(), fetchTournamentNames()]);
-    await preselectMyPlayer();
+  function formatEventDate(iso: string | undefined): string {
+    if (!iso?.trim()) return '–';
+    try {
+      const d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return d.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+    } catch {
+      return iso;
+    }
+  }
+
+  $effect(() => {
+    const id = tournamentIdFromUrl;
+    if (!id) {
+      tournamentInfo = null;
+      return;
+    }
+    tournamentInfo = null;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(`${apiUrl}/tournaments/${id}`);
+        if (!res.ok) {
+          if (!cancelled) tournamentInfo = { name: 'Tournament', date: '' };
+          return;
+        }
+        const t = (await res.json()) as Record<string, unknown>;
+        if (cancelled) return;
+        const name = String(t.name ?? '').trim() || 'Tournament';
+        const dateRaw = t.date;
+        const date =
+          typeof dateRaw === 'string'
+            ? dateRaw
+            : dateRaw instanceof Date
+              ? dateRaw.toISOString()
+              : '';
+        const loc = t.location != null ? String(t.location).trim() : '';
+        const url = t.url != null ? String(t.url).trim() : '';
+        const meta = t.meta != null ? String(t.meta).trim() : '';
+        tournamentInfo = {
+          name,
+          date,
+          ...(loc ? { location: loc } : {}),
+          ...(url ? { url } : {}),
+          ...(meta ? { meta } : {}),
+        };
+      } catch {
+        if (!cancelled) tournamentInfo = { name: 'Tournament', date: '' };
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   });
 
-  function toggleAddPlayerEventP1() {
-    addPlayerError = '';
-    if (addPlayerContext?.kind === 'event-p1') {
-      addPlayerContext = null;
-      newPlayerName = '';
-      newPlayerTeam = '';
-      return;
-    }
-    addPlayerContext = { kind: 'event-p1' };
-    newPlayerName = '';
-    newPlayerTeam = '';
-  }
-
-  function toggleAddPlayerRoundP2(roundIndex: number) {
-    addPlayerError = '';
-    if (addPlayerContext?.kind === 'round-p2' && addPlayerContext.roundIndex === roundIndex) {
-      addPlayerContext = null;
-      newPlayerName = '';
-      newPlayerTeam = '';
-      return;
-    }
-    addPlayerContext = { kind: 'round-p2', roundIndex };
-    newPlayerName = '';
-    newPlayerTeam = '';
-  }
-
-  async function onAddPlayer(e: Event) {
-    e.preventDefault();
-    addPlayerError = '';
-    if (!addPlayerContext) return;
-    if (!newPlayerName.trim()) return;
-    addPlayerLoading = true;
-    try {
-      const res = await fetch(`${apiUrl}/players`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newPlayerName.trim(), team: newPlayerTeam.trim() }),
+  /** Scroll the active round tab into the visible strip (pairs with min-width fix on the scroll container). */
+  $effect(() => {
+    const idx = activeRoundIndex;
+    void tick().then(() => {
+      document.getElementById(`tab-tournament-results-round-${idx}`)?.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest',
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        addPlayerError = (data as { message?: string }).message ?? 'Failed to add player';
-        addPlayerLoading = false;
-        return;
-      }
-      const created = await res.json();
-      await fetchPlayers();
-      newPlayerName = '';
-      newPlayerTeam = '';
-      const ctx = addPlayerContext;
-      addPlayerContext = null;
-      if (ctx.kind === 'event-p1') {
-        if (eventP1) {
-          addPlayerError = 'You are already selected.';
-          addPlayerLoading = false;
-          return;
-        }
-        eventP1 = created._id;
-      } else {
-        const ri = ctx.roundIndex;
-        if (rounds[ri].p2) {
-          addPlayerError = 'Opponent is already selected.';
-          addPlayerLoading = false;
-          return;
-        }
-        rounds = rounds.map((r, i) => (i === ri ? { ...r, p2: created._id } : r));
-      }
-    } catch {
-      addPlayerError = 'Could not reach API.';
-    } finally {
-      addPlayerLoading = false;
-    }
-  }
+    });
+  });
 
-  function openEventPlayerPicker() {
-    playerPickerContext = { scope: 'event-p1' };
-    playerPickerOpen = true;
-  }
-
-  function openRoundPlayerPicker(roundIndex: number) {
-    playerPickerContext = { scope: 'round-p2', roundIndex };
-    playerPickerOpen = true;
-  }
-
-  function handlePlayerSelect(playerId: string) {
-    if (!playerPickerContext) return;
-    if (playerPickerContext.scope === 'event-p1') {
-      eventP1 = playerId;
-    } else {
-      const ri = playerPickerContext.roundIndex;
-      rounds = rounds.map((row, i) => (i === ri ? { ...row, p2: playerId } : row));
-    }
-    playerPickerOpen = false;
-    playerPickerContext = null;
-  }
+  onMount(async () => {
+    await loadLinkedPlayer();
+  });
 
   function openDeckPickerEventP1() {
-    deckPickerContext = { scope: 'event-p1' };
-    deckPickerOpen = true;
-  }
-
-  function openDeckPickerRoundP2(roundIndex: number) {
-    deckPickerContext = { scope: 'round-p2', roundIndex };
     deckPickerOpen = true;
   }
 
   async function handleDeckSelect(deckId: string) {
-    /** Snapshot before await — modal onClose used to clear context while fetchDeck was in flight. */
-    const ctx = deckPickerContext;
-    if (!ctx) return;
     const deck = deckId.trim() ? await fetchDeck(deckId) : null;
-    if (ctx.scope === 'event-p1') {
-      p1DeckId = deckId;
-      p1DeckDisplayName = deck?.name ?? '';
-      if (deck?.deckColor?.trim()) {
-        p1DeckColor = deck.deckColor.trim();
-      } else if (!deckId.trim()) {
-        p1DeckColor = '';
-      }
-    } else {
-      const ri = ctx.roundIndex;
-      rounds = rounds.map((row, i) => {
-        if (i !== ri) return row;
-        return {
-          ...row,
-          p2DeckId: deckId,
-          p2DeckDisplayName: deck?.name ?? '',
-          p2DeckColor: deck?.deckColor ? deck.deckColor : deckId ? row.p2DeckColor : '',
-        };
-      });
+    p1DeckId = deckId;
+    p1DeckDisplayName = deck?.name ?? '';
+    if (deck?.deckColor?.trim()) {
+      p1DeckColor = deck.deckColor.trim();
+    } else if (!deckId.trim()) {
+      p1DeckColor = '';
     }
     deckPickerOpen = false;
-    deckPickerContext = null;
   }
 
   function addRound() {
-    const n = rounds.length + 1;
-    rounds = [...rounds, emptyRound(n)];
+    if (rounds.length >= MAX_ROUNDS) return;
+    const label = String(rounds.length + 1);
+    rounds = [...rounds, emptyRound(label)];
+    activeRoundIndex = rounds.length - 1;
   }
 
   function removeRound(index: number) {
     if (rounds.length <= 1) return;
-    rounds = rounds.filter((_, i) => i !== index).map((r, i) => ({ ...r, round: i + 1 }));
+    const prevActive = activeRoundIndex;
+    rounds = rounds.filter((_, i) => i !== index).map((r, i) => ({ ...r, round: String(i + 1) }));
+    if (index < prevActive) activeRoundIndex = prevActive - 1;
+    else if (index === prevActive) activeRoundIndex = Math.min(prevActive, rounds.length - 1);
+    activeRoundIndex = Math.max(0, Math.min(activeRoundIndex, rounds.length - 1));
+  }
+
+  function setRoundLabel(roundIndex: number, raw: string) {
+    rounds = rounds.map((row, i) => (i === roundIndex ? { ...row, round: raw } : row));
+  }
+
+  function blurRoundLabel(roundIndex: number, fallback: string) {
+    rounds = rounds.map((row, i) => {
+      if (i !== roundIndex) return row;
+      const t = row.round.trim();
+      return { ...row, round: t || fallback };
+    });
   }
 
   function patchGame(roundIndex: number, gameIndex: number, patch: Partial<GameRow>) {
@@ -329,10 +259,23 @@
     });
   }
 
+  /** Loser of the previous game goes first in the next (typical “loser starts”). */
+  function starterSideAfterPrevious(prev: GameRow): '' | 'p1' | 'p2' {
+    if (prev.winnerSide === 'p1') return 'p2';
+    if (prev.winnerSide === 'p2') return 'p1';
+    return '';
+  }
+
   function addGame(roundIndex: number) {
-    rounds = rounds.map((row, i) =>
-      i === roundIndex ? { ...row, games: [...row.games, emptyGame()] } : row
-    );
+    rounds = rounds.map((row, i) => {
+      if (i !== roundIndex) return row;
+      const prev = row.games[row.games.length - 1];
+      const starterSide = starterSideAfterPrevious(prev);
+      return {
+        ...row,
+        games: [...row.games, { ...emptyGame(), starterSide }],
+      };
+    });
   }
 
   function removeGame(roundIndex: number, gameIndex: number) {
@@ -342,17 +285,7 @@
     });
   }
 
-  const pickerExcludeId = $derived(
-    playerPickerContext?.scope === 'round-p2' ? eventP1 : ''
-  );
-
-  const deckPickerLabel = $derived(
-    deckPickerContext?.scope === 'event-p1'
-      ? eventP1Label
-      : deckPickerContext?.scope === 'round-p2'
-        ? roundP2Label(rounds[deckPickerContext.roundIndex])
-        : ''
-  );
+  const deckPickerLabel = $derived(myPlayerName || 'You');
 
   function parseLoreField(s: string): number | undefined {
     const t = s.trim();
@@ -362,74 +295,156 @@
     return n;
   }
 
+  /** Derive winner from lore (used when editing lore fields). */
+  function winnerSideFromLore(p1Str: string, p2Str: string): '' | 'p1' | 'p2' {
+    const p1 = parseLoreField(p1Str);
+    const p2 = parseLoreField(p2Str);
+    if (p1 === undefined && p2 === undefined) return '';
+    if (p1 !== undefined && p2 !== undefined) {
+      if (p1 >= GAME_LORE_WIN && p2 >= GAME_LORE_WIN) {
+        return p1 >= p2 ? 'p1' : 'p2';
+      }
+      if (p1 >= GAME_LORE_WIN && p2 < GAME_LORE_WIN) return 'p1';
+      if (p2 >= GAME_LORE_WIN && p1 < GAME_LORE_WIN) return 'p2';
+      if (p1 > p2) return 'p1';
+      if (p2 > p1) return 'p2';
+      return '';
+    }
+    if (p1 !== undefined && p2 === undefined && p1 >= GAME_LORE_WIN) return 'p1';
+    if (p2 !== undefined && p1 === undefined && p2 >= GAME_LORE_WIN) return 'p2';
+    return '';
+  }
+
+  function patchGameLore(
+    roundIndex: number,
+    gameIndex: number,
+    lore: { p1Lore?: string; p2Lore?: string },
+  ) {
+    rounds = rounds.map((row, i) => {
+      if (i !== roundIndex) return row;
+      return {
+        ...row,
+        games: row.games.map((g, gi) => {
+          if (gi !== gameIndex) return g;
+          const next = { ...g, ...lore };
+          return { ...next, winnerSide: winnerSideFromLore(next.p1Lore, next.p2Lore) };
+        }),
+      };
+    });
+  }
+
   async function onSubmit(e: Event) {
     e.preventDefault();
     error = '';
     resultMessage = '';
-    if (!tournamentName.trim()) {
-      error = 'Tournament name is required.';
+    if (!tournamentIdFromUrl) {
+      error = 'Missing tournament. Open this page from a tournament (Add results).';
       return;
     }
     if (!eventP1.trim()) {
-      error = 'Choose You in Event.';
+      error =
+        'Sign in with an account that has a linked player profile. Link a player in your account settings if needed.';
       return;
     }
-    const bodyRounds = [];
+    const youName = myPlayerName.trim().toLowerCase();
+
+    const bodyRounds: Array<
+      | {
+          round: string;
+          intentionalDraw: true;
+          opponentName: string;
+          p2DeckColor?: string;
+          notes?: string;
+        }
+      | {
+          round: string;
+          opponentName: string;
+          p2DeckColor?: string;
+          notes?: string;
+          games: Array<{
+            winnerSide: 'p1' | 'p2';
+            starterSide?: 'p1' | 'p2';
+            p1Lore?: number;
+            p2Lore?: number;
+            notes?: string;
+          }>;
+        }
+    > = [];
     for (const r of rounds) {
-      if (!r.p2.trim()) {
-        error = `Round ${r.round}: choose Opponent.`;
+      const roundLabel = r.round.trim();
+      if (!roundLabel) {
+        error = 'Every round needs a label (e.g. round number or name).';
         return;
       }
-      if (eventP1 === r.p2) {
-        error = `Round ${r.round}: Opponent must be different from You.`;
+      if (r.intentionalDraw) {
+        const oppId = r.opponentName.trim();
+        if (!oppId) {
+          error = `Round “${roundLabel}”: intentional draw needs an opponent name (match is saved without games or winner).`;
+          return;
+        }
+        if (youName && oppId.toLowerCase() === youName) {
+          error = `Round “${roundLabel}”: Opponent must be different from You (same name).`;
+          return;
+        }
+        bodyRounds.push({
+          round: roundLabel,
+          intentionalDraw: true,
+          opponentName: oppId,
+          ...(r.p2DeckColor?.trim() ? { p2DeckColor: r.p2DeckColor.trim() } : {}),
+          ...(r.notes.trim() ? { notes: r.notes.trim() } : {}),
+        });
+        continue;
+      }
+      const opp = r.opponentName.trim();
+      if (!opp) {
+        error = `Round “${roundLabel}”: enter Opponent name.`;
+        return;
+      }
+      if (youName && opp.toLowerCase() === youName) {
+        error = `Round “${roundLabel}”: Opponent must be different from You (same name).`;
         return;
       }
       const games = [];
       for (const g of r.games) {
         if (g.winnerSide !== 'p1' && g.winnerSide !== 'p2') {
-          error = `Round ${r.round}: each game needs a winner (You or Opponent).`;
+          error = `Round “${roundLabel}”: each game needs a winner (set lore or pick You / Opponent).`;
           return;
         }
-        const winnerId = g.winnerSide === 'p1' ? eventP1 : r.p2;
-        const starterId =
-          g.starterSide === 'p1' ? eventP1 : g.starterSide === 'p2' ? r.p2 : undefined;
         const p1Lore = parseLoreField(g.p1Lore);
         const p2Lore = parseLoreField(g.p2Lore);
         games.push({
-          winner: winnerId,
-          starter: starterId,
+          winnerSide: g.winnerSide,
+          ...(g.starterSide === 'p1' || g.starterSide === 'p2'
+            ? { starterSide: g.starterSide }
+            : {}),
           ...(p1Lore !== undefined ? { p1Lore } : {}),
           ...(p2Lore !== undefined ? { p2Lore } : {}),
           notes: g.notes.trim() || undefined,
         });
       }
       bodyRounds.push({
-        round: r.round,
-        p1: eventP1,
-        p2: r.p2,
-        p1Deck: p1DeckId.trim() || undefined,
-        p2Deck: r.p2DeckId.trim() || undefined,
-        p1DeckColor: p1DeckColor || undefined,
+        round: roundLabel,
+        opponentName: opp,
         p2DeckColor: r.p2DeckColor || undefined,
         notes: r.notes.trim() || undefined,
         games,
       });
     }
 
-    const playedIso = new Date(playedAt);
-    if (Number.isNaN(playedIso.getTime())) {
-      error = 'Invalid date/time.';
-      return;
-    }
-
     loading = true;
     try {
+      const token = getAuthToken();
       const res = await fetch(`${apiUrl}/matches/tournaments/bulk-results`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
-          tournamentName: tournamentName.trim(),
-          playedAt: playedIso.toISOString(),
+          tournamentId: tournamentIdFromUrl,
+          p1: eventP1,
+          p1Deck: p1DeckId.trim() || undefined,
+          p1DeckColor: p1DeckColor || undefined,
           rounds: bodyRounds,
         }),
       });
@@ -440,14 +455,18 @@
         return;
       }
       const created = (data as { created?: { _id: string }[] }).created ?? [];
-      const failed = (data as { failed?: { round: number; message: string }[] }).failed ?? [];
+      const failed = (data as { failed?: { round: string; message: string }[] }).failed ?? [];
       if (failed.length) {
-        resultMessage = `Created ${created.length} match(es). Failed: ${failed.map((f) => `R${f.round}: ${f.message}`).join('; ')}`;
+        resultMessage = `Created ${created.length} match(es). Failed: ${failed.map((f) => `${f.round}: ${f.message}`).join('; ')}`;
       } else {
-        resultMessage = `Created ${created.length} match(es).`;
+        const idRounds = rounds.filter((r) => r.intentionalDraw).length;
+        resultMessage =
+          idRounds > 0
+            ? `Created ${created.length} match(es) (${idRounds} intentional draw${idRounds === 1 ? '' : 's'}, no winner).`
+            : `Created ${created.length} match(es).`;
       }
-      if (created.length === bodyRounds.length && created[0]?._id) {
-        await goto(`/matches/${created[0]._id}`);
+      if (!failed.length) {
+        await goto(`/tournaments/${tournamentIdFromUrl}`);
         return;
       }
     } catch {
@@ -464,378 +483,458 @@
 
 <div class="page tournament-results-page">
   <h1 class="page-title">Tournament results</h1>
-  <p class="page-sub">
-    Choose You, your deck, and your deck color once under Event, then each round pick Opponent and
-    opponent deck color. All rounds share the same event time.
-  </p>
 
-  <form class="stack tournament-results__form" onsubmit={onSubmit}>
-    <section class="card stack">
-      <h2 class="card__title">Event</h2>
-      <label class="label" for="tournamentName">Tournament name</label>
-      <input
-        id="tournamentName"
-        class="input"
-        bind:value={tournamentName}
-        placeholder="Name"
-        list="tournament-results-datalist"
-        autocomplete="off"
-        required
-      />
-      {#if tournamentNames.length > 0}
-        <datalist id="tournament-results-datalist">
-          {#each tournamentNames as name (name)}
-            <option value={name}></option>
-          {/each}
-        </datalist>
-      {/if}
-      <label class="label" for="playedAt">Played at (event time)</label>
-      <input id="playedAt" type="datetime-local" class="input" bind:value={playedAt} required />
-
-      <label class="label" for="event-p1">You</label>
-      <button
-        id="event-p1"
-        type="button"
-        class="input tournament-results__select-btn"
-        onclick={openEventPlayerPicker}
+  {#if !tournamentIdFromUrl}
+    <div class="card stack">
+      <p class="card__sub" style="margin: 0;">
+        Open this page from a tournament’s <strong>Add results</strong> action so the tournament is
+        already selected (URL includes <code class="muted">tournamentId</code>).
+      </p>
+      <p class="card__sub" style="margin: 0;">
+        <a href="/tournaments">Browse tournaments</a>
+      </p>
+    </div>
+  {:else}
+    {#if tournamentInfo === null}
+      <div class="card stack tournament-results__tournament-card" aria-busy="true">
+        <div class="loading-skeleton" aria-hidden="true">
+          <div class="loading-skeleton__line loading-skeleton__line--title"></div>
+          <div class="loading-skeleton__line"></div>
+        </div>
+        <p class="card__sub muted" style="margin: 0;">Loading tournament…</p>
+      </div>
+    {:else}
+      <section
+        class="card stack tournament-results__tournament-card"
+        aria-labelledby="tr-tournament-heading"
       >
-        {eventP1Label}
-      </button>
-
-      <div class="row tournament-results__add-player-row">
-        {#if !eventP1}
-          <button
-            type="button"
-            class="btn"
-            aria-expanded={addPlayerContext?.kind === 'event-p1'}
-            onclick={toggleAddPlayerEventP1}
+        <div class="tournament-results__tournament-head row">
+          <h2 id="tr-tournament-heading" class="card__title tournament-results__tournament-title">
+            {tournamentInfo.name}
+          </h2>
+          <a
+            href="/tournaments/{tournamentIdFromUrl}"
+            class="muted tournament-results__tournament-back"
           >
-            {addPlayerContext?.kind === 'event-p1' ? 'Cancel' : '+ New player (you)'}
-          </button>
-        {/if}
+            View tournament
+          </a>
+        </div>
+        <ul class="tournament-results__facts muted" aria-label="Tournament details">
+          <li><strong>Date</strong> {formatEventDate(tournamentInfo.date)}</li>
+          {#if tournamentInfo.meta?.trim()}
+            <li><strong>Meta</strong> {tournamentInfo.meta.trim()}</li>
+          {/if}
+          {#if tournamentInfo.location?.trim()}
+            {@const loc = tournamentInfo.location.trim()}
+            <li>
+              <strong>Location</strong>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`}
+                class="tournament-results__fact-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {loc}
+              </a>
+            </li>
+          {/if}
+          {#if tournamentInfo.url?.trim()}
+            <li>
+              <strong>Link</strong>
+              <a
+                href={tournamentInfo.url.trim()}
+                class="tournament-results__fact-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {tournamentInfo.url.trim()}
+              </a>
+            </li>
+          {/if}
+        </ul>
+      </section>
+    {/if}
+
+    <form class="stack tournament-results__form" onsubmit={onSubmit}>
+      <div class="row tournament-results__actions tournament-results__actions--top">
+        <button type="submit" class="btn btn--primary" disabled={loading}>
+          {loading ? 'Saving…' : 'Save'}
+        </button>
+        <a href="/tournaments/{tournamentIdFromUrl}" class="btn">Cancel</a>
       </div>
 
-      {#if addPlayerContext?.kind === 'event-p1'}
-        <div class="card stack tournament-results__add-player-card">
-          <p class="card__sub" style="margin: 0;">Create a player and assign them as You.</p>
-          <div class="stack formgrid" style="margin-top: 10px;">
-            <label class="label" for="tr-new-name-event">Name</label>
-            <input
-              id="tr-new-name-event"
-              type="text"
-              class="input"
-              bind:value={newPlayerName}
-              placeholder="Player name"
-            />
-            <label class="label" for="tr-new-team-event">Team</label>
-            <input
-              id="tr-new-team-event"
-              type="text"
-              class="input"
-              bind:value={newPlayerTeam}
-              placeholder="Optional"
-            />
-            {#if addPlayerError}
-              <p class="alert" style="grid-column: 1 / -1;">{addPlayerError}</p>
-            {/if}
-            <div class="row" style="grid-column: 1 / -1;">
-              <button
-                type="button"
-                class="btn btn--primary"
-                disabled={addPlayerLoading}
-                onclick={onAddPlayer}
-              >
-                {addPlayerLoading ? 'Adding…' : 'Add player'}
-              </button>
-            </div>
-          </div>
-        </div>
-      {/if}
+      <section class="card stack">
+        <h3 class="card__title" style="margin: 0;">You</h3>
+        {#if eventP1}
+          <p class="card__sub muted" style="margin: 0;">
+            Playing as <strong>{myPlayerName || 'Your profile'}</strong>
+            <span class="muted"> · results are saved for this player only.</span>
+          </p>
 
-      {#if showEventP1DeckSelect()}
-        <label class="label" for="event-p1-deck">Your Deck</label>
-        <button
-          id="event-p1-deck"
-          type="button"
-          class="input tournament-results__select-btn"
-          onclick={openDeckPickerEventP1}
-        >
-          {p1DeckDisplayName || '—'}
-        </button>
-      {/if}
-
-      {#if eventP1}
-        <label class="label" for="event-p1-deck-color">Your deck color</label>
-        <DeckColorSelect
-          id="event-p1-deck-color"
-          bind:value={p1DeckColor}
-          ariaLabel="Your deck color"
-        />
-      {/if}
-    </section>
-
-    {#each rounds as r, roundIndex (roundIndex)}
-      <section class="card stack tournament-results__round">
-        <div class="tournament-results__round-head row">
-          <h2 class="card__title">Round {r.round}</h2>
-          {#if rounds.length > 1}
-            <button type="button" class="btn" onclick={() => removeRound(roundIndex)}>
-              Remove round
-            </button>
-          {/if}
-        </div>
-
-        <label class="label" for="p2-{roundIndex}">Opponent</label>
-        <button
-          id="p2-{roundIndex}"
-          type="button"
-          class="input tournament-results__select-btn"
-          onclick={() => openRoundPlayerPicker(roundIndex)}
-        >
-          {roundP2Label(r)}
-        </button>
-
-        <div class="row tournament-results__add-player-row">
-          {#if !r.p2}
-            <button
-              type="button"
-              class="btn"
-              aria-expanded={addPlayerContext?.kind === 'round-p2' &&
-                addPlayerContext.roundIndex === roundIndex}
-              onclick={() => toggleAddPlayerRoundP2(roundIndex)}
-            >
-              {addPlayerContext?.kind === 'round-p2' && addPlayerContext.roundIndex === roundIndex
-                ? 'Cancel'
-                : '+ New player (Opponent)'}
-            </button>
-          {/if}
-        </div>
-
-        {#if addPlayerContext?.kind === 'round-p2' && addPlayerContext.roundIndex === roundIndex}
-          <div class="card stack tournament-results__add-player-card">
-            <p class="card__sub" style="margin: 0;">Create a player and assign them as Opponent.</p>
-            <div class="stack formgrid" style="margin-top: 10px;">
-              <label class="label" for="tr-new-name-{roundIndex}">Name</label>
-              <input
-                id="tr-new-name-{roundIndex}"
-                type="text"
-                class="input"
-                bind:value={newPlayerName}
-                placeholder="Player name"
-              />
-              <label class="label" for="tr-new-team-{roundIndex}">Team</label>
-              <input
-                id="tr-new-team-{roundIndex}"
-                type="text"
-                class="input"
-                bind:value={newPlayerTeam}
-                placeholder="Optional"
-              />
-              {#if addPlayerError}
-                <p class="alert" style="grid-column: 1 / -1;">{addPlayerError}</p>
-              {/if}
-              <div class="row" style="grid-column: 1 / -1;">
-                <button
-                  type="button"
-                  class="btn btn--primary"
-                  disabled={addPlayerLoading}
-                  onclick={onAddPlayer}
-                >
-                  {addPlayerLoading ? 'Adding…' : 'Add player'}
-                </button>
-              </div>
-            </div>
-          </div>
-        {/if}
-
-        {#if showRoundP2DeckSelect(r)}
-          <label class="label" for="p2deck-{roundIndex}">Opponent deck</label>
+          <label class="label" for="event-p1-deck" style="margin-top: 0.5rem;">Your deck</label>
           <button
-            id="p2deck-{roundIndex}"
+            id="event-p1-deck"
             type="button"
             class="input tournament-results__select-btn"
-            onclick={() => openDeckPickerRoundP2(roundIndex)}
+            onclick={openDeckPickerEventP1}
           >
-            {r.p2DeckDisplayName || '—'}
+            {p1DeckDisplayName || 'Choose deck (optional)'}
           </button>
+
+          <label class="label" for="event-p1-deck-color">Your deck color</label>
+          <DeckColorSelect
+            id="event-p1-deck-color"
+            bind:value={p1DeckColor}
+            ariaLabel="Your deck color"
+          />
+        {:else}
+          <p class="card__sub" style="margin: 0;">
+            Sign in with an account that has a <strong>linked player</strong> to record tournament
+            results as yourself.
+          </p>
         {/if}
+        {#if error}
+          <p class="alert tournament-results__error" role="alert">{error}</p>
+        {/if}
+      </section>
 
-        <label class="label" for="p2c-{roundIndex}">Opponent deck color</label>
-        <DeckColorSelect
-          id="p2c-{roundIndex}"
-          bind:value={r.p2DeckColor}
-          ariaLabel="Opponent deck color"
-        />
+      <div class="stack tournament-results__rounds-wrap">
+        <div class="tournament-results__tabs-bar">
+          <div class="tournament-results__tabs-scroll">
+            <div class="app-tabs tournament-results__round-tabs" role="tablist" aria-label="Rounds">
+              {#each rounds as rTab, i (i)}
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-tournament-results-round-{i}"
+                  aria-controls="panel-tournament-results-round"
+                  aria-selected={activeRoundIndex === i}
+                  class="app-tabs__tab"
+                  class:app-tabs__tab--active={activeRoundIndex === i}
+                  onclick={() => (activeRoundIndex = i)}
+                >
+                  Round {rTab.round}
+                </button>
+              {/each}
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn tournament-results__add-round-tab"
+            disabled={rounds.length >= MAX_ROUNDS}
+            title={rounds.length >= MAX_ROUNDS
+              ? `At most ${MAX_ROUNDS} rounds`
+              : 'Add another round'}
+            onclick={addRound}
+          >
+            + Add round
+          </button>
+        </div>
 
-        <label class="label" for="mnotes-{roundIndex}">Match notes</label>
-        <textarea
-          id="mnotes-{roundIndex}"
-          class="input"
-          rows="2"
-          bind:value={r.notes}
-          placeholder="Optional notes for this match"
-        ></textarea>
-
-        <h3 class="tournament-results__games-title">Games</h3>
-        {#each r.games as g, gi (`${roundIndex}-${gi}`)}
-          <div class="tournament-results__game card stack">
-            <span class="tournament-results__game-label">Game {gi + 1}</span>
-            <div class="formgrid tournament-results__lore-row">
-              <div>
-                <label class="label" for="l1-{roundIndex}-{gi}">Your lore</label>
+        <div
+          id="panel-tournament-results-round"
+          class="card stack tournament-results__round"
+          role="tabpanel"
+          tabindex="0"
+          aria-labelledby="tab-tournament-results-round-{activeRoundIndex}"
+        >
+          {#each [activeRoundIndex] as roundIndex (roundIndex)}
+            {@const r = rounds[roundIndex]}
+            <div class="tournament-results__round-head row">
+              <h2 class="card__title tournament-results__round-heading">
+                <span class="tournament-results__round-heading-prefix">Round</span>
                 <input
-                  id="l1-{roundIndex}-{gi}"
-                  type="number"
-                  min="0"
-                  class="input"
-                  inputmode="numeric"
-                  value={g.p1Lore}
-                  oninput={(e) =>
-                    patchGame(roundIndex, gi, { p1Lore: e.currentTarget.value })}
+                  id="round-label-{roundIndex}"
+                  type="text"
+                  class="input tournament-results__round-heading-input"
+                  value={r.round}
+                  maxlength="40"
+                  autocomplete="off"
+                  aria-label="Round label (stored on the match)"
+                  oninput={(e) => setRoundLabel(roundIndex, e.currentTarget.value)}
+                  onblur={() => blurRoundLabel(roundIndex, String(roundIndex + 1))}
                 />
+              </h2>
+              {#if rounds.length > 1}
+                <button
+                  type="button"
+                  class="btn btn--sm btn--danger-outline"
+                  onclick={() => removeRound(roundIndex)}
+                >
+                  <IconTrash size={18} className="game-line__icon icon-trash" />&nbsp;Remove
+                </button>
+              {/if}
+            </div>
+
+            <div class="tournament-results__id-field">
+              <p class="label tournament-results__id-field-label" id="tr-round-mode-label-{roundIndex}">
+                Round result
+              </p>
+              <div
+                class="tournament-results__id-chips"
+                role="radiogroup"
+                aria-labelledby="tr-round-mode-label-{roundIndex}"
+              >
+                <label
+                  class="tournament-results__id-chip"
+                  class:tournament-results__id-chip--active={!r.intentionalDraw}
+                >
+                  <input
+                    type="radio"
+                    class="tournament-results__id-chip-input"
+                    name="tr-round-mode-{roundIndex}"
+                    checked={!r.intentionalDraw}
+                    onchange={() => {
+                      rounds = rounds.map((row, i) =>
+                        i === roundIndex ? { ...row, intentionalDraw: false } : row
+                      );
+                    }}
+                  />
+                  <span class="tournament-results__id-chip-text">Match played</span>
+                </label>
+                <label
+                  class="tournament-results__id-chip"
+                  class:tournament-results__id-chip--active={r.intentionalDraw}
+                >
+                  <input
+                    type="radio"
+                    class="tournament-results__id-chip-input"
+                    name="tr-round-mode-{roundIndex}"
+                    checked={r.intentionalDraw}
+                    onchange={() => {
+                      rounds = rounds.map((row, i) =>
+                        i === roundIndex ? { ...row, intentionalDraw: true } : row
+                      );
+                    }}
+                  />
+                  <span class="tournament-results__id-chip-text">Intentional draw</span>
+                </label>
               </div>
-              <div>
-                <label class="label" for="l2-{roundIndex}-{gi}">Opponent lore</label>
-                <input
-                  id="l2-{roundIndex}-{gi}"
-                  type="number"
-                  min="0"
-                  class="input"
-                  inputmode="numeric"
-                  value={g.p2Lore}
-                  oninput={(e) =>
-                    patchGame(roundIndex, gi, { p2Lore: e.currentTarget.value })}
-                />
-              </div>
+              <p class="card__sub muted tournament-results__id-help">
+                {#if r.intentionalDraw}
+                  Creates a tournament match with <strong>no games</strong> and <strong>no winner</strong>.
+                  Enter your paired opponent below.
+                {:else}
+                  Record games below; match results are saved when you submit.
+                {/if}
+              </p>
             </div>
-            <p class="label" id="gs-label-{roundIndex}-{gi}">Starter (optional)</p>
-            <div
-              class="tournament-results__toggle"
-              role="group"
-              aria-labelledby="gs-label-{roundIndex}-{gi}"
-            >
-              <button
-                type="button"
-                class="tournament-results__toggle-btn"
-                aria-pressed={g.starterSide === 'p1'}
-                disabled={!eventP1}
-                onclick={() => patchGame(roundIndex, gi, { starterSide: 'p1' })}
-              >
-                You
-              </button>
-              <button
-                type="button"
-                class="tournament-results__toggle-btn tournament-results__toggle-btn--mid"
-                aria-pressed={g.starterSide === ''}
-                onclick={() => patchGame(roundIndex, gi, { starterSide: '' })}
-              >
-                —
-              </button>
-              <button
-                type="button"
-                class="tournament-results__toggle-btn"
-                aria-pressed={g.starterSide === 'p2'}
-                disabled={!r.p2}
-                onclick={() => patchGame(roundIndex, gi, { starterSide: 'p2' })}
-              >
-                {r.p2 ? roundP2Label(r) : 'Opponent'}
-              </button>
-            </div>
-            <p class="label" id="gw-label-{roundIndex}-{gi}">Winner</p>
-            <div
-              class="tournament-results__toggle"
-              role="group"
-              aria-labelledby="gw-label-{roundIndex}-{gi}"
-            >
-              <button
-                type="button"
-                class="tournament-results__toggle-btn"
-                aria-pressed={g.winnerSide === 'p1'}
-                disabled={!eventP1}
-                onclick={() => patchGame(roundIndex, gi, { winnerSide: 'p1' })}
-              >
-                You
-              </button>
-              <button
-                type="button"
-                class="tournament-results__toggle-btn tournament-results__toggle-btn--mid"
-                aria-pressed={g.winnerSide === ''}
-                onclick={() => patchGame(roundIndex, gi, { winnerSide: '' })}
-              >
-                —
-              </button>
-              <button
-                type="button"
-                class="tournament-results__toggle-btn"
-                aria-pressed={g.winnerSide === 'p2'}
-                disabled={!r.p2}
-                onclick={() => patchGame(roundIndex, gi, { winnerSide: 'p2' })}
-              >
-                {r.p2 ? roundP2Label(r) : 'Opponent'}
-              </button>
-            </div>
-            <label class="label" for="gn-{roundIndex}-{gi}">Game notes</label>
+
+            <label class="label" for="opponent-{roundIndex}">Opponent</label>
             <input
-              id="gn-{roundIndex}-{gi}"
+              id="opponent-{roundIndex}"
               type="text"
               class="input"
-              value={g.notes}
-              oninput={(e) => patchGame(roundIndex, gi, { notes: e.currentTarget.value })}
-              placeholder="Optional"
+              maxlength="120"
+              value={r.opponentName}
+              oninput={(e) => {
+                const v = e.currentTarget.value;
+                rounds = rounds.map((row, i) =>
+                  i === roundIndex ? { ...row, opponentName: v } : row
+                );
+              }}
+              placeholder={r.intentionalDraw ? 'Paired opponent (required)' : 'Opponent name'}
+              aria-label="Opponent name"
             />
-            {#if r.games.length > 1}
-              <button type="button" class="btn" onclick={() => removeGame(roundIndex, gi)}>
-                Remove game
+
+            <label class="label" for="p2c-{roundIndex}">Opponent deck color</label>
+            <DeckColorSelect
+              id="p2c-{roundIndex}"
+              bind:value={r.p2DeckColor}
+              ariaLabel="Opponent deck color"
+            />
+
+            <label class="label" for="mnotes-{roundIndex}">Match notes</label>
+            <textarea
+              id="mnotes-{roundIndex}"
+              class="input"
+              rows="2"
+              bind:value={r.notes}
+              placeholder="Optional notes for this match"
+            ></textarea>
+
+            {#if !r.intentionalDraw}
+            <div class="tournament-results__games-head row">
+              <h3 class="tournament-results__games-title">Games</h3>
+              <button
+                type="button"
+                class="btn tournament-results__add-game-btn"
+                onclick={() => addGame(roundIndex)}
+              >
+                + Add game
               </button>
+            </div>
+            {#each r.games as g, gi (`${roundIndex}-${gi}`)}
+              <div class="tournament-results__game stack">
+                <span class="tournament-results__game-label">Game {gi + 1}</span>
+                <div
+                  class="tournament-results__lore-vs"
+                  role="group"
+                  aria-label="Lore — you vs opponent"
+                >
+                  <div class="tournament-results__lore-side tournament-results__lore-side--p1">
+                    <label class="tournament-results__lore-label" for="l1-{roundIndex}-{gi}"
+                      >Your lore</label
+                    >
+                    <input
+                      id="l1-{roundIndex}-{gi}"
+                      type="number"
+                      min="0"
+                      class="input tournament-results__lore-input"
+                      inputmode="numeric"
+                      value={g.p1Lore}
+                      oninput={(e) =>
+                        patchGameLore(roundIndex, gi, { p1Lore: e.currentTarget.value })}
+                    />
+                  </div>
+                  <div class="tournament-results__lore-vs-mid" aria-hidden="true">VS.</div>
+                  <div class="tournament-results__lore-side tournament-results__lore-side--p2">
+                    <label class="tournament-results__lore-label" for="l2-{roundIndex}-{gi}"
+                      >Opponent lore</label
+                    >
+                    <input
+                      id="l2-{roundIndex}-{gi}"
+                      type="number"
+                      min="0"
+                      class="input tournament-results__lore-input tournament-results__lore-input--p2"
+                      inputmode="numeric"
+                      value={g.p2Lore}
+                      oninput={(e) =>
+                        patchGameLore(roundIndex, gi, { p2Lore: e.currentTarget.value })}
+                    />
+                  </div>
+                </div>
+                <div class="tournament-results__game-toggles">
+                  <div class="tournament-results__toggle-group">
+                    <p class="tournament-results__toggle-label" id="gs-label-{roundIndex}-{gi}">
+                      Starter (optional)
+                    </p>
+                    <div
+                      class="tournament-results__toggle"
+                      role="group"
+                      aria-labelledby="gs-label-{roundIndex}-{gi}"
+                    >
+                      <button
+                        type="button"
+                        class="tournament-results__toggle-btn"
+                        aria-pressed={g.starterSide === 'p1'}
+                        disabled={!eventP1}
+                        onclick={() => patchGame(roundIndex, gi, { starterSide: 'p1' })}
+                      >
+                        You
+                      </button>
+                      <button
+                        type="button"
+                        class="tournament-results__toggle-btn tournament-results__toggle-btn--mid"
+                        aria-pressed={g.starterSide === ''}
+                        onclick={() => patchGame(roundIndex, gi, { starterSide: '' })}
+                      >
+                        —
+                      </button>
+                      <button
+                        type="button"
+                        class="tournament-results__toggle-btn"
+                        aria-pressed={g.starterSide === 'p2'}
+                        disabled={!r.opponentName.trim()}
+                        onclick={() => patchGame(roundIndex, gi, { starterSide: 'p2' })}
+                      >
+                        {roundP2Label(r)}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="tournament-results__toggle-group">
+                    <p class="tournament-results__toggle-label" id="gw-label-{roundIndex}-{gi}">
+                      Winner
+                    </p>
+                    <div
+                      class="tournament-results__toggle"
+                      role="group"
+                      aria-labelledby="gw-label-{roundIndex}-{gi}"
+                      title="Winner updates from lore (20 to win, or higher lore if both under 20). You can override with the buttons."
+                    >
+                      <button
+                        type="button"
+                        class="tournament-results__toggle-btn"
+                        aria-pressed={g.winnerSide === 'p1'}
+                        disabled={!eventP1}
+                        onclick={() => patchGame(roundIndex, gi, { winnerSide: 'p1' })}
+                      >
+                        You
+                      </button>
+                      <button
+                        type="button"
+                        class="tournament-results__toggle-btn tournament-results__toggle-btn--mid"
+                        aria-pressed={g.winnerSide === ''}
+                        onclick={() => patchGame(roundIndex, gi, { winnerSide: '' })}
+                      >
+                        —
+                      </button>
+                      <button
+                        type="button"
+                        class="tournament-results__toggle-btn"
+                        aria-pressed={g.winnerSide === 'p2'}
+                        disabled={!r.opponentName.trim()}
+                        onclick={() => patchGame(roundIndex, gi, { winnerSide: 'p2' })}
+                      >
+                        {roundP2Label(r)}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <label class="label tournament-results__game-field-label" for="gn-{roundIndex}-{gi}"
+                  >Game notes</label
+                >
+                <textarea
+                  id="gn-{roundIndex}-{gi}"
+                  rows="2"
+                  class="input tournament-results__note-input"
+                  bind:value={g.notes}
+                  oninput={(e) => patchGame(roundIndex, gi, { notes: e.currentTarget.value })}
+                  placeholder="Optional notes for this game"
+                ></textarea>
+                {#if r.games.length > 1}
+                  <button
+                    type="button"
+                    class="btn btn--sm btn--danger-outline tournament-results__remove-game-btn"
+                    onclick={() => removeGame(roundIndex, gi)}
+                  >
+                    <IconTrash size={18} className="game-line__icon icon-trash" />&nbsp;Remove game
+                  </button>
+                {/if}
+              </div>
+            {/each}
+            <button
+              type="button"
+              class="btn tournament-results__add-game-btn tournament-results__add-game-btn--footer"
+              onclick={() => addGame(roundIndex)}
+            >
+              + Add game
+            </button>
+            {:else}
+              <div class="tournament-results__id-games-skip card stack">
+                <p class="card__sub muted" style="margin: 0;">
+                  No game rows for an intentional draw — the match is still created without a winner.
+                </p>
+              </div>
             {/if}
-          </div>
-        {/each}
-        <button type="button" class="btn" onclick={() => addGame(roundIndex)}>+ Add game</button>
-      </section>
-    {/each}
+          {/each}
+        </div>
+      </div>
 
-    <button type="button" class="btn" onclick={addRound}>+ Add round</button>
+      {#if resultMessage}
+        <p class="card__sub" role="status">{resultMessage}</p>
+      {/if}
+    </form>
+  {/if}
 
-    {#if error}
-      <p class="alert" role="alert">{error}</p>
-    {/if}
-    {#if resultMessage}
-      <p class="card__sub" role="status">{resultMessage}</p>
-    {/if}
-
-    <div class="row tournament-results__actions">
-      <button type="submit" class="btn btn--primary" disabled={loading}>
-        {loading ? 'Saving…' : 'Save all matches'}
-      </button>
-      <a href="/matches" class="btn">Cancel</a>
-    </div>
-  </form>
-
-  <PlayerPickerModal
-    bind:open={playerPickerOpen}
-    title="Select player"
-    forLabel={playerPickerContext?.scope === 'event-p1' ? 'You' : 'Opponent'}
-    presetTeamFromMe={playerPickerContext?.scope !== 'round-p2'}
-    excludePlayerId={pickerExcludeId}
-    onSelect={handlePlayerSelect}
-    onClose={() => {
-      playerPickerOpen = false;
-      playerPickerContext = null;
-    }}
-  />
   <DeckPickerModal
     bind:open={deckPickerOpen}
     title="Select deck"
     forLabel={deckPickerLabel}
-    filterPlayerId={deckPickerContext?.scope === 'event-p1'
-      ? eventP1
-      : deckPickerContext?.scope === 'round-p2'
-        ? rounds[deckPickerContext.roundIndex]?.p2 ?? ''
-        : ''}
+    filterPlayerId={eventP1}
     onSelect={handleDeckSelect}
     onClose={() => {
       deckPickerOpen = false;
-      deckPickerContext = null;
     }}
   />
 </div>
@@ -843,16 +942,52 @@
 <style>
   .tournament-results-page {
     max-width: 720px;
+    min-width: 0;
   }
   .page-title {
     margin: 0 0 0.25rem 0;
     font-size: 1.5rem;
     font-weight: 700;
   }
-  .page-sub {
-    margin: 0 0 1.25rem 0;
-    color: var(--muted);
+  .tournament-results__tournament-card {
+    margin-bottom: var(--space-md, 1rem);
+  }
+  .tournament-results__error {
+    margin: 0.75rem 0 0 0;
+  }
+  .tournament-results__tournament-head {
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .tournament-results__tournament-title {
+    margin: 0;
+    flex: 1 1 12rem;
+    min-width: 0;
+    word-break: break-word;
+  }
+  .tournament-results__tournament-back {
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+  }
+  .tournament-results__tournament-back:hover {
+    border-bottom-color: currentColor;
+  }
+  .tournament-results__facts {
+    margin: 0;
+    padding-left: 1.25rem;
     font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+  .tournament-results__facts li {
+    margin-bottom: 0.25rem;
+  }
+  .tournament-results__fact-link {
+    color: inherit;
+    word-break: break-all;
   }
   .tournament-results__round-head {
     justify-content: space-between;
@@ -860,35 +995,344 @@
     flex-wrap: wrap;
     gap: 0.5rem;
   }
+  .tournament-results__round-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .tournament-results__round-heading-prefix {
+    flex-shrink: 0;
+    color: var(--fg);
+  }
+  .tournament-results__round-heading-input {
+    flex: 1 1 6rem;
+    min-width: 4rem;
+    max-width: 18rem;
+    min-height: 44px;
+    padding: 0.35rem 0.65rem;
+    font: inherit;
+    font-weight: 700;
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+  .tournament-results__id-field {
+    margin-top: 0.15rem;
+  }
+  .tournament-results__id-field-label {
+    margin: 0 0 0.35rem 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+  }
+  .tournament-results__id-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm, 0.5rem);
+  }
+  .tournament-results__id-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs, 4px);
+    padding: 10px 16px;
+    min-height: 44px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border);
+    background: var(--glass-bg);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--fg);
+    transition:
+      background var(--transition),
+      border-color var(--transition),
+      color var(--transition);
+  }
+  .tournament-results__id-chip:hover {
+    background: var(--glass-bg-strong);
+    border-color: var(--border-strong);
+  }
+  .tournament-results__id-chip:focus-within {
+    outline: 2px solid var(--ink-glow);
+    outline-offset: 2px;
+  }
+  .tournament-results__id-chip--active:focus-within {
+    outline-color: rgba(255, 255, 255, 0.35);
+  }
+  .tournament-results__id-chip--active {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: white;
+  }
+  .tournament-results__id-chip--active:hover {
+    background: var(--ink-hover);
+    border-color: var(--ink-hover);
+    color: white;
+  }
+  .tournament-results__id-chip-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  .tournament-results__id-chip-text {
+    user-select: none;
+  }
+  .tournament-results__id-help {
+    margin: 0.5rem 0 0.85rem 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+  }
+  .tournament-results__id-games-skip {
+    margin-top: 0.35rem;
+    padding: 0.65rem 0.75rem;
+    background: var(--glass-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  /**
+   * Tab row: scrollable round tabs + add button pinned on the right.
+   * Grid/flex defaults use min-width:auto so the row was growing to full tab width with no scroll;
+   * min-width:0 + flex-basis:0 on the scroll strip fixes horizontal overflow.
+   */
+  .tournament-results__rounds-wrap {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  .tournament-results__form.stack {
+    min-width: 0;
+    margin-top: var(--space-md, 1rem);
+    margin-bottom: 5rem;
+  }
+  .tournament-results__tabs-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-top: var(--space-md, 1rem);
+    margin-bottom: var(--space-lg, 1.25rem);
+    padding-bottom: var(--space-md, 1rem);
+    border-bottom: 1px solid var(--border);
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  .tournament-results__tabs-scroll {
+    flex: 1 1 0%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .tournament-results__tabs-scroll::-webkit-scrollbar {
+    height: 6px;
+  }
+  .tournament-results__tabs-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 3px;
+  }
+  .tournament-results__round-tabs.app-tabs {
+    margin: 0;
+    padding: 0;
+    border: none;
+    margin-bottom: 0;
+    flex-wrap: nowrap;
+    width: max-content;
+    max-width: none;
+    gap: 0.25rem;
+  }
+  .tournament-results__round-tabs .app-tabs__tab {
+    flex: 0 0 auto;
+    padding: 0.45rem;
+    font-size: 1.3rem;
+    line-height: 1.3rem;
+    white-space: nowrap;
+  }
+  .tournament-results__add-round-tab {
+    flex-shrink: 0;
+    align-self: center;
+  }
   .tournament-results__select-btn {
     text-align: left;
     cursor: pointer;
     width: 100%;
   }
-  .tournament-results__add-player-row {
-    margin-bottom: var(--space-sm, 0.5rem);
+  .tournament-results__games-head {
+    justify-content: space-between;
+    align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
+    margin: 0.35rem 0 0.4rem 0;
   }
-  .tournament-results__add-player-card {
-    margin-bottom: var(--space-md, 1rem);
+  @media (max-width: 380px) {
+    .tournament-results__games-head {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .tournament-results__add-game-btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
   .tournament-results__games-title {
-    margin: 0.5rem 0 0.25rem 0;
-    font-size: 1rem;
+    margin: 0;
+    font-size: 0.9375rem;
     font-weight: 600;
   }
+  .tournament-results__add-game-btn {
+    flex-shrink: 0;
+    min-height: 40px;
+    padding: 7px 12px;
+    font-size: 0.875rem;
+  }
+  .tournament-results__add-game-btn--footer {
+    width: 100%;
+    margin-top: 0.15rem;
+  }
   .tournament-results__game {
-    padding: var(--space-md, 1rem);
+    padding: 0.45rem 0.55rem;
     background: var(--glass-bg, rgba(255, 255, 255, 0.03));
+    max-width: 100%;
+  }
+  .tournament-results__game.stack {
+    gap: 0.35rem;
+  }
+  @media (max-width: 479px) {
+    .tournament-results__game {
+      padding: 0.55rem 0.65rem;
+    }
+    .tournament-results__game.stack {
+      gap: 0.55rem;
+    }
+    .tournament-results__add-game-btn {
+      min-height: 44px;
+    }
   }
   .tournament-results__game-label {
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
+    color: var(--muted);
+    margin-bottom: -0.05rem;
+  }
+  .tournament-results__game-field-label {
+    gap: 4px;
+    font-size: 0.8125rem;
+  }
+  .tournament-results__lore-vs {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.35rem 0.5rem;
+    width: 100%;
+    min-width: 0;
+  }
+  .tournament-results__lore-side {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+  .tournament-results__lore-side--p1 {
+    align-items: flex-start;
+  }
+  .tournament-results__lore-side--p2 {
+    align-items: flex-end;
+  }
+  .tournament-results__lore-label {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.8125rem;
     color: var(--muted);
   }
-  .tournament-results__lore-row {
-    margin-bottom: 0.25rem;
+  .tournament-results__lore-vs-mid {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    padding: 0 0.15rem;
+    font-size: clamp(1.25rem, 4vw, 1.75rem);
+    line-height: 1;
+    font-weight: 800;
+    color: var(--muted);
+    user-select: none;
+  }
+  /** Narrow screens: stack lore fields so inputs stay wide and tappable (no squeezed columns). */
+  @media (max-width: 419px) {
+    .tournament-results__lore-vs {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.45rem;
+    }
+    .tournament-results__lore-vs-mid {
+      align-self: center;
+      padding: 0.1rem 0;
+      font-size: 0.9375rem;
+      letter-spacing: 0.08em;
+    }
+    .tournament-results__lore-side--p2 {
+      align-items: flex-start;
+    }
+    .tournament-results__lore-input--p2 {
+      text-align: left;
+    }
+  }
+  .tournament-results__lore-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+  .tournament-results__lore-input--p2 {
+    text-align: right;
+  }
+  .tournament-results__note-input {
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+  @media (max-width: 479px) {
+    .tournament-results__note-input {
+      min-height: 44px;
+      padding: 10px 12px;
+    }
+  }
+  .tournament-results__game-toggles {
+    display: grid;
+    gap: 0.35rem;
+  }
+  @media (min-width: 480px) {
+    .tournament-results__game-toggles {
+      grid-template-columns: 1fr 1fr;
+      gap: 0.45rem;
+    }
+  }
+  .tournament-results__toggle-label {
+    margin: 0 0 0.2rem 0;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.01em;
   }
   .tournament-results__toggle {
     display: flex;
@@ -897,11 +1341,12 @@
     border-radius: var(--radius);
     border: 1px solid var(--border-strong);
     overflow: hidden;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0;
   }
   .tournament-results__toggle-btn {
     flex: 1;
     min-width: 0;
+    min-height: 44px;
     padding: 10px 6px;
     border: none;
     background: transparent;
@@ -910,9 +1355,22 @@
     font-size: 0.8125rem;
     color: var(--text);
     transition: background 0.15s var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (min-width: 480px) {
+    .tournament-results__toggle-btn {
+      min-height: 0;
+      padding: 7px 4px;
+      font-size: 0.75rem;
+    }
   }
   .tournament-results__toggle-btn + .tournament-results__toggle-btn {
     border-left: 1px solid var(--border-strong);
+  }
+  .tournament-results__toggle-btn:not(.tournament-results__toggle-btn--mid) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .tournament-results__toggle-btn:disabled {
     opacity: 0.45;
@@ -926,23 +1384,30 @@
     color: var(--muted);
     font-weight: 700;
   }
+  @media (min-width: 480px) {
+    .tournament-results__toggle-btn--mid {
+      flex: 0 0 2.25rem;
+    }
+  }
+  .tournament-results__remove-game-btn {
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+    align-self: flex-start;
+  }
+  @media (max-width: 379px) {
+    .tournament-results__remove-game-btn {
+      width: 100%;
+      justify-content: center;
+      align-self: stretch;
+    }
+  }
   .tournament-results__actions {
     gap: 0.75rem;
     flex-wrap: wrap;
   }
-  @media (min-width: 640px) {
-    .tournament-results__form .formgrid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-md, 1rem);
-      align-items: start;
-    }
-    .tournament-results__form .formgrid .label {
-      grid-column: span 1;
-    }
-    .tournament-results__form .formgrid > div {
-      min-width: 0;
-    }
+  .tournament-results__actions--top {
+    margin-top: var(--space-md, 1rem);
   }
   .tournament-results__form :global(.deck-color-select) {
     z-index: 1;

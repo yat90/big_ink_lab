@@ -17,7 +17,7 @@
       const res = await fetch(`${apiUrl}/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), team: team.trim() }),
+        body: JSON.stringify({ name: name.trim(), team: team.trim(), isGuest: false }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

@@ -85,6 +85,7 @@ export class AuthService {
     const player = await this.playersService.create({
       name: name || email,
       team: '',
+      isGuest: false,
     });
     const passwordHash = await bcrypt.hash(password, 10);
     const created = await this.userModel.create({

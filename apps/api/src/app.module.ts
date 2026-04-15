@@ -9,6 +9,7 @@ import { PlayersModule } from './players/players.module';
 import { DecksModule } from './decks/decks.module';
 import { AuthModule } from './auth/auth.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { TournamentsModule } from './tournaments/tournaments.module';
 import { DEFAULT_MONGODB_URI, DEFAULT_DB_NAME } from './constants';
 
 @Module({
@@ -28,6 +29,7 @@ import { DEFAULT_MONGODB_URI, DEFAULT_DB_NAME } from './constants';
     DecksModule,
     AuthModule,
     AnalyticsModule,
+    TournamentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

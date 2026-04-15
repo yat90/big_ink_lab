@@ -147,7 +147,7 @@
 
 {#if !loading && !error && player && hasAnyStats}
   <div class="page stats-page">
-    <div class="stats-page__tabs" role="tablist" aria-label="Statistics categories">
+    <div class="app-tabs" role="tablist" aria-label="Statistics categories">
       {#each TABS as tab (tab.id)}
         <button
           type="button"
@@ -155,8 +155,8 @@
           aria-selected={activeTab === tab.id}
           aria-controls="panel-{tab.id}"
           id="tab-{tab.id}"
-          class="stats-page__tab"
-          class:stats-page__tab--active={activeTab === tab.id}
+          class="app-tabs__tab"
+          class:app-tabs__tab--active={activeTab === tab.id}
           onclick={() => (activeTab = tab.id)}
         >
           {tab.label}
@@ -245,43 +245,6 @@
     margin: 0 0 var(--space-md) 0;
     font-size: 0.95rem;
     line-height: 1.5;
-  }
-
-  .stats-page__tabs {
-    margin-top: var(--space-md);
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xs);
-    padding-bottom: var(--space-md);
-    border-bottom: 1px solid var(--border);
-    margin-bottom: var(--space-lg);
-  }
-
-  .stats-page__tab {
-    padding: var(--space-sm) var(--space-md);
-    font-weight: 600;
-    font-size: 1.05rem;
-    color: var(--muted);
-    background: none;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition:
-      color 0.15s ease,
-      background 0.15s ease;
-  }
-
-  .stats-page__tab:hover {
-    color: var(--text);
-    background: var(--glass-bg-strong, rgba(0, 0, 0, 0.05));
-  }
-
-  .stats-page__tab--active {
-    color: var(--text);
-    background: var(--glass-bg-strong, rgba(0, 0, 0, 0.08));
   }
 
   .stats-page__panels {

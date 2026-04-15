@@ -37,6 +37,7 @@
     "@types/node": "^22.0.0",
     "@types/passport-jwt": "^4.0.0",
     "@types/tar-stream": "^3.1.4",
+    "tsx": "^4.19.0",
     "typescript": "^5.0.0"
   }
 }

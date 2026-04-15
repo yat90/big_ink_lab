@@ -1,5 +1,5 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document, Types } from "mongoose";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document, Types } from 'mongoose';
 import { Game, GameSchema } from "./game.interface";
 import { Stage } from "./stages.enum";
 import { DeckColor } from "./deck-color.enum";
@@ -11,26 +11,22 @@ export class Match extends Document {
 	@Prop({ type: String, enum: Object.values(Stage) })
 	stage: Stage;
 
-	@Prop({ default: "" })
-	tournamentName: string;
+	/** Optional link to a tournament document (`Tournament` collection). */
+	@Prop({ type: Types.ObjectId, ref: 'Tournament', required: false })
+	tournament?: Types.ObjectId;
 
 	@Prop({ type: Date })
 	playedAt: Date;
 
-	@Prop({ optional: true })
-	round?: number;
+	/** Swiss index (e.g. "1", "2") or bracket label ("top 8", "final"). */
+	@Prop({ type: String, trim: true })
+	round?: string;
 
 	@Prop({ type: Types.ObjectId, ref: "Player" })
 	p1: string;
 
 	@Prop({ type: String, enum: DECK_COLOR_SCHEMA_ENUM })
 	p1DeckColor: DeckColor | "";
-
-	@Prop({ default: "" })
-	p1DeckName: string;
-
-	@Prop({ default: "" })
-	p1DeckLink: string;
 
 	/** Optional deck reference (e.g. when player is from The Big Ink Theory). */
 	@Prop({ type: Types.ObjectId, ref: "Deck", required: false })

@@ -19,26 +19,40 @@
   type StageOption = (typeof STAGE_OPTIONS)[number];
   type MatrixMode = 'matches' | 'games';
   let selectedStages = $state<StageOption[]>([...STAGE_OPTIONS]);
-  let selectedTournament = $state('');
+  let selectedTournamentId = $state('');
   let selectedMatrixMode = $state<MatrixMode>('matches');
-  let tournamentNames = $state<string[]>([]);
+  type TournamentRow = { _id: string; name: string };
+  let tournamentRows = $state<TournamentRow[]>([]);
 
   const apiUrl = config.apiUrl ?? '/api';
   const tournamentStageSelected = $derived(selectedStages.includes('Tournament'));
 
-  async function fetchTournamentNames() {
+  const selectedTournamentLabel = $derived.by(() => {
+    if (!selectedTournamentId.trim()) return '';
+    return tournamentRows.find((t) => t._id === selectedTournamentId)?.name ?? '';
+  });
+
+  async function fetchTournamentRows() {
     try {
-      const res = await fetch(`${apiUrl}/matches/tournaments`);
+      const res = await fetch(`${apiUrl}/tournaments?limit=200&page=1`);
       if (res.ok) {
-        const data = await res.json();
-        tournamentNames = data.tournamentNames ?? [];
+        const json = await res.json();
+        const data: unknown[] = Array.isArray(json) ? json : (json?.data ?? []);
+        tournamentRows = data.map((row) => {
+          const r = row as Record<string, unknown>;
+          return { _id: String(r._id ?? ''), name: String(r.name ?? '') };
+        });
       }
     } catch {
-      tournamentNames = [];
+      tournamentRows = [];
     }
   }
 
-  async function fetchStats(stages: StageOption[], tournamentName?: string, matrixMode: MatrixMode = 'matches') {
+  async function fetchStats(
+    stages: StageOption[],
+    tournamentId?: string,
+    matrixMode: MatrixMode = 'matches',
+  ) {
     loading = true;
     error = '';
     try {
@@ -46,7 +60,7 @@
       if (stages.length > 0 && stages.length < STAGE_OPTIONS.length) {
         stages.forEach((s) => params.append('stage', s));
       }
-      if (tournamentName?.trim()) params.set('tournamentName', tournamentName.trim());
+      if (tournamentId?.trim()) params.set('tournamentId', tournamentId.trim());
       params.set('matrixMode', matrixMode);
       const url = `${apiUrl}/matches/stats${params.toString() ? `?${params}` : ''}`;
       const res = await fetch(url);
@@ -65,7 +79,7 @@
   function toggleStage(stage: StageOption) {
     if (selectedStages.includes(stage)) {
       selectedStages = selectedStages.filter((s) => s !== stage);
-      if (stage === 'Tournament') selectedTournament = '';
+      if (stage === 'Tournament') selectedTournamentId = '';
     } else {
       selectedStages = [...selectedStages, stage].sort(
         (a, b) => STAGE_OPTIONS.indexOf(a) - STAGE_OPTIONS.indexOf(b),
@@ -74,11 +88,11 @@
   }
 
   $effect(() => {
-    if (tournamentStageSelected) fetchTournamentNames();
+    if (tournamentStageSelected) void fetchTournamentRows();
   });
 
   $effect(() => {
-    fetchStats(selectedStages, selectedTournament || undefined, selectedMatrixMode);
+    fetchStats(selectedStages, selectedTournamentId || undefined, selectedMatrixMode);
   });
 </script>
 
@@ -99,12 +113,18 @@
   {:else if error}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
-      <a href="/" class="btn">Back to home</a>
+      <div class="row" style="gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-md);">
+        <a href="/me/statistics" class="btn">My statistics</a>
+        <a href="/" class="btn">Back to home</a>
+      </div>
     </div>
   {:else if stats}
     <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: var(--space-md);">
       <h2 class="card__title" style="margin: 0;">Statistics</h2>
-      <a href="/" class="btn">Back to home</a>
+      <div class="row" style="gap: var(--space-sm); flex-wrap: wrap;">
+        <a href="/me/statistics" class="btn">My statistics</a>
+        <a href="/" class="btn">Back to home</a>
+      </div>
     </div>
 
     <div class="card match-stats__card match-stats__filter">
@@ -129,12 +149,12 @@
           <select
             id="filter-tournament"
             class="input match-stats__tournament-select"
-            bind:value={selectedTournament}
+            bind:value={selectedTournamentId}
             aria-label="Filter by tournament"
           >
             <option value="">All tournaments</option>
-            {#each tournamentNames as name (name)}
-              <option value={name}>{name}</option>
+            {#each tournamentRows as t (t._id)}
+              <option value={t._id}>{t.name}</option>
             {/each}
           </select>
         </div>
@@ -142,8 +162,8 @@
       {#if selectedStages.length < STAGE_OPTIONS.length}
         <p class="muted" style="margin: var(--space-sm) 0 0; font-size: 0.85rem;">
           Showing stats for: {selectedStages.length === 0 ? 'all stages' : selectedStages.join(', ')}
-          {#if selectedTournament}
-            · {selectedTournament}
+          {#if selectedTournamentLabel}
+            · {selectedTournamentLabel}
           {/if}
         </p>
       {/if}
