@@ -23,7 +23,7 @@ const MATCHES = 'matches';
 const TOURNAMENTS = 'tournaments';
 
 async function main(): Promise<void> {
-  const uri ="mongodb+srv://Vercel-Admin-atlas-cordovan-envelope:r80ElsdLX3pVfyJe@atlas-cordovan-envelope.xjwff63.mongodb.net/?retryWrites=true&w=majority";
+  const uri ="";
   console.log(`Connecting to MongoDB (${dryRun ? 'dry-run' : 'write'})…`);
   await mongoose.connect(uri, {
     dbName: DEFAULT_DB_NAME,
