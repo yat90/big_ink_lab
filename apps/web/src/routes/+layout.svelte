@@ -172,6 +172,7 @@
 </svelte:head>
 
 {#if !isLorePage && !isAuthPage && authReady && isAuthenticated}
+  <a class="skip-link" href="#main">Skip to main content</a>
   <header class="topbar">
     <div class="topbar__desktop-only">
       <DesktopNavBar authDisplayName={authDisplayName} logout={logout} />
@@ -199,10 +200,22 @@
       {/if}
     {:else}
       <div class="page">
-        <div class="card">
-          <p class="muted">Checking login…</p>
+        <div class="auth-check" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="muted">Checking login…</span>
         </div>
       </div>
     {/if}
   </main>
 </div>
+
+<style>
+  .auth-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    padding: var(--space-xl) var(--space-md);
+    min-height: 40vh;
+  }
+</style>

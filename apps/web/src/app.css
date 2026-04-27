@@ -1278,6 +1278,101 @@ select.input option {
   }
 }
 
+/* Keyboard / screen-reader skip link – visually hidden until focused. */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 12px;
+  z-index: 100;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--ink);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transition: top 0.15s var(--ease);
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: calc(12px + env(safe-area-inset-top));
+  outline: 2px solid #c084fc;
+  outline-offset: 2px;
+}
+
+/* Inline loading spinner (small, accessible — pair with role="status"). */
+.spinner {
+  display: inline-block;
+  width: 1.25em;
+  height: 1.25em;
+  border: 2px solid var(--glass-border);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spinner-rotate 0.8s linear infinite;
+  flex-shrink: 0;
+}
+.spinner--lg {
+  width: 1.75em;
+  height: 1.75em;
+  border-width: 3px;
+}
+@keyframes spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 1.6s;
+  }
+}
+
+/* Input wrapper with a trailing button (e.g. password show/hide). */
+.input-affix {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+.input-affix > .input {
+  flex: 1;
+  padding-right: 56px;
+}
+.input-affix__btn {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 38px;
+  padding: 4px 10px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    color var(--transition),
+    background var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.input-affix__btn:hover {
+  color: var(--fg);
+  background: var(--glass-bg-strong);
+}
+.input-affix__btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .loading-skeleton {
   display: flex;
   flex-direction: column;

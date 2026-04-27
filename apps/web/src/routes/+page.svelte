@@ -35,6 +35,7 @@
   let loading = $state(true);
   let error = $state('');
   let loreTrackerLoading = $state(false);
+  let retrying = $state(false);
   /** Current user's linked player id (for Quick Match P1). */
   let myPlayerId = $state<string | null>(null);
   let pastTournaments = $state<DashboardTournament[]>([]);
@@ -122,7 +123,8 @@
     return games.filter((g) => gameWinnerId(g) === playerId).length;
   }
 
-  onMount(async () => {
+  async function loadDashboard() {
+    error = '';
     try {
       const token = getAuthToken();
       if (token) {
@@ -187,6 +189,21 @@
       }
     } catch {
       error = 'Could not load dashboard.';
+    }
+  }
+
+  async function retry() {
+    retrying = true;
+    try {
+      await loadDashboard();
+    } finally {
+      retrying = false;
+    }
+  }
+
+  onMount(async () => {
+    try {
+      await loadDashboard();
     } finally {
       loading = false;
     }
@@ -200,18 +217,25 @@
 <div class="page">
   {#if loading}
     <div class="card">
-      <div class="loading-skeleton" aria-busy="true" aria-live="polite">
+      <div class="loading-skeleton" aria-busy="true" aria-live="polite" aria-label="Loading dashboard">
         <div class="loading-skeleton__line loading-skeleton__line--title"></div>
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         <div class="loading-skeleton__line"></div>
       </div>
-      <p class="muted" style="margin-top: var(--space-md);">Loading…</p>
     </div>
   {:else if error}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
       <div class="row" style="gap: 12px; margin-top: 12px;">
-        <a href="/matches" class="btn btn--primary">Matches</a>
+        <button type="button" class="btn btn--primary" onclick={retry} disabled={retrying}>
+          {#if retrying}
+            <span class="spinner" aria-hidden="true" style="margin-right: 8px;"></span>
+            Retrying…
+          {:else}
+            Try again
+          {/if}
+        </button>
+        <a href="/matches" class="btn">Matches</a>
         <a href="/players" class="btn">Players</a>
       </div>
     </div>
