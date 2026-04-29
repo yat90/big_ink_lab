@@ -16,6 +16,7 @@
   import IconUpload from '$lib/icons/IconUpload.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
+  import { DateDisplay } from '$lib/DateDisplay';
 
   type Player = { _id: string; name: string; team?: string };
 
@@ -79,15 +80,6 @@
   function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
     if (!p) return '–';
     return typeof p === 'string' ? p : (p.name ?? '–');
-  }
-
-  function formatDate(s: string | undefined): string {
-    if (!s) return '–';
-    try {
-      return new Date(s).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
-    } catch {
-      return s;
-    }
   }
 
   function matchWinnerId(m: LorcanaMatch): string | undefined {
@@ -540,7 +532,7 @@
             style="text-decoration: none; color: inherit;"
           >
             <div class="matchcard__top muted">
-              {formatDate(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
+              {DateDisplay.formatRelative(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
                 · {formatMatchRoundLabel(match.round)}{/if}
             </div>
             <div class="matchcard__row">
