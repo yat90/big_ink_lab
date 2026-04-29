@@ -2,6 +2,7 @@
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
   import Pagination from '$lib/Pagination.svelte';
+  import { focusTrap, scrollLock } from '$lib/a11y';
 
   /** Move the modal root to document.body so it covers the full viewport. */
   function portal(node: HTMLElement) {
@@ -140,7 +141,7 @@
       aria-label="Close"
       onclick={onClose}
     ></button>
-    <div class="player-picker-modal__card card">
+    <div class="player-picker-modal__card card" use:focusTrap use:scrollLock>
       <h2 id="player-picker-title" class="player-picker-modal__title">{title}</h2>
       {#if forLabel}
         <p class="player-picker-modal__for muted">Selecting player for <strong>{forLabel}</strong></p>

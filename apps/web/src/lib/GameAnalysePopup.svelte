@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { focusTrap, scrollLock } from '$lib/a11y';
+
   type Props = {
     /** When true, the popup is shown. */
     open: boolean;
@@ -44,7 +46,11 @@
       aria-label="Close"
       onclick={handleClose}
     ></button>
-    <div class="delete-game-modal__card card game-analyse-modal__card">
+    <div
+      class="delete-game-modal__card card game-analyse-modal__card"
+      use:focusTrap
+      use:scrollLock
+    >
       <h2 id="game-analyse-title" class="delete-game-modal__title">
         {title}
       </h2>

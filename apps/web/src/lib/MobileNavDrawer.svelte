@@ -9,6 +9,7 @@
   import IconUser from '$lib/icons/IconUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import IconClose from '$lib/icons/IconClose.svelte';
+  import { focusTrap, scrollLock } from '$lib/a11y';
 
   interface Props {
     open: boolean;
@@ -46,7 +47,13 @@
 
 {#if open}
   <div class="mobile-nav__backdrop" role="presentation" onclick={closeMenu}></div>
-  <nav id="mobile-nav-drawer" class="mobile-nav__drawer" aria-label="More menu">
+  <nav
+    id="mobile-nav-drawer"
+    class="mobile-nav__drawer"
+    aria-label="More menu"
+    use:focusTrap
+    use:scrollLock
+  >
     <button
       type="button"
       class="mobile-nav__drawer-close"
@@ -160,18 +167,6 @@
         <IconLogOut size={24} />
       </span>
       Logout
-    </button>
-    <div class="mobile-nav__drawer-divider" role="separator" aria-hidden="true"></div>
-    <button
-      type="button"
-      class="mobile-nav__drawer-link mobile-nav__drawer-link--button mobile-nav__drawer-link--close"
-      aria-label="Close menu"
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconClose size={24} />
-      </span>
-      Close
     </button>
   </nav>
 {/if}

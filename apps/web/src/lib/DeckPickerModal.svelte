@@ -4,6 +4,7 @@
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
   import Pagination from '$lib/Pagination.svelte';
+  import { focusTrap, scrollLock } from '$lib/a11y';
 
   /** Move the modal root to document.body so it covers the full viewport. */
   function portal(node: HTMLElement) {
@@ -161,7 +162,7 @@
       aria-label="Close"
       onclick={onClose}
     ></button>
-    <div class="deck-picker-modal__card card">
+    <div class="deck-picker-modal__card card" use:focusTrap use:scrollLock>
       <h2 id="deck-picker-title" class="deck-picker-modal__title">{title}</h2>
       {#if forLabel}
         <p class="deck-picker-modal__for muted">Selecting deck for <strong>{forLabel}</strong></p>
