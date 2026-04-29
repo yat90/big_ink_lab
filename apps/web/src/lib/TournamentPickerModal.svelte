@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { focusTrap, scrollLock } from '$lib/a11y';
+
   /** Move the modal root to document.body so it covers the full viewport. */
   function portal(node: HTMLElement) {
     document.body.appendChild(node);
@@ -74,7 +76,7 @@
       aria-label="Close"
       onclick={onClose}
     ></button>
-    <div class="tournament-picker-modal__card card">
+    <div class="tournament-picker-modal__card card" use:focusTrap use:scrollLock>
       <h2 id="tournament-picker-title" class="tournament-picker-modal__title">{title}</h2>
       <p class="tournament-picker-modal__hint muted">Optional — link this match to a tournament event.</p>
 
