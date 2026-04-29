@@ -11,6 +11,7 @@
   } from '$lib/lorcana-match';
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
+  import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
 
   type Player = { _id: string; name: string; team?: string };
 
@@ -40,25 +41,27 @@
   let myPlayerId = $state<string | null>(null);
   let pastTournaments = $state<DashboardTournament[]>([]);
   let upcomingTournaments = $state<DashboardTournament[]>([]);
+  let opponentPickerOpen = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
 
-  /** Default players for Quick Match when no selection UI. */
-  const QUICK_MATCH_P1_ID = '69a8a02d97f97400baf9f7fc';
-  const QUICK_MATCH_P2_ID = '69a8a03297f97400baf9f7ff';
+  function openQuickMatchOpponentPicker() {
+    if (!myPlayerId || loreTrackerLoading) return;
+    opponentPickerOpen = true;
+  }
 
-  async function startLoreTracker() {
+  async function createQuickMatchWithOpponent(opponentId: string) {
+    if (!myPlayerId || !opponentId || opponentId === myPlayerId) return;
     loreTrackerLoading = true;
     try {
-      const p1Id = myPlayerId ?? QUICK_MATCH_P1_ID;
       const res = await fetch(`${apiUrl}/matches`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           stage: 'Casual',
           games: [{}],
-          p1: p1Id,
-          p2: QUICK_MATCH_P2_ID,
+          p1: myPlayerId,
+          p2: opponentId,
           playedAt: new Date().toISOString(),
         }),
       });
@@ -73,6 +76,11 @@
     } finally {
       loreTrackerLoading = false;
     }
+  }
+
+  function handleOpponentSelected(playerId: string) {
+    if (!playerId) return;
+    createQuickMatchWithOpponent(playerId);
   }
 
   function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
@@ -247,15 +255,23 @@
             <h2 class="card__title">Big Ink Lab</h2>
             <p class="card__sub">Track matches, players, and Lorcana stats.</p>
           </div>
-          <div class="row" style="gap: 8px; flex-wrap: wrap;">
-            <button
-              type="button"
-              class="btn"
-              disabled={loreTrackerLoading}
-              onclick={startLoreTracker}
-            >
-              {loreTrackerLoading ? 'Creating…' : 'Quick Match'}
-            </button>
+          <div class="row dashboard__header-actions" style="gap: 8px; flex-wrap: wrap;">
+            <div class="dashboard__quick-match">
+              <button
+                type="button"
+                class="btn"
+                disabled={loreTrackerLoading || !myPlayerId}
+                title={myPlayerId ? '' : 'Link a player on your profile to use Quick Match'}
+                onclick={openQuickMatchOpponentPicker}
+              >
+                {loreTrackerLoading ? 'Creating…' : 'Quick Match'}
+              </button>
+              {#if !myPlayerId}
+                <span class="dashboard__quick-match-hint muted">
+                  <a href="/me">Link a player on your profile</a> to use Quick Match
+                </span>
+              {/if}
+            </div>
             <a href="/tournaments" class="btn">Tournaments</a>
             <a href="/tournaments/new" class="btn">New tournament</a>
             <a href="/matches/new" class="btn btn--primary">New match</a>
@@ -414,6 +430,16 @@
   {/if}
 </div>
 
+<PlayerPickerModal
+  bind:open={opponentPickerOpen}
+  title="Pick your opponent"
+  forLabel="Quick Match opponent"
+  excludePlayerId={myPlayerId ?? ''}
+  presetTeamFromMe={false}
+  onSelect={handleOpponentSelected}
+  onClose={() => (opponentPickerOpen = false)}
+/>
+
 <style>
   .dashboard {
     display: flex;
@@ -432,6 +458,22 @@
 
   .dashboard__header-top {
     flex-wrap: wrap;
+  }
+
+  .dashboard__quick-match {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .dashboard__quick-match-hint {
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+  .dashboard__quick-match-hint a {
+    color: inherit;
+    text-decoration: underline;
   }
   @media (min-width: 640px) {
     .dashboard__header {
