@@ -50,6 +50,10 @@ export default defineConfig(
         KeyboardEvent: 'readonly',
         CustomEvent: 'readonly',
         URLSearchParams: 'readonly',
+        File: 'readonly',
+        FileList: 'readonly',
+        FormData: 'readonly',
+        Response: 'readonly',
       },
     },
     rules: {
