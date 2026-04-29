@@ -954,6 +954,90 @@ a {
   font-size: 0.9rem;
 }
 
+/* Shared collapsible filter card – used by /matches, /players, /decks (FilterCard.svelte). */
+.filter-card-wrap {
+  margin-top: var(--space-md, 1rem);
+  margin-bottom: var(--space-md, 1rem);
+}
+.filter-card {
+  gap: 0;
+}
+.filter-card__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+  padding: 0.65rem 0.35rem;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+.filter-card__toggle:hover {
+  background: var(--glass-bg-strong, rgba(255, 255, 255, 0.06));
+}
+.filter-card__toggle-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.filter-card__toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.filter-card__toggle:hover .filter-card__toggle-icon {
+  color: var(--fg);
+}
+.filter-card__toggle-label {
+  flex-shrink: 0;
+}
+.filter-card__toggle-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink, #a855f7) 18%, transparent);
+  color: var(--fg);
+}
+.filter-card__chevron {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  width: 1.25rem;
+  text-align: center;
+}
+.filter-card__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid color-mix(in srgb, var(--fg, #fafafa) 10%, transparent);
+  margin-top: 0.35rem;
+}
+.filter-card__count {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.filter-card__summary {
+  margin: 0.35rem 0 0;
+  padding: 0 0.35rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
 .game-line {
   position: relative;
   margin: 0;

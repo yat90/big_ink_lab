@@ -4,6 +4,7 @@
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerName } from '$lib/decks';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
+  import FilterCard from '$lib/FilterCard.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
   import Pagination from '$lib/Pagination.svelte';
 
@@ -21,7 +22,21 @@
   let totalPages = $state(1);
   let total = $state(0);
 
+  /** Filter panel starts collapsed (shared FilterCard pattern). */
+  let filtersExpanded = $state(false);
+
   const apiUrl = config.apiUrl ?? '/api';
+
+  const filterSummary = $derived(`${total} deck${total === 1 ? '' : 's'}`);
+  const selectedPlayerName = $derived(
+    filterPlayer ? (players.find((p) => p._id === filterPlayer)?.name ?? '') : ''
+  );
+  const filterBadges = $derived<string[]>(
+    [
+      filterColor ? `Color: ${filterColor}` : '',
+      selectedPlayerName ? `Player: ${selectedPlayerName}` : '',
+    ].filter((b) => b.length > 0)
+  );
 
   async function loadDecks() {
     loading = true;
@@ -31,7 +46,7 @@
       if (filterColor.trim()) params.set('color', filterColor.trim());
       if (filterPlayer.trim()) params.set('player', filterPlayer.trim());
       params.set('page', String(currentPage));
-      params.set('limit', '5');
+      params.set('limit', '15');
       const url = `${apiUrl}/decks?${params}`;
       const res = await fetch(url);
       if (!res.ok) {
@@ -116,7 +131,7 @@
     <div class="card" role="alert" aria-live="assertive">
       <p class="alert">{error}</p>
     </div>
-  {:else if decks.length === 0}
+  {:else if decks.length === 0 && !filterColor && !filterPlayer}
     <div class="card stack">
       <h2 class="card__title">No decks yet</h2>
       <p class="card__sub">Create a deck with name and card list.</p>
@@ -134,34 +149,45 @@
       <a href="/decks/new" class="btn btn--primary">New deck</a>
     </div>
 
-    <div class="decks-filters">
-      <label for="filter-color" class="decks-filters__label">Deck color</label>
-      <select
-        id="filter-color"
-        class="input decks-filters__select"
-        bind:value={filterColor}
-        onchange={onFilterChange}
-        aria-label="Filter by deck color"
-      >
-        <option value="">All</option>
-        {#each DECK_COLOR_OPTIONS as color (color)}
-          <option value={color}>{color}</option>
-        {/each}
-      </select>
-      <label for="filter-player" class="decks-filters__label">Player</label>
-      <select
-        id="filter-player"
-        class="input decks-filters__select"
-        bind:value={filterPlayer}
-        onchange={onFilterChange}
-        aria-label="Filter by player"
-      >
-        <option value="">All</option>
-        {#each players as p (p._id)}
-          <option value={p._id}>{p.name}</option>
-        {/each}
-      </select>
-    </div>
+    <FilterCard
+      bind:expanded={filtersExpanded}
+      summary={filterSummary}
+      badges={filterBadges}
+      panelId="decks-filters-panel"
+    >
+      <div class="filters__row">
+        <label class="filters__label" for="filter-color">
+          <span class="muted" style="font-size: 0.85rem;">Deck color</span>
+          <select
+            id="filter-color"
+            class="input filters__select"
+            bind:value={filterColor}
+            onchange={onFilterChange}
+            aria-label="Filter by deck color"
+          >
+            <option value="">All</option>
+            {#each DECK_COLOR_OPTIONS as color (color)}
+              <option value={color}>{color}</option>
+            {/each}
+          </select>
+        </label>
+        <label class="filters__label" for="filter-player">
+          <span class="muted" style="font-size: 0.85rem;">Player</span>
+          <select
+            id="filter-player"
+            class="input filters__select"
+            bind:value={filterPlayer}
+            onchange={onFilterChange}
+            aria-label="Filter by player"
+          >
+            <option value="">All</option>
+            {#each players as p (p._id)}
+              <option value={p._id}>{p.name}</option>
+            {/each}
+          </select>
+        </label>
+      </div>
+    </FilterCard>
 
     <div class="stack">
       {#if decks.length === 0 && (filterColor || filterPlayer)}
@@ -202,21 +228,6 @@
 </div>
 
 <style>
-  .decks-filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-md);
-    margin-bottom: var(--space-lg);
-  }
-  .decks-filters__label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--muted);
-  }
-  .decks-filters__select {
-    min-width: 10rem;
-  }
   .deckcard__name {
     font-weight: 700;
     font-size: 1.1rem;

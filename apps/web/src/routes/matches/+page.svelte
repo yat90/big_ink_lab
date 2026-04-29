@@ -14,6 +14,7 @@
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import IconUpload from '$lib/icons/IconUpload.svelte';
+  import FilterCard from '$lib/FilterCard.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
 
@@ -23,7 +24,7 @@
   let loading = $state(true);
   let error = $state('');
 
-  const PAGE_SIZE = 10;
+  const PAGE_SIZE = 15;
 
   let filterStage = $state<string>('');
   /** When set (from URL `?tournamentId=`), filters matches linked to that tournament entity. */
@@ -37,6 +38,9 @@
   let totalPages = $state(1);
   let total = $state(0);
 
+  /** Filter panel starts collapsed (shared FilterCard pattern). */
+  let filtersExpanded = $state(false);
+
   /** Logged-in user’s player (for showing Duels import when linked). */
   let myPlayerId = $state<string | null>(null);
   let duelsImportInput = $state<HTMLInputElement | null>(null);
@@ -49,6 +53,15 @@
   const apiUrl = config.apiUrl ?? '/api';
 
   const isDuelsImportBusy = $derived(importingDuelsReplays || importingDuelsBulk);
+
+  const filterSummary = $derived(`${total} total match${total === 1 ? '' : 'es'}`);
+  const filterBadges = $derived<string[]>(
+    [
+      filterPlayerName ? `Player: ${filterPlayerName}` : '',
+      filterStage ? `Stage: ${filterStage}` : '',
+      filterTime ? `Last ${filterTime}d` : '',
+    ].filter((b) => b.length > 0)
+  );
 
   let duelsImportMenu = $state<HTMLElement | null>(null);
 
@@ -411,10 +424,7 @@
     </div>
   {:else}
     <div class="row matches-header">
-      <h2 class="card__title" style="margin: 0;">
-        Matches
-        <span class="matches-header__count muted" aria-label="Total matches">({total})</span>
-      </h2>
+      <h2 class="card__title" style="margin: 0;">Matches</h2>
       <div class="row" style="gap: var(--space-sm); flex-wrap: wrap;">
         <a href="/matches/quick" class="btn">Quick match</a>
         <a href="/tournaments" class="btn">Tournaments</a>
@@ -465,7 +475,12 @@
       <p class="alert matches-page__duels-alert" role="alert">{duelsBulkImportError}</p>
     {/if}
 
-    <div class="filters card">
+    <FilterCard
+      bind:expanded={filtersExpanded}
+      summary={filterSummary}
+      badges={filterBadges}
+      panelId="matches-filters-panel"
+    >
       <div class="filters__row">
         <label class="filters__label" for="filter-player-btn">
           <span class="muted" style="font-size: 0.85rem;">Player</span>
@@ -509,12 +524,9 @@
         </label>
       </div>
       <div class="filters__footer">
-        <p class="filters__count muted">
-          {total} total match{total === 1 ? '' : 'es'}
-        </p>
         <button type="button" class="btn" onclick={clearFilters}>Clear filters</button>
       </div>
-    </div>
+    </FilterCard>
 
     <PlayerPickerModal
       bind:open={playerPickerOpen}
