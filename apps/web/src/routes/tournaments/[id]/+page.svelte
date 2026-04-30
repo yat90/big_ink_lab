@@ -142,7 +142,7 @@
   function formatDate(s: string | undefined): string {
     if (!s) return '–';
     try {
-      return new Date(s).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+      return new Date(s).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
     } catch {
       return s;
     }

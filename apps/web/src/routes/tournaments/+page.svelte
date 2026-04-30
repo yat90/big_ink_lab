@@ -57,7 +57,7 @@
   function formatDate(iso: string | null | undefined): string {
     if (!iso) return '–';
     try {
-      return new Date(iso).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+      return new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
     } catch {
       return String(iso);
     }

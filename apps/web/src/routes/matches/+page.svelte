@@ -17,6 +17,7 @@
   import FilterCard from '$lib/FilterCard.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
+  import { DateDisplay } from '$lib/DateDisplay';
 
   type Player = { _id: string; name: string; team?: string };
 
@@ -44,15 +45,11 @@
   /** Logged-in user’s player (for showing Duels import when linked). */
   let myPlayerId = $state<string | null>(null);
   let duelsImportInput = $state<HTMLInputElement | null>(null);
-  let duelsBulkImportInput = $state<HTMLInputElement | null>(null);
-  let importingDuelsReplays = $state(false);
-  let importingDuelsBulk = $state(false);
+  let importingDuels = $state(false);
   let duelsImportError = $state('');
-  let duelsBulkImportError = $state('');
+  let duelsHelpOpen = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
-
-  const isDuelsImportBusy = $derived(importingDuelsReplays || importingDuelsBulk);
 
   const filterSummary = $derived(`${total} total match${total === 1 ? '' : 'es'}`);
   const filterBadges = $derived<string[]>(
@@ -63,44 +60,30 @@
     ].filter((b) => b.length > 0)
   );
 
-  let duelsImportMenu = $state<HTMLElement | null>(null);
+  /**
+   * A single `.zip` larger than this threshold is routed to the bulk archive
+   * endpoint. Individual compressed replays from duels.ink are only a few KB,
+   * so 1 MB is a safe floor for "this is a multi-game archive".
+   */
+  const BULK_ZIP_MIN_SIZE_BYTES = 1 * 1024 * 1024;
 
-  /** Accessible name / tooltip for the icon-only Duels import control. */
-  function duelsImportAriaLabel(): string {
-    if (!isDuelsImportBusy) {
-      return 'Import from Duels — replay files (.gz / .zip) or bulk archive (.zip of .gz games)';
-    }
-    if (importingDuelsBulk) return 'Importing bulk…';
-    return 'Importing…';
+  function looksLikeBulkZip(files: FileList): boolean {
+    if (files.length !== 1) return false;
+    const file = files[0];
+    return file.name.toLowerCase().endsWith('.zip') && file.size > BULK_ZIP_MIN_SIZE_BYTES;
   }
 
-  function closeDuelsImportMenu() {
-    const el = duelsImportMenu;
-    if (el && 'open' in el) (el as { open: boolean }).open = false;
-  }
-
-  function openDuelsSingleImport() {
-    closeDuelsImportMenu();
+  function triggerDuelsImport() {
     duelsImportInput?.click();
   }
 
-  function openDuelsBulkImport() {
-    closeDuelsImportMenu();
-    duelsBulkImportInput?.click();
+  function toggleDuelsHelp() {
+    duelsHelpOpen = !duelsHelpOpen;
   }
 
   function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
     if (!p) return '–';
     return typeof p === 'string' ? p : (p.name ?? '–');
-  }
-
-  function formatDate(s: string | undefined): string {
-    if (!s) return '–';
-    try {
-      return new Date(s).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
-    } catch {
-      return s;
-    }
   }
 
   function matchWinnerId(m: LorcanaMatch): string | undefined {
@@ -214,6 +197,53 @@
     }
   });
 
+  async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
+    const data = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const m = data.message;
+    if (Array.isArray(m)) return m.join(', ');
+    if (typeof m === 'string') return m;
+    return `${fallback} (${res.status})`;
+  }
+
+  async function importAsBulk(file: File, token: string): Promise<void> {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`${apiUrl}/matches/import-duels-bulk`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    if (!res.ok) {
+      duelsImportError = await extractErrorMessage(res, 'Bulk import failed');
+      return;
+    }
+    const json = (await res.json()) as { matches: Array<{ _id: string }> };
+    const list = json.matches ?? [];
+    if (list.length > 0) {
+      await goto(`/matches/${list[0]._id}`);
+    } else {
+      await fetchMatches();
+    }
+  }
+
+  async function importAsReplays(files: FileList, token: string): Promise<void> {
+    const fd = new FormData();
+    for (const f of Array.from(files)) {
+      fd.append('files', f);
+    }
+    const res = await fetch(`${apiUrl}/matches/import-duels`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    if (!res.ok) {
+      duelsImportError = await extractErrorMessage(res, 'Import failed');
+      return;
+    }
+    const match = (await res.json()) as { _id: string };
+    await goto(`/matches/${match._id}`);
+  }
+
   async function onDuelsImportFilesSelected(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
     const files = input.files;
@@ -224,85 +254,18 @@
       input.value = '';
       return;
     }
-    importingDuelsReplays = true;
+    importingDuels = true;
     duelsImportError = '';
-    duelsBulkImportError = '';
     try {
-      const fd = new FormData();
-      for (const f of Array.from(files)) {
-        fd.append('files', f);
+      if (looksLikeBulkZip(files)) {
+        await importAsBulk(files[0], token);
+      } else {
+        await importAsReplays(files, token);
       }
-      const res = await fetch(`${apiUrl}/matches/import-duels`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as {
-          message?: string | string[];
-        };
-        const m = data.message;
-        duelsImportError = Array.isArray(m)
-          ? m.join(', ')
-          : typeof m === 'string'
-            ? m
-            : `Import failed (${res.status})`;
-        return;
-      }
-      const match = (await res.json()) as { _id: string };
-      await goto(`/matches/${match._id}`);
     } catch {
       duelsImportError = 'Import failed.';
     } finally {
-      importingDuelsReplays = false;
-      input.value = '';
-    }
-  }
-
-  async function onDuelsBulkImportFileSelected(e: Event) {
-    const input = e.currentTarget as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    const token = getAuthToken();
-    if (!token) {
-      duelsBulkImportError = 'Sign in to import.';
-      input.value = '';
-      return;
-    }
-    importingDuelsBulk = true;
-    duelsBulkImportError = '';
-    duelsImportError = '';
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      const res = await fetch(`${apiUrl}/matches/import-duels-bulk`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as {
-          message?: string | string[];
-        };
-        const m = data.message;
-        duelsBulkImportError = Array.isArray(m)
-          ? m.join(', ')
-          : typeof m === 'string'
-            ? m
-            : `Bulk import failed (${res.status})`;
-        return;
-      }
-      const json = (await res.json()) as { matches: Array<{ _id: string }> };
-      const list = json.matches ?? [];
-      if (list.length > 0) {
-        await goto(`/matches/${list[0]._id}`);
-      } else {
-        await fetchMatches();
-      }
-    } catch {
-      duelsBulkImportError = 'Bulk import failed.';
-    } finally {
-      importingDuelsBulk = false;
+      importingDuels = false;
       input.value = '';
     }
   }
@@ -329,18 +292,9 @@
       class="matches-page__duels-file-input"
       accept=".gz,.zip,application/gzip,application/x-gzip,application/zip"
       multiple
-      disabled={isDuelsImportBusy}
+      disabled={importingDuels}
       onchange={onDuelsImportFilesSelected}
-      aria-label="Import Duels replay files"
-    />
-    <input
-      bind:this={duelsBulkImportInput}
-      type="file"
-      class="matches-page__duels-file-input"
-      accept=".zip,.tar.gz,.tgz,application/zip,application/x-gzip,application/gzip"
-      disabled={isDuelsImportBusy}
-      onchange={onDuelsBulkImportFileSelected}
-      aria-label="Import Duels bulk archive (zip of gz games)"
+      aria-label="Import Duels replays or bulk archive"
     />
   {/if}
   {#if loading}
@@ -365,61 +319,53 @@
       <div class="row matches-page__empty-actions">
         <a href="/matches/new" class="btn btn--primary">New match</a>
         {#if myPlayerId}
-          <details
-            bind:this={duelsImportMenu}
-            class="matches-page__duels-menu"
-            class:matches-page__duels-menu--busy={isDuelsImportBusy}
+          <button
+            type="button"
+            class="btn matches-page__duels-import-btn"
+            onclick={triggerDuelsImport}
+            disabled={importingDuels}
+            aria-busy={importingDuels}
+            aria-label={importingDuels ? 'Importing…' : 'Import from Duels'}
+            title="Import replays (.gz/.zip) or a bulk .zip archive from duels.ink"
           >
-            <summary
-              class="btn matches-page__duels-menu__summary matches-page__duels-menu__summary--icon"
-              aria-label={duelsImportAriaLabel()}
-              title={duelsImportAriaLabel()}
-              aria-busy={isDuelsImportBusy}
-            >
-              <IconUpload size={20} />
-            </summary>
-            <div class="matches-page__duels-menu__panel" role="menu">
-              <button
-                type="button"
-                class="matches-page__duels-menu__item"
-                role="menuitem"
-                disabled={isDuelsImportBusy}
-                onclick={openDuelsSingleImport}
-              >
-                Import replays from duels.ink…
-              </button>
-              <button
-                type="button"
-                class="matches-page__duels-menu__item"
-                role="menuitem"
-                disabled={isDuelsImportBusy}
-                title="One .zip with day folders and .gz games; matchView groups games, else one match per replay"
-                onclick={openDuelsBulkImport}
-              >
-                Import bulk replays (.zip)
-              </button>
-            </div>
-          </details>
+            <IconUpload size={20} />
+            <span>{importingDuels ? 'Importing…' : 'Import'}</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn--sm matches-page__duels-help-btn"
+            onclick={toggleDuelsHelp}
+            aria-expanded={duelsHelpOpen}
+            aria-controls="duels-import-help"
+            aria-label={duelsHelpOpen ? 'Hide import help' : 'What can I import?'}
+            title="What can I import?"
+          >
+            ?
+          </button>
         {/if}
       </div>
-      {#if myPlayerId}
-        <p class="muted matches-page__duels-hint">
-          You are <strong>Player 1</strong>. Opponent is taken from the replay
-          (<code>playerNames</code> / <code>perspective</code>). One <code>.gz</code> per game, or one
-          <code>.zip</code> of <code>.gz</code> files. A new player is created if the name does not
-          exist.
-        </p>
-        <p class="muted matches-page__duels-hint matches-page__duels-hint--bulk">
-          <strong>Bulk:</strong> one <code>.zip</code> (folders per day, <code>.gz</code> per game). A
-          <code>.tar.gz</code> still works. With <code>matchView</code>, games merge into one match per id;
-          without it, each replay becomes its own single-game match.
-        </p>
+      {#if myPlayerId && duelsHelpOpen}
+        <div
+          id="duels-import-help"
+          class="matches-page__duels-help-panel"
+          role="region"
+          aria-label="Duels import help"
+        >
+          <p class="muted matches-page__duels-hint">
+            You are <strong>Player 1</strong>. Opponent is taken from the replay
+            (<code>playerNames</code> / <code>perspective</code>). One <code>.gz</code> per game, or
+            one <code>.zip</code> of <code>.gz</code> files. A new player is created if the name does
+            not exist.
+          </p>
+          <p class="muted matches-page__duels-hint matches-page__duels-hint--bulk">
+            <strong>Bulk:</strong> one <code>.zip</code> (folders per day, <code>.gz</code> per game).
+            A <code>.tar.gz</code> still works. With <code>matchView</code>, games merge into one match
+            per id; without it, each replay becomes its own single-game match.
+          </p>
+        </div>
       {/if}
       {#if duelsImportError}
         <p class="alert" role="alert">{duelsImportError}</p>
-      {/if}
-      {#if duelsBulkImportError}
-        <p class="alert" role="alert">{duelsBulkImportError}</p>
       {/if}
     </div>
   {:else}
@@ -429,50 +375,24 @@
         <a href="/matches/quick" class="btn">Quick match</a>
         <a href="/tournaments" class="btn">Tournaments</a>
         {#if myPlayerId}
-          <details
-            bind:this={duelsImportMenu}
-            class="matches-page__duels-menu"
-            class:matches-page__duels-menu--busy={isDuelsImportBusy}
+          <button
+            type="button"
+            class="btn matches-page__duels-import-btn"
+            onclick={triggerDuelsImport}
+            disabled={importingDuels}
+            aria-busy={importingDuels}
+            aria-label={importingDuels ? 'Importing…' : 'Import from Duels'}
+            title="Import replays (.gz/.zip) or a bulk .zip archive from duels.ink"
           >
-            <summary
-              class="btn matches-page__duels-menu__summary matches-page__duels-menu__summary--icon"
-              aria-label={duelsImportAriaLabel()}
-              title={duelsImportAriaLabel()}
-              aria-busy={isDuelsImportBusy}
-            >
-              <IconUpload size={20} />
-            </summary>
-            <div class="matches-page__duels-menu__panel" role="menu">
-              <button
-                type="button"
-                class="matches-page__duels-menu__item"
-                role="menuitem"
-                disabled={isDuelsImportBusy}
-                onclick={openDuelsSingleImport}
-              >
-                Import replays from duels.ink
-              </button>
-              <button
-                type="button"
-                class="matches-page__duels-menu__item"
-                role="menuitem"
-                disabled={isDuelsImportBusy}
-                title="One .zip with day folders and .gz games; matchView groups games, else one match per replay"
-                onclick={openDuelsBulkImport}
-              >
-                Import bulk replays (.zip)
-              </button>
-            </div>
-          </details>
+            <IconUpload size={20} />
+            <span>{importingDuels ? 'Importing…' : 'Import'}</span>
+          </button>
         {/if}
         <a href="/matches/new" class="btn btn--primary">New match</a>
       </div>
     </div>
     {#if myPlayerId && duelsImportError}
       <p class="alert matches-page__duels-alert" role="alert">{duelsImportError}</p>
-    {/if}
-    {#if myPlayerId && duelsBulkImportError}
-      <p class="alert matches-page__duels-alert" role="alert">{duelsBulkImportError}</p>
     {/if}
 
     <FilterCard
@@ -552,7 +472,7 @@
             style="text-decoration: none; color: inherit;"
           >
             <div class="matchcard__top muted">
-              {formatDate(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
+              {DateDisplay.formatRelative(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
                 · {formatMatchRoundLabel(match.round)}{/if}
             </div>
             <div class="matchcard__row">
@@ -641,80 +561,33 @@
     margin-top: var(--space-sm);
   }
 
-  .matches-page__duels-menu {
-    position: relative;
-    display: inline-block;
+  .matches-page__duels-import-btn {
+    gap: var(--space-xs);
   }
 
-  .matches-page__duels-menu--busy .matches-page__duels-menu__summary {
-    pointer-events: none;
-    opacity: 0.75;
-  }
-
-  .matches-page__duels-menu__summary {
-    list-style: none;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .matches-page__duels-menu__summary--icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 2.5rem;
-    min-height: 2.5rem;
-    padding: 0 var(--space-sm);
-  }
-
-  .matches-page__duels-menu__summary--icon :global(svg) {
+  .matches-page__duels-import-btn :global(svg) {
     display: block;
     flex-shrink: 0;
   }
 
-  .matches-page__duels-menu__summary::-webkit-details-marker {
-    display: none;
+  .matches-page__duels-help-btn {
+    min-width: 2.25rem;
+    padding-inline: 0;
+    font-weight: 700;
+    line-height: 1;
   }
 
-  .matches-page__duels-menu__panel {
-    position: absolute;
-    top: calc(100% + 4px);
-    right: 0;
-    z-index: 20;
-    min-width: 12rem;
-    padding: var(--space-xs);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    color: #e8eaef;
-    background: #1c1d22;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: var(--radius-md, 8px);
-    box-shadow:
-      0 4px 6px rgba(0, 0, 0, 0.25),
-      0 12px 28px rgba(0, 0, 0, 0.35);
-  }
-
-  .matches-page__duels-menu__item {
-    display: block;
-    width: 100%;
-    margin: 0;
+  .matches-page__duels-help-panel {
+    margin-top: var(--space-sm);
     padding: var(--space-sm) var(--space-md);
-    text-align: left;
-    font: inherit;
-    color: inherit;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm, 6px);
-    cursor: pointer;
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+    border-radius: var(--radius-md, 8px);
+    background: var(--glass-bg, rgba(255, 255, 255, 0.04));
+    max-width: 42rem;
   }
 
-  .matches-page__duels-menu__item:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  .matches-page__duels-menu__item:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .matches-page__duels-help-panel .matches-page__duels-hint:first-child {
+    margin-top: 0;
   }
 
   .matches-page__duels-alert {

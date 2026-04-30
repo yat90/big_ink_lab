@@ -359,7 +359,6 @@ a {
 .mobile-nav__bar {
   display: flex;
   align-items: center;
-  gap: 10px;
   width: 100%;
   max-width: 100%;
   padding: 0 4px;
@@ -369,8 +368,8 @@ a {
   flex: 1;
   min-width: 0;
   align-items: stretch;
-  gap: 8px;
-  padding: 6px 6px;
+  gap: 2px;
+  padding: 6px 4px;
   border-radius: var(--radius-full);
   background: rgba(0, 0, 0, 0.35);
   backdrop-filter: saturate(var(--glass-dark-saturate)) blur(var(--glass-dark-blur));
@@ -387,13 +386,13 @@ a {
   flex: 1;
   min-width: 0;
   min-height: 48px;
-  padding: 8px 4px;
+  padding: 8px 2px;
   border-radius: calc(var(--radius-full) - 4px);
   border: none;
   background: transparent;
   font-family: inherit;
   font-weight: 600;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   line-height: 1.1;
   text-decoration: none;
   text-align: center;
@@ -436,43 +435,6 @@ a {
 }
 .mobile-nav__item--active .mobile-nav__item-icon {
   color: var(--fg);
-}
-.mobile-nav__more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  /* Match pill height: 6px padding + 48px item min-height + 6px padding = 60px */
-  width: 60px;
-  height: 60px;
-  min-width: 60px;
-  min-height: 60px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.05);
-  backdrop-filter: saturate(var(--glass-dark-saturate)) blur(var(--glass-dark-blur));
-  -webkit-backdrop-filter: saturate(var(--glass-dark-saturate)) blur(var(--glass-dark-blur));
-  border: 1px solid var(--glass-dark-border);
-  box-shadow: var(--glass-dark-shadow);
-  color: var(--fg);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    background var(--transition),
-    transform var(--transition);
-}
-.mobile-nav__more:hover {
-  background: var(--glass-dark-active-bg);
-  transform: scale(1.02);
-}
-.mobile-nav__more-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.mobile-nav__more-icon svg {
-  width: 24px;
-  height: 24px;
 }
 .mobile-nav__backdrop {
   position: fixed;
@@ -613,9 +575,17 @@ a {
 @keyframes topbar-drawer-in-fullscreen {
   from {
     opacity: 0;
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-nav__drawer,
+  .topbar__drawer {
+    animation: none;
   }
 }
 @media (min-width: 640px) {
