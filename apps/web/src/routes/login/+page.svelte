@@ -14,6 +14,8 @@
     };
   };
 
+  type PasswordStrength = 'weak' | 'fair' | 'ok';
+
   let mode = $state<AuthMode>('login');
   let name = $state('');
   let email = $state('');
@@ -28,6 +30,67 @@
   const nextPath = $derived($page.url.searchParams.get('next') || '/');
   const title = $derived(mode === 'login' ? 'Login' : 'Create account');
 
+  const registerPasswordStrength = $derived.by((): PasswordStrength | null => {
+    if (mode !== 'register' || password.length === 0) return null;
+    if (password.length < 6) return 'weak';
+    if (password.length < 10) return 'fair';
+    return 'ok';
+  });
+
+  function extractApiMessage(body: unknown): string {
+    if (!body || typeof body !== 'object') return '';
+    const raw = (body as { message?: unknown }).message;
+    if (typeof raw === 'string') return raw;
+    if (Array.isArray(raw) && raw.every((x) => typeof x === 'string')) return raw.join(' ');
+    return '';
+  }
+
+  function mapAuthError(status: number, body: unknown, authMode: AuthMode): string {
+    const raw = extractApiMessage(body);
+    const lower = raw.toLowerCase();
+
+    if (status >= 500) {
+      return 'The server had a problem. Please try again in a moment.';
+    }
+
+    if (status === 401) {
+      if (lower.includes('invalid') && (lower.includes('password') || lower.includes('email'))) {
+        return 'That email or password does not match our records. Check for typos and try again.';
+      }
+      if (lower.includes('disabled')) {
+        return 'This account is disabled. Contact an administrator if you need help.';
+      }
+      if (lower.includes('token')) {
+        return 'Your session could not be verified. Please sign in again.';
+      }
+      return raw || 'We could not sign you in. Check your details and try again.';
+    }
+
+    if (status === 409) {
+      if (lower.includes('already') || lower.includes('registered')) {
+        return 'An account with this email already exists. Try logging in or use a different email.';
+      }
+    }
+
+    if (status === 400) {
+      if (lower.includes('at least 6') || lower.includes('6 characters')) {
+        return 'Use a password with at least 6 characters.';
+      }
+      if (lower.includes('valid email')) {
+        return 'Enter a valid email address.';
+      }
+    }
+
+    if (status === 404) {
+      return 'The sign-in service could not be reached. If this keeps happening, try again later.';
+    }
+
+    if (raw) return raw;
+    return authMode === 'login'
+      ? 'We could not sign you in. Please try again.'
+      : 'We could not create your account. Please try again.';
+  }
+
   // Focus the most relevant first field on load (desktop only — mobile autofocus
   // pops a keyboard that hides the form, which hurts more than it helps).
   onMount(() => {
@@ -40,6 +103,7 @@
   async function switchMode() {
     mode = mode === 'login' ? 'register' : 'login';
     error = '';
+    password = '';
     if (mode === 'login') name = '';
     await tick();
     if (mode === 'register') {
@@ -65,18 +129,29 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Authentication failed.';
+        error = mapAuthError(res.status, data, mode);
         return;
       }
       const data = (await res.json()) as AuthResponse;
       setAuthSession(data.accessToken, data.user);
       window.location.href = nextPath;
-    } catch {
-      error = 'Could not reach API.';
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      const looksNetwork =
+        e instanceof TypeError || /network|fetch|load failed|failed to fetch/i.test(msg);
+      error = looksNetwork
+        ? 'We could not reach the server. Check your connection and try again.'
+        : 'Something went wrong. Please try again.';
     } finally {
       loading = false;
     }
   }
+
+  const strengthLabel: Record<PasswordStrength, string> = {
+    weak: 'Weak',
+    fair: 'Fair',
+    ok: 'OK',
+  };
 </script>
 
 <svelte:head>
@@ -128,7 +203,7 @@
             class="input"
             type={showPassword ? 'text' : 'password'}
             bind:value={password}
-            placeholder="Minimum 6 characters"
+            placeholder={mode === 'login' ? 'Password' : 'Choose a password'}
             autocomplete={mode === 'login' ? 'current-password' : 'new-password'}
             minlength="6"
             required
@@ -144,6 +219,21 @@
           </button>
         </span>
       </label>
+
+      {#if mode === 'login'}
+        <p class="auth-forgot">
+          <a class="auth-forgot__link" href="/forgot-password">Forgot password?</a>
+        </p>
+      {:else}
+        <div class="auth-register-password-meta">
+          <p class="hint">At least 6 characters.</p>
+          {#if registerPasswordStrength}
+            <span class="password-strength password-strength--{registerPasswordStrength}" aria-live="polite">
+              {strengthLabel[registerPasswordStrength]}
+            </span>
+          {/if}
+        </div>
+      {/if}
 
       {#if error}
         <p class="alert" role="alert">{error}</p>
@@ -167,6 +257,9 @@
         {mode === 'login' ? 'Create account' : 'Back to login'}
       </button>
     </div>
+    <p class="hint auth-switch-note">
+      The password field is cleared when you switch between login and sign up.
+    </p>
   </div>
 </div>
 
@@ -182,5 +275,61 @@
   .auth-card__switch {
     margin-top: var(--space-lg);
     justify-content: space-between;
+  }
+
+  .auth-forgot {
+    margin: calc(var(--space-xs) * -1) 0 0;
+    text-align: right;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .auth-forgot__link {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .auth-forgot__link:hover {
+    color: var(--ink-hover);
+  }
+
+  .auth-register-password-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-top: calc(var(--space-xs) * -1);
+  }
+
+  .auth-register-password-meta .hint {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .password-strength {
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .password-strength--weak {
+    color: var(--danger);
+  }
+
+  .password-strength--fair {
+    color: var(--gold);
+  }
+
+  .password-strength--ok {
+    color: var(--ok);
+  }
+
+  .auth-switch-note {
+    margin: var(--space-md) 0 0;
+    font-size: 0.875rem;
+    text-align: center;
   }
 </style>

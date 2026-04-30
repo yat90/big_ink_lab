@@ -10,6 +10,8 @@
     _id: string;
     name: string;
     team: string;
+    isGuest?: boolean;
+    hasLinkedAccount?: boolean;
     stats?: PlayerStats;
     decksUsed?: DeckUsed[];
   };
@@ -87,6 +89,11 @@
         >
           <div>
             <h1 class="card__title" style="margin: 0;">{player.name}</h1>
+            {#if player.isGuest}
+              <p class="card__sub muted" style="margin-top: var(--space-xs);">Guest profile (no login)</p>
+            {:else if player.hasLinkedAccount}
+              <p class="card__sub muted" style="margin-top: var(--space-xs);">Roster — linked to a user account</p>
+            {/if}
             {#if player.team}
               <p class="card__sub" style="margin-top: var(--space-xs);">{player.team}</p>
             {/if}

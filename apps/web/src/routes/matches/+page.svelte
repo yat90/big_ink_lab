@@ -6,11 +6,7 @@
   import { getAuthToken } from '$lib/auth';
   import { STAGE_OPTIONS } from '$lib/matches';
   import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
-  import {
-    formatMatchRoundLabel,
-    getMatchRoundKey,
-    matchStageOrTournamentLabel,
-  } from '$lib/lorcana-match';
+  import { formatMatchRoundLabel, getMatchRoundKey } from '$lib/lorcana-match';
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import IconUpload from '$lib/icons/IconUpload.svelte';
@@ -104,6 +100,30 @@
   function gamesWon(match: LorcanaMatch, playerId: string): number {
     const games = match.games ?? [];
     return games.filter((g) => gameWinnerId(g) === playerId).length;
+  }
+
+  /** Stage vocabulary chip; tournament-linked matches use the Tournament label when needed. */
+  function matchStagePillLabel(m: LorcanaMatch): string | null {
+    const st = m.stage?.trim();
+    if (st && (STAGE_OPTIONS as readonly string[]).includes(st)) return st;
+    const t = m.tournament;
+    if (t && (typeof t === 'object' ? t._id || t.name : typeof t === 'string' && t.trim()))
+      return 'Tournament';
+    return null;
+  }
+
+  /** Populated tournament ref → link target for list chips. */
+  function matchTournamentChip(
+    m: LorcanaMatch
+  ): { id: string; name: string } | null {
+    const t = m.tournament;
+    if (t && typeof t === 'object' && t._id) {
+      return { id: t._id, name: t.name?.trim() || 'Tournament' };
+    }
+    if (typeof t === 'string' && /^[a-f\d]{24}$/i.test(t.trim())) {
+      return { id: t.trim(), name: 'Tournament' };
+    }
+    return null;
   }
 
   function getTimeRange(): { fromDate?: string; toDate?: string } {
@@ -417,6 +437,7 @@
       panelId="matches-filters-panel"
       onClear={clearFilters}
       canClear={canClearFilters}
+      showSummaryInExpandedPanel={false}
     >
       <div class="filters__row">
         <label class="filters__label" for="filter-player-btn">
@@ -461,7 +482,10 @@
         </label>
       </div>
       <div class="filters__footer">
-        <button type="button" class="btn" onclick={clearFilters}>Clear filters</button>
+        <p class="filters__count muted">{filterSummary}</p>
+        <button type="button" class="btn" onclick={clearFilters} disabled={!canClearFilters}>
+          Clear filters
+        </button>
       </div>
     </FilterCard>
 
@@ -474,25 +498,50 @@
     />
 
     {#if matches.length === 0}
-      <div class="card stack">
+      <div class="card stack matches-page__empty-filtered">
         <p class="card__sub">No matches match your filters.</p>
+        {#if canClearFilters}
+          <button type="button" class="btn" onclick={clearFilters}>Clear filters</button>
+        {/if}
       </div>
     {:else}
       <div class="stack">
-        {#each matches as match}
+        {#each matches as match (match._id)}
           {@const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1}
           {@const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2}
           {@const winnerId = matchWinnerId(match)}
-          <a
-            href="/matches/{match._id}"
-            class="card playercard matchcard"
-            style="text-decoration: none; color: inherit;"
-          >
-            <div class="matchcard__top muted">
-              {DateDisplay.formatRelative(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
-                · {formatMatchRoundLabel(match.round)}{/if}
+          {@const stagePill = matchStagePillLabel(match)}
+          {@const tournamentLink = matchTournamentChip(match)}
+          <div class="card playercard matchcard">
+            <div class="matchcard__top muted matchcard__top--with-pill">
+              {#if stagePill}
+                <span class="matchcard__stage-pill">{stagePill}</span>
+              {/if}
+              <span
+                class="matchcard__date-chip"
+                title={DateDisplay.formatDateTime(match.playedAt)}
+                >{DateDisplay.formatDate(match.playedAt)}</span
+              >
+              {#if tournamentLink}
+                <a
+                  href="/tournaments/{tournamentLink.id}"
+                  class="matchcard__chip matchcard__chip--tournament"
+                  aria-label="Open tournament: {tournamentLink.name}"
+                  onclick={(e) => e.stopPropagation()}>{tournamentLink.name}</a
+                >
+              {/if}
+              {#if getMatchRoundKey(match.round) != null}
+                <span class="matchcard__top-meta matchcard__top-meta--round"
+                  >{formatMatchRoundLabel(match.round)}</span
+                >
+              {/if}
             </div>
-            <div class="matchcard__row">
+            <a
+              href="/matches/{match._id}"
+              class="matchcard__row matchcard__main-link"
+              style="text-decoration: none; color: inherit;"
+              aria-label="Open match: {playerName(match.p1)} vs {playerName(match.p2)}"
+            >
               <div
                 class="matchcard__player matchcard__player--left"
                 class:matchcard__player--winner={winnerId === p1Id}
@@ -536,8 +585,8 @@
                   {/if}
                 </span>
               </div>
-            </div>
-          </a>
+            </a>
+          </div>
         {/each}
       </div>
 
@@ -609,5 +658,91 @@
 
   .matches-page__duels-alert {
     margin: 0 0 var(--space-sm) 0;
+  }
+
+  .matches-page__empty-filtered .btn {
+    align-self: flex-start;
+    margin-top: var(--space-sm);
+  }
+
+  :global(.matchcard) .matchcard__top--with-pill {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem 0.5rem;
+  }
+
+  :global(.matchcard) .matchcard__stage-pill {
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--fg, #fafafa) 14%, transparent);
+    background: color-mix(in srgb, var(--fg, #fafafa) 6%, transparent);
+    color: color-mix(in srgb, var(--fg, #fafafa) 78%, var(--muted));
+  }
+
+  :global(.matchcard) .matchcard__date-chip {
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent);
+    background: color-mix(in srgb, var(--muted) 12%, transparent);
+    color: color-mix(in srgb, var(--fg, #fafafa) 85%, var(--muted));
+  }
+
+  :global(.matchcard) .matchcard__chip--tournament {
+    flex-shrink: 0;
+    max-width: min(100%, 14rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    color: var(--primary);
+    text-decoration: none;
+    transition:
+      background var(--transition),
+      border-color var(--transition),
+      color var(--transition);
+  }
+
+  @media (hover: hover) {
+    :global(.matchcard) .matchcard__chip--tournament:hover {
+      background: color-mix(in srgb, var(--primary) 22%, transparent);
+      border-color: color-mix(in srgb, var(--primary) 65%, transparent);
+    }
+  }
+
+  :global(.matchcard) .matchcard__chip--tournament:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  :global(.matchcard) .matchcard__top-meta {
+    min-width: 0;
+    flex: 1 1 12rem;
+  }
+
+  :global(.matchcard) .matchcard__top-meta--round {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: right;
+    color: var(--muted);
+  }
+
+  :global(.matchcard) .matchcard__main-link:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 3px;
+    border-radius: var(--radius-sm);
   }
 </style>

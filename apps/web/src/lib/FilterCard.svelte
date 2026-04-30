@@ -21,6 +21,11 @@
     canClear?: boolean;
     /** Label for the collapsed (and optional) clear control. */
     clearLabel?: string;
+    /**
+     * When false, the summary is not repeated at the bottom of the expanded panel
+     * (e.g. total count is shown only in the slot’s filters footer).
+     */
+    showSummaryInExpandedPanel?: boolean;
   }
 
   let {
@@ -33,6 +38,7 @@
     onClear,
     canClear = false,
     clearLabel = 'Clear filters',
+    showSummaryInExpandedPanel = true,
   }: Props = $props();
 
   function toggle() {
@@ -63,7 +69,7 @@
     {#if expanded}
       <div id={panelId} class="filter-card__panel">
         {@render children?.()}
-        {#if summary}
+        {#if summary && showSummaryInExpandedPanel}
           <p class="filter-card__count muted">{summary}</p>
         {/if}
       </div>

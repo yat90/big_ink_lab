@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Player, PlayerSchema } from '../matches/schemas/player.schema';
+import { User, UserSchema } from '../auth/schemas/user.schema';
 import { AnalyticsModule } from '../analytics/analytics.module';
 import { PlayersController } from './players.controller';
 import { PlayersService } from './players.service';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Player.name, schema: PlayerSchema }]),
+    MongooseModule.forFeature([
+      { name: Player.name, schema: PlayerSchema },
+      { name: User.name, schema: UserSchema },
+    ]),
     AnalyticsModule,
   ],
   controllers: [PlayersController],

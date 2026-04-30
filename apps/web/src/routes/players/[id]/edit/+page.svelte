@@ -7,6 +7,9 @@
   const id = $page.params.id;
   let name = $state('');
   let team = $state('');
+  let isGuest = $state(false);
+  /** When true, cannot enable guest — someone logs in as this player. */
+  let hasLinkedAccount = $state(false);
   let loading = $state(true);
   let saving = $state(false);
   let error = $state('');
@@ -24,6 +27,8 @@
       const player = await res.json();
       name = player.name ?? '';
       team = player.team ?? '';
+      isGuest = player.isGuest === true;
+      hasLinkedAccount = player.hasLinkedAccount === true;
     } catch {
       error = 'Could not load player.';
     } finally {
@@ -40,7 +45,11 @@
       const res = await fetch(`${apiUrl}/players/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), team: team.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          team: team.trim(),
+          isGuest: hasLinkedAccount ? false : isGuest,
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -81,6 +90,23 @@
       <p class="card__sub">Change name and team.</p>
 
       <form onsubmit={onSubmit} class="stack" style="margin-top: 8px;">
+        {#if hasLinkedAccount}
+          <p class="muted" role="status" style="margin: 0;">
+            This player is linked to a login account — they stay on the roster as a regular profile.
+          </p>
+        {:else}
+          <label class="label" style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" bind:checked={isGuest} style="margin-top: 0.2rem;" />
+            <span>
+              <strong style="font-weight: 700;">Guest profile</strong>
+              <span class="hint" style="display: block; margin-top: 0.25rem;">
+                No one can sign in as this player until you link an account. Guest profiles are
+                hidden from the default list; use Players → Guests or All to find them.
+              </span>
+            </span>
+          </label>
+        {/if}
+
         <div class="formgrid">
           <label class="label" for="name">
             Name <span aria-hidden="true">*</span>

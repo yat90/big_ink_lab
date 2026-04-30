@@ -210,11 +210,65 @@
 
 <div class="page">
   {#if loading}
-    <div class="card">
-      <div class="loading-skeleton" aria-busy="true" aria-live="polite" aria-label="Loading dashboard">
-        <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-        <div class="loading-skeleton__line loading-skeleton__line--short"></div>
-        <div class="loading-skeleton__line"></div>
+    <div class="dashboard dashboard--skeleton" aria-busy="true" aria-live="polite" aria-label="Loading dashboard">
+      <div class="card stack dashboard__header">
+        <div class="loading-skeleton">
+          <div class="loading-skeleton__line loading-skeleton__line--title"></div>
+          <div class="loading-skeleton__line loading-skeleton__line--short"></div>
+        </div>
+        <div class="row loading-skeleton__actions-primary">
+          <div class="loading-skeleton__line loading-skeleton__line--icon"></div>
+          <div class="loading-skeleton__line loading-skeleton__line--primary-btn"></div>
+        </div>
+        <div class="row loading-skeleton__actions-secondary">
+          <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
+          <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
+          <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
+        </div>
+      </div>
+
+      <div class="card stack dashboard__tournaments">
+        <div class="row" style="justify-content: space-between;">
+          <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
+          <div class="row" style="gap: 8px;">
+            <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
+            <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
+          </div>
+        </div>
+        <div class="loading-skeleton__line loading-skeleton__line--sub"></div>
+        <div class="loading-skeleton__tournaments-cols">
+          <div class="stack" style="gap: var(--space-sm);">
+            <div class="loading-skeleton__line loading-skeleton__line--micro"></div>
+            <div class="loading-skeleton__line"></div>
+            <div class="loading-skeleton__line loading-skeleton__line--short"></div>
+          </div>
+          <div class="stack" style="gap: var(--space-sm);">
+            <div class="loading-skeleton__line loading-skeleton__line--micro"></div>
+            <div class="loading-skeleton__line"></div>
+            <div class="loading-skeleton__line loading-skeleton__line--short"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard__summary card">
+        <div class="loading-skeleton__line loading-skeleton__line--section-title loading-skeleton__line--at-a-glance"></div>
+        <div class="dashboard__summary-grid">
+          {#each [0, 1, 2, 3] as i (i)}
+            <div class="loading-skeleton__stat-block"></div>
+          {/each}
+        </div>
+      </div>
+
+      <div class="card stack">
+        <div class="row" style="justify-content: space-between;">
+          <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
+          <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
+        </div>
+        <div class="stack" style="gap: var(--space-sm);">
+          {#each [0, 1, 2] as i (i)}
+            <div class="loading-skeleton__match-block"></div>
+          {/each}
+        </div>
       </div>
     </div>
   {:else if error}
@@ -241,26 +295,30 @@
             <h2 class="card__title">Big Ink Lab</h2>
             <p class="card__sub">Track matches, players, and Lorcana stats.</p>
           </div>
-          <div class="row" style="gap: 8px; flex-wrap: wrap;">
-            <button
-              type="button"
-              class="btn btn--sm page-header__refresh"
-              onclick={() => refreshDashboard()}
-              aria-label="Refresh dashboard"
-            >
-              <IconRefresh size={20} />
-            </button>
-            <button
-              type="button"
-              class="btn"
-              disabled={loreTrackerLoading}
-              onclick={startLoreTracker}
-            >
-              {loreTrackerLoading ? 'Creating…' : 'Quick Match'}
-            </button>
-            <a href="/tournaments" class="btn">Tournaments</a>
-            <a href="/tournaments/new" class="btn">New tournament</a>
-            <a href="/matches/new" class="btn btn--primary">New match</a>
+          <div class="dashboard__header-actions stack">
+            <div class="row dashboard__header-actions-primary">
+              <button
+                type="button"
+                class="btn btn--sm page-header__refresh"
+                onclick={() => refreshDashboard()}
+                aria-label="Refresh dashboard"
+              >
+                <IconRefresh size={20} />
+              </button>
+              <a href="/matches/new" class="btn btn--primary dashboard__header-new-match">New match</a>
+            </div>
+            <div class="row dashboard__header-actions-secondary">
+              <button
+                type="button"
+                class="btn btn--sm"
+                disabled={loreTrackerLoading}
+                onclick={startLoreTracker}
+              >
+                {loreTrackerLoading ? 'Creating…' : 'Quick Match'}
+              </button>
+              <a href="/tournaments" class="btn btn--sm">Tournaments</a>
+              <a href="/tournaments/new" class="btn btn--sm">New tournament</a>
+            </div>
           </div>
         </div>
       </div>
@@ -274,8 +332,7 @@
           </div>
         </div>
         <p class="card__sub muted" style="margin: 0 0 var(--space-sm) 0;">
-          Last two tournaments before <strong>{localCalendarDay()}</strong> (local) and the next two on or after that
-          day (UTC midnight boundary).
+          Recent tournaments and what&apos;s coming up.
         </p>
         <div class="dashboard__tournaments-grid">
           <div class="dashboard__tournaments-col">
@@ -324,23 +381,23 @@
           <h3 class="dashboard__summary-title">At a glance</h3>
           <div class="dashboard__summary-grid">
             {#if stats}
-              <div class="dashboard__stat">
+              <a href="/matches" class="dashboard__stat dashboard__stat--link">
                 <span class="dashboard__stat-value">{stats.totalMatches}</span>
                 <span class="dashboard__stat-label muted">Matches</span>
-              </div>
-              <div class="dashboard__stat">
+              </a>
+              <a href="/matches" class="dashboard__stat dashboard__stat--link">
                 <span class="dashboard__stat-value">{stats.totalGames}</span>
                 <span class="dashboard__stat-label muted">Games</span>
-              </div>
+              </a>
             {/if}
-            <div class="dashboard__stat">
+            <a href="/decks" class="dashboard__stat dashboard__stat--link">
               <span class="dashboard__stat-value">{deckCount}</span>
               <span class="dashboard__stat-label muted">Decks</span>
-            </div>
-            <div class="dashboard__stat">
+            </a>
+            <a href="/players" class="dashboard__stat dashboard__stat--link">
               <span class="dashboard__stat-value">{playerCount}</span>
               <span class="dashboard__stat-label muted">Players</span>
-            </div>
+            </a>
           </div>
         </div>
       {/if}
@@ -422,6 +479,45 @@
     flex-direction: column;
     gap: var(--space-md);
   }
+
+  .dashboard--skeleton {
+    pointer-events: none;
+  }
+
+  .dashboard__header-actions {
+    align-items: flex-end;
+    gap: var(--space-sm);
+    min-width: 0;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+  }
+
+  .dashboard__header-actions-primary,
+  .dashboard__header-actions-secondary {
+    justify-content: flex-end;
+    gap: var(--space-sm);
+  }
+
+  .dashboard__header-new-match {
+    min-height: 46px;
+  }
+
+  @media (max-width: 639px) {
+    .dashboard__header-actions {
+      width: 100%;
+      align-items: stretch;
+    }
+
+    .dashboard__header-actions-primary,
+    .dashboard__header-actions-secondary {
+      justify-content: flex-start;
+    }
+
+    .dashboard__header-new-match {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
   @media (min-width: 640px) {
     .dashboard {
       gap: var(--space-lg);
@@ -473,6 +569,31 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
+  }
+
+  a.dashboard__stat--link {
+    text-decoration: none;
+    color: inherit;
+    border-radius: var(--radius-sm);
+    padding: var(--space-sm);
+    margin: calc(var(--space-sm) * -1);
+    align-self: start;
+    min-width: 0;
+    transition:
+      background var(--transition),
+      box-shadow var(--transition);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (hover: hover) {
+    a.dashboard__stat--link:hover {
+      background: var(--glass-bg-strong);
+    }
+  }
+
+  a.dashboard__stat--link:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }
 
   .dashboard__stat-value {

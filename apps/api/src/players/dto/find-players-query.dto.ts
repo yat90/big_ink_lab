@@ -25,4 +25,10 @@ export class FindPlayersQueryDto extends PaginationQueryDto {
   @Transform(({ value }) => queryBool(value))
   @IsBoolean()
   includeGuests?: boolean;
+
+  /** When true, return only guest players (`isGuest: true`). Takes precedence over includeGuests. */
+  @IsOptional()
+  @Transform(({ value }) => queryBool(value))
+  @IsBoolean()
+  guestsOnly?: boolean;
 }

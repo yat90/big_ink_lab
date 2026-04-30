@@ -64,6 +64,29 @@
   let lastP2ChangeAt = 0;
   let lastP1WasInc = false;
   let lastP2WasInc = false;
+  /** Brief flash when a tap is ignored due to cooldown (same player, opposite direction). */
+  let p1CooldownFlash = $state(false);
+  let p2CooldownFlash = $state(false);
+  let p1CooldownFlashTimer: ReturnType<typeof setTimeout> | null = null;
+  let p2CooldownFlashTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function flashCooldownIgnored(player: 'p1' | 'p2') {
+    if (player === 'p1') {
+      if (p1CooldownFlashTimer) clearTimeout(p1CooldownFlashTimer);
+      p1CooldownFlash = true;
+      p1CooldownFlashTimer = setTimeout(() => {
+        p1CooldownFlash = false;
+        p1CooldownFlashTimer = null;
+      }, 220);
+    } else {
+      if (p2CooldownFlashTimer) clearTimeout(p2CooldownFlashTimer);
+      p2CooldownFlash = true;
+      p2CooldownFlashTimer = setTimeout(() => {
+        p2CooldownFlash = false;
+        p2CooldownFlashTimer = null;
+      }, 220);
+    }
+  }
 
   /** All lore changes since last clear; cleared after LORE_INACTIVITY_CLEAR_MS with no new changes. */
   const LORE_INACTIVITY_CLEAR_MS = 2500;
@@ -431,6 +454,8 @@
       if (winCheckTimeout) clearTimeout(winCheckTimeout);
       if (syncInterval) clearInterval(syncInterval);
       if (pruneChangesInterval) clearInterval(pruneChangesInterval);
+      if (p1CooldownFlashTimer) clearTimeout(p1CooldownFlashTimer);
+      if (p2CooldownFlashTimer) clearTimeout(p2CooldownFlashTimer);
       void releaseWakeLock();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleOnline);
@@ -497,7 +522,10 @@
 
   function incP1() {
     const now = Date.now();
-    if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP1WasInc) return;
+    if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP1WasInc) {
+      flashCooldownIgnored('p1');
+      return;
+    }
     lastP1ChangeAt = now;
     lastP1WasInc = true;
     addChange('p1', 1);
@@ -507,7 +535,10 @@
   }
   function decP1() {
     const now = Date.now();
-    if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP1WasInc) return;
+    if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP1WasInc) {
+      flashCooldownIgnored('p1');
+      return;
+    }
     lastP1ChangeAt = now;
     lastP1WasInc = false;
     addChange('p1', -1);
@@ -516,7 +547,10 @@
   }
   function incP2() {
     const now = Date.now();
-    if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP2WasInc) return;
+    if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP2WasInc) {
+      flashCooldownIgnored('p2');
+      return;
+    }
     lastP2ChangeAt = now;
     lastP2WasInc = true;
     addChange('p2', 1);
@@ -526,7 +560,10 @@
   }
   function decP2() {
     const now = Date.now();
-    if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP2WasInc) return;
+    if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP2WasInc) {
+      flashCooldownIgnored('p2');
+      return;
+    }
     lastP2ChangeAt = now;
     lastP2WasInc = false;
     addChange('p2', -1);
@@ -734,6 +771,7 @@
       <div
         class="lore-panel lore-panel--p2"
         class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p2Id}
+        class:lore-panel--cooldown-flash={p2CooldownFlash}
       >
         <div class="lore-panel__center">
           {#if canEditMatch}
@@ -749,11 +787,11 @@
               class="lore-panel__delta"
               class:lore-panel__delta--pos={p2DeltaLastSecond > 0}
               class:lore-panel__delta--neg={p2DeltaLastSecond < 0}
-              aria-label="Sum of changes since last activity"
+              aria-label="Sum of recent changes (clears after a short pause)"
             >
               {#if p2DeltaLastSecond !== 0}
                 {p2DeltaLastSecond > 0 ? '+' : ''}{p2DeltaLastSecond}
-            {/if}
+              {/if}
             </span>
             <span class="lore-panel__number">{p2Lore}</span>
           </span>
@@ -787,6 +825,7 @@
       <div
         class="lore-panel lore-panel--p1"
         class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p1Id}
+        class:lore-panel--cooldown-flash={p1CooldownFlash}
       >
         <div class="lore-panel__center">
           {#if canEditMatch}
@@ -802,11 +841,11 @@
               class="lore-panel__delta"
               class:lore-panel__delta--pos={p1DeltaLastSecond > 0}
               class:lore-panel__delta--neg={p1DeltaLastSecond < 0}
-              aria-label="Sum of changes since last activity"
+              aria-label="Sum of recent changes (clears after a short pause)"
             >
               {#if p1DeltaLastSecond !== 0}
                 {p1DeltaLastSecond > 0 ? '+' : ''}{p1DeltaLastSecond}
-            {/if}
+              {/if}
             </span>
             <span class="lore-panel__number">{p1Lore}</span>
           </span>
@@ -1098,6 +1137,21 @@
   .lore-panel--winner {
     animation: lore-winner-pulse-panel 2s ease-in-out;
     box-shadow: inset 0 0 0 3px var(--ok);
+  }
+
+  .lore-panel--cooldown-flash {
+    animation: lore-cooldown-nudge 0.22s ease-out;
+  }
+
+  @keyframes lore-cooldown-nudge {
+    0%,
+    100% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.15);
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
+    }
   }
 
   @keyframes lore-winner-pulse-panel {

@@ -25,6 +25,9 @@ export interface PlayerWithStatsResponse {
   _id: unknown;
   name?: string;
   team?: string;
+  isGuest?: boolean;
+  /** True when a login account references this player — guest flag cannot be enabled. */
+  hasLinkedAccount: boolean;
   stats: PlayerStatsDto;
   decksUsed: DeckUsed[];
 }
@@ -49,6 +52,7 @@ export class PlayersController {
       query.name,
       query.team,
       query.includeGuests === true,
+      query.guestsOnly === true,
     );
     return createPaginatedResponse(data, total, page, limit);
   }
@@ -75,7 +79,13 @@ export class PlayersController {
       deckId,
       matrixMode: matrixMode === 'games' ? 'games' : 'matches',
     });
-    return { ...player.toObject(), stats, decksUsed } as PlayerWithStatsResponse;
+    const hasLinkedAccount = await this.playersService.isPlayerLinkedToUser(id);
+    return {
+      ...player.toObject(),
+      stats,
+      decksUsed,
+      hasLinkedAccount,
+    } as PlayerWithStatsResponse;
   }
 
   /** Creates a new player. */
@@ -88,7 +98,7 @@ export class PlayersController {
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() dto: Partial<Pick<Player, 'name' | 'team'>>,
+    @Body() dto: Partial<Pick<Player, 'name' | 'team' | 'isGuest'>>,
   ): Promise<Player> {
     const player = await this.playersService.update(id, dto);
     if (!player) throw new NotFoundException('Player not found');
