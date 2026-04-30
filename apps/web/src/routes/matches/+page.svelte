@@ -15,9 +15,9 @@
   import Pagination from '$lib/Pagination.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
-  import IconRefresh from '$lib/icons/IconRefresh.svelte';
   import { ERR, messageFromFailedResponse } from '$lib/errors';
   import { authMe } from '$lib/me';
+  import { registerPageRefresh } from '$lib/pageRefreshRegistry';
 
   type Player = { _id: string; name: string; team?: string };
 
@@ -227,7 +227,11 @@
       myPlayerId = p._id;
       applied = true;
     });
-    return () => unsub();
+    const unregRefresh = registerPageRefresh(fetchMatches);
+    return () => {
+      unsub();
+      unregRefresh();
+    };
   });
 
   async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
@@ -335,7 +339,6 @@
       <div class="row matches-header row--between">
         <div class="page-header__title-row">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-          <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
         </div>
         <div class="row row--sm">
           <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
@@ -421,14 +424,6 @@
     <div class="row matches-header row--between">
       <div class="page-header__title-row">
         <h2 class="card__title card-title-reset">Matches</h2>
-        <button
-          type="button"
-          class="btn btn--sm page-header__refresh"
-          onclick={() => fetchMatches()}
-          aria-label="Refresh list"
-        >
-          <IconRefresh size={20} />
-        </button>
       </div>
       <div class="row row--sm">
         <a href="/matches/quick" class="btn">Quick match</a>

@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { config } from '$lib/config';
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerName } from '$lib/decks';
   import { ERR, messageFromFailedResponse } from '$lib/errors';
   import FilterCard from '$lib/FilterCard.svelte';
-  import IconRefresh from '$lib/icons/IconRefresh.svelte';
+  import { registerPageRefresh } from '$lib/pageRefreshRegistry';
   import InkIcons from '$lib/InkIcons.svelte';
   import { authMe } from '$lib/me';
   import Pagination from '$lib/Pagination.svelte';
@@ -136,6 +137,8 @@
   $effect(() => {
     loadDecks();
   });
+
+  onMount(() => registerPageRefresh(loadDecks));
 </script>
 
 <svelte:head>
@@ -148,7 +151,6 @@
       <div class="page-header">
         <div class="page-header__title-row">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-          <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
         </div>
         <div class="loading-skeleton__line loading-skeleton__line--primary-btn decks-page__skel-new"></div>
       </div>
@@ -183,14 +185,6 @@
     <div class="page-header">
       <div class="page-header__title-row">
         <h2 class="card__title card-title-reset">Decks</h2>
-        <button
-          type="button"
-          class="btn btn--sm page-header__refresh"
-          onclick={() => loadDecks()}
-          aria-label="Refresh list"
-        >
-          <IconRefresh size={20} />
-        </button>
       </div>
       <a href="/decks/new" class="btn btn--primary">New deck</a>
     </div>

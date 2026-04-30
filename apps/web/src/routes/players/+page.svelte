@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { config } from '$lib/config';
   import { authMe } from '$lib/me';
   import { get } from 'svelte/store';
   import { ERR, messageFromFailedResponse } from '$lib/errors';
   import FilterCard from '$lib/FilterCard.svelte';
   import Pagination from '$lib/Pagination.svelte';
-  import IconRefresh from '$lib/icons/IconRefresh.svelte';
+  import { registerPageRefresh } from '$lib/pageRefreshRegistry';
 
   type GuestScope = 'roster' | 'guests' | 'all';
 
@@ -162,6 +163,8 @@
     guestScope;
     fetchPlayers();
   });
+
+  onMount(() => registerPageRefresh(fetchPlayers));
 </script>
 
 <div class="page players-page">
@@ -171,7 +174,6 @@
         <div class="players-page__header-main">
           <div class="page-header__title-row">
             <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-            <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
           </div>
         </div>
         <div class="loading-skeleton__line loading-skeleton__line--primary-btn players-page__skel-new"></div>
@@ -250,14 +252,6 @@
       <div class="players-page__header-main">
         <div class="page-header__title-row">
           <h2 class="card__title card-title-reset">Players</h2>
-          <button
-            type="button"
-            class="btn btn--sm page-header__refresh"
-            onclick={() => fetchPlayers()}
-            aria-label="Refresh list"
-          >
-            <IconRefresh size={20} />
-          </button>
         </div>
         {#if filterTeam.trim()}
           <div class="players-page__chip-row" aria-label="Active filters">

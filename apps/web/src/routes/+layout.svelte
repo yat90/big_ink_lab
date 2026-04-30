@@ -13,6 +13,8 @@
   import MobileNavDrawer from '$lib/MobileNavDrawer.svelte';
   import InstallPrompt from '$lib/InstallPrompt.svelte';
   import { setAuthMe } from '$lib/me';
+  import PullToRefreshIndicator from '$lib/PullToRefreshIndicator.svelte';
+  import { pullToRefresh } from '$lib/pullToRefresh';
 
   let { children = undefined }: { children?: Snippet } = $props();
 
@@ -47,6 +49,7 @@
 
   const isLorePage = $derived(/^\/matches\/[^/]+\/lore$/.test($page.url.pathname));
   const isAuthPage = $derived($page.url.pathname === '/login');
+  const pullToRefreshDisabled = $derived(isLorePage || mobileMenuOpen);
   const apiUrl = config.apiUrl ?? '/api';
 
   let authReady = $state(false);
@@ -173,12 +176,14 @@
   {#if authReady && isAuthenticated && !isAuthPage}
     <InstallPrompt />
   {/if}
+  <PullToRefreshIndicator />
   <main
     id="main"
     class="main"
     class:main--full={isLorePage}
     tabindex="-1"
     aria-label={title === 'Big Ink Lab' ? 'Main content' : `Main content — ${title}`}
+    use:pullToRefresh={{ disabled: pullToRefreshDisabled }}
   >
     {#if authReady || isAuthPage}
       {#if children}

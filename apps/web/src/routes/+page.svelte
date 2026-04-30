@@ -11,9 +11,9 @@
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
-  import IconRefresh from '$lib/icons/IconRefresh.svelte';
   import { ERR, messageFromFailedResponse } from '$lib/errors';
   import { authMe } from '$lib/me';
+  import { registerPageRefresh } from '$lib/pageRefreshRegistry';
   import { get } from 'svelte/store';
 
   type Player = { _id: string; name: string; team?: string };
@@ -177,6 +177,7 @@
     const unsub = authMe.subscribe((m) => {
       myPlayerId = m?.player?._id ?? null;
     });
+    const unregRefresh = registerPageRefresh(refreshDashboard);
     void (async () => {
       try {
         await loadDashboard();
@@ -184,7 +185,10 @@
         loading = false;
       }
     })();
-    return () => unsub();
+    return () => {
+      unsub();
+      unregRefresh();
+    };
   });
 </script>
 
@@ -201,7 +205,6 @@
           <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         </div>
         <div class="row loading-skeleton__actions-primary">
-          <div class="loading-skeleton__line loading-skeleton__line--icon"></div>
           <div class="loading-skeleton__line loading-skeleton__line--primary-btn"></div>
         </div>
         <div class="row loading-skeleton__actions-secondary">
@@ -214,7 +217,7 @@
       <div class="card stack dashboard__tournaments">
         <div class="row row--between">
           <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
-          <div class="row gap-sm">
+            <div class="row gap-sm">
             <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
             <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
           </div>
@@ -281,14 +284,6 @@
           </div>
           <div class="dashboard__header-actions stack">
             <div class="row dashboard__header-actions-primary">
-              <button
-                type="button"
-                class="btn btn--sm page-header__refresh"
-                onclick={() => refreshDashboard()}
-                aria-label="Refresh dashboard"
-              >
-                <IconRefresh size={20} />
-              </button>
               <a href="/matches/new" class="btn btn--primary dashboard__header-new-match">New match</a>
             </div>
             <div class="row dashboard__header-actions-secondary">

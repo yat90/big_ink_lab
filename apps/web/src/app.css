@@ -2142,22 +2142,12 @@ a[class*='playercard']:active {
   background: var(--glass-bg-strong, rgba(0, 0, 0, 0.08));
 }
 
-/* List page headers: title + refresh icon */
+/* List page headers: title row */
 .page-header__title-row {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   flex-wrap: wrap;
-}
-
-.page-header__refresh {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-  padding-left: 12px;
-  padding-right: 12px;
 }
 
 /* PWA install hint (above mobile bottom nav) */
