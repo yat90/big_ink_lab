@@ -245,6 +245,7 @@ export class DecksService {
     const second = sorted.length >= 2 ? sorted[1] : first;
     const [a, b] = [first, second].sort((x, y) => (INK_ORDER[x] ?? 99) - (INK_ORDER[y] ?? 99));
     const pair = `${a} / ${b}`;
-    return (DECK_COLOR_OPTIONS.find((v) => v === pair) as DeckColor) ?? null;
+    const match = DECK_COLOR_OPTIONS.find((v: DeckColor) => v === pair);
+    return match ?? null;
   }
 }

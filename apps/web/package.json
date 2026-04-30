@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
-    "deck-ink": "*"
+    "deck-ink": "file:../../packages/deck-ink"
   },
   "devDependencies": {
     "@sveltejs/adapter-vercel": "^5.0.0",
