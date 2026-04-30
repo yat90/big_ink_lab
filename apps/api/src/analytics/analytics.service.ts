@@ -5,7 +5,7 @@ import { Match } from '../matches/schemas/lorcana-match.schema';
 import { Player } from '../matches/schemas/player.schema';
 import { Deck } from '../decks/schemas/deck.schema';
 import { Stage } from '../matches/schemas/stages.enum';
-import { DeckColor } from '../matches/schemas/deck-color.enum';
+import { DECK_COLOR_OPTIONS } from '../matches/schemas/deck-color.enum';
 import type {
   DeckStats,
   DeckStatsByOpponent,
@@ -555,7 +555,7 @@ export class AnalyticsService {
       .select('p1 p2 matchWinner p1Deck p2Deck p1DeckColor p2DeckColor')
       .lean()
       .exec();
-    const allColors = Object.values(DeckColor);
+    const allColors = [...DECK_COLOR_OPTIONS];
     const byOpponentDeckColor: Record<string, DeckStatsByOpponent> = {};
     for (const c of allColors) {
       byOpponentDeckColor[c] = { played: 0, won: 0 };

@@ -3,12 +3,17 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Deck } from './schemas/deck.schema';
 import { Card } from './schemas/card.schema';
-import { DeckColor } from '../matches/schemas/deck-color.enum';
+import {
+  DECK_COLOR_OPTIONS,
+  INK_ORDER,
+  INKS,
+  type DeckColor,
+} from '../matches/schemas/deck-color.enum';
 import { LorcastService, type LorcastCard } from './lorcast.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { DeckStats } from './deck-stats.interface';
 import { generateLorcanaDeckName } from './deck-name-generator';
-import { LINE_REGEX, INK_ORDER, INKS } from './deck.constants';
+import { LINE_REGEX } from './deck.constants';
 import type { LorcastCardWithAmount } from './deck-check.interface';
 
 @Injectable()
@@ -132,7 +137,8 @@ export class DecksService {
       player: dto.player ?? undefined,
       cards: cardRefs,
       lastEditedAt: now,
-      lastEditedBy: userId && Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : undefined,
+      lastEditedBy:
+        userId && Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : undefined,
     });
 
     await created.populate(['player', 'cards.card', 'lastEditedBy']);
@@ -219,6 +225,6 @@ export class DecksService {
     const second = sorted.length >= 2 ? sorted[1] : first;
     const [a, b] = [first, second].sort((x, y) => (INK_ORDER[x] ?? 99) - (INK_ORDER[y] ?? 99));
     const pair = `${a} / ${b}`;
-    return (Object.values(DeckColor).find((v) => v === pair) as DeckColor) ?? null;
+    return (DECK_COLOR_OPTIONS.find((v) => v === pair) as DeckColor) ?? null;
   }
 }

@@ -9,13 +9,14 @@
     "dev": "npm run dev:web && npm run dev:api",
     "dev:web": "npm run dev --workspace=web",
     "dev:api": "npm run start:dev --workspace=api",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w deck-ink && npm run build -w api && npm run build -w web",
     "build:web": "npm run build --workspace=web",
     "build:api": "npm run build --workspace=api",
     "preview": "npm run preview --workspace=web",
     "vercel:dev": "vercel dev"
   },
   "workspaces": [
+    "packages/*",
     "apps/web",
     "apps/api"
   ],

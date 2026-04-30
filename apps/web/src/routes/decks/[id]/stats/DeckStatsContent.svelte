@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { INK_CHART_COLORS, INKS } from 'deck-ink';
   import DeckStatsCardTab from './DeckStatsCardTab.svelte';
   import DeckStatsMatchesTab from './DeckStatsMatchesTab.svelte';
   import DeckStatsMulliganTab from './DeckStatsMulliganTab.svelte';
@@ -50,17 +51,7 @@
     return entries.sort((a, b) => b[1].played - a[1].played);
   });
 
-  const INK_ORDER = ['Amber', 'Amethyst', 'Emerald', 'Ruby', 'Sapphire', 'Steel'];
   const CURVE_ORDER = ['0', '1', '2', '3', '4', '5', '6', '7', '8+'];
-  const INK_CHART_COLORS: Record<string, string> = {
-    Amber: '#f59e0b',
-    Amethyst: '#7c3aed',
-    Emerald: '#10b981',
-    Ruby: '#ef4444',
-    Sapphire: '#06b6d4',
-    Steel: '#64748b',
-    Other: '#475569',
-  };
   const curveBars = $derived.by(() => {
     if (!stats?.curve) return [];
     const max = Math.max(1, ...Object.values(stats.curve));
@@ -79,7 +70,7 @@
       const segs = (byInk[cost] ?? {}) as Record<string, number>;
       const total = Object.values(segs).reduce((a, b) => a + b, 0);
       let acc = 0;
-      const segments = INK_ORDER.filter((ink) => (segs[ink] ?? 0) > 0).map((ink) => {
+      const segments = INKS.filter((ink) => (segs[ink] ?? 0) > 0).map((ink) => {
         const count = segs[ink] ?? 0;
         const pct = total > 0 ? (count / total) * 100 : 0;
         const start = acc;
@@ -130,7 +121,7 @@
     const total = Object.values(stats.byInk).reduce((a, b) => a + b, 0);
     if (total === 0) return [];
     let acc = 0;
-    return INK_ORDER.filter((ink) => (stats!.byInk[ink] ?? 0) > 0).map((ink) => {
+    return INKS.filter((ink) => (stats!.byInk[ink] ?? 0) > 0).map((ink) => {
       const count = stats!.byInk[ink] ?? 0;
       const pct = (count / total) * 100;
       const start = acc;

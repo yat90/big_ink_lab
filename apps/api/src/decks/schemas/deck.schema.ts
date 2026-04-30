@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { DeckColor } from '../../matches/schemas/deck-color.enum';
+import { DECK_COLOR_OPTIONS, type DeckColor } from '../../matches/schemas/deck-color.enum';
 import { DeckCardEntrySchema } from './card.schema';
 
 @Schema({ timestamps: true })
@@ -12,7 +12,7 @@ export class Deck extends Document {
   @Prop({ default: '' })
   deckList: string;
 
-  @Prop({ type: String, enum: Object.values(DeckColor), required: false })
+  @Prop({ type: String, enum: [...DECK_COLOR_OPTIONS], required: false })
   deckColor?: DeckColor;
 
   @Prop({ default: '' })

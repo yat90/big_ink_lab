@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
-  import { onMount } from 'svelte';
+  import { portal } from '$lib/portal';
+  import { onMount, tick } from 'svelte';
 
   /** Selected deck color value, e.g. "Amber / Amethyst" or "" */
   let {
@@ -26,6 +28,84 @@
   let open = $state(false);
   let buttonEl = $state<HTMLButtonElement | null>(null);
   let listEl = $state<HTMLUListElement | null>(null);
+  let listStyle = $state('');
+
+  const GAP = 4;
+  const MAX_LIST_H = 280;
+  const VIEW_MARGIN = 8;
+
+  function computeListStyle(): string {
+    if (!buttonEl) return '';
+    const rect = buttonEl.getBoundingClientRect();
+    const vv = window.visualViewport;
+    const viewportTop = vv?.offsetTop ?? 0;
+    const viewportH = vv?.height ?? window.innerHeight;
+    const viewportBottom = viewportTop + viewportH;
+    const mobile = window.matchMedia('(max-width: 639px)').matches;
+    const bottomReserve = mobile ? 80 : 12;
+    const safeBottom = viewportBottom - bottomReserve;
+    const safeTop = viewportTop + VIEW_MARGIN;
+    const spaceBelow = safeBottom - rect.bottom - GAP;
+    const spaceAbove = rect.top - safeTop - GAP;
+    const openDown = spaceBelow >= 140 || spaceBelow >= spaceAbove;
+    let left = rect.left;
+    let width = rect.width;
+    const vw = window.innerWidth;
+    if (left + width > vw - VIEW_MARGIN) {
+      width = Math.max(160, vw - 2 * VIEW_MARGIN);
+      left = Math.max(VIEW_MARGIN, Math.min(left, vw - width - VIEW_MARGIN));
+    }
+    if (openDown) {
+      const maxHeight = Math.min(MAX_LIST_H, Math.max(80, spaceBelow));
+      const top = rect.bottom + GAP;
+      return [
+        `position:fixed`,
+        `z-index:100`,
+        `top:${top}px`,
+        `left:${left}px`,
+        `width:${width}px`,
+        `max-height:${maxHeight}px`,
+      ].join(';');
+    }
+    const maxHeight = Math.min(MAX_LIST_H, Math.max(80, spaceAbove));
+    const listBottomY = rect.top - GAP;
+    const bottomPx = window.innerHeight - listBottomY;
+    return [
+      `position:fixed`,
+      `z-index:100`,
+      `bottom:${bottomPx}px`,
+      `left:${left}px`,
+      `width:${width}px`,
+      `max-height:${maxHeight}px`,
+    ].join(';');
+  }
+
+  async function syncListPosition() {
+    await tick();
+    listStyle = computeListStyle();
+  }
+
+  $effect(() => {
+    if (!open || !browser) return;
+    void syncListPosition();
+    const run = () => {
+      listStyle = computeListStyle();
+    };
+    const main = document.getElementById('main');
+    main?.addEventListener('scroll', run, { passive: true });
+    window.addEventListener('scroll', run, true);
+    window.addEventListener('resize', run);
+    const vv = window.visualViewport;
+    vv?.addEventListener('scroll', run);
+    vv?.addEventListener('resize', run);
+    return () => {
+      main?.removeEventListener('scroll', run);
+      window.removeEventListener('scroll', run, true);
+      window.removeEventListener('resize', run);
+      vv?.removeEventListener('scroll', run);
+      vv?.removeEventListener('resize', run);
+    };
+  });
 
   function toggle() {
     if (disabled) return;
@@ -90,10 +170,12 @@
     {/if}
     <span class="deck-color-select__chevron" aria-hidden="true">▼</span>
   </button>
-  {#if open}
+  {#if open && browser}
     <ul
+      use:portal={document.body}
       bind:this={listEl}
       class="deck-color-select__list"
+      style={listStyle}
       role="listbox"
       aria-label={ariaLabel}
     >
@@ -108,7 +190,7 @@
       >
         <span class="deck-color-select__placeholder">—</span>
       </li>
-      {#each DECK_COLOR_OPTIONS as c}
+      {#each DECK_COLOR_OPTIONS as c (c)}
         <li
           role="option"
           class="deck-color-select__option"
@@ -191,11 +273,6 @@
   }
 
   .deck-color-select__list {
-    position: absolute;
-    z-index: 9999;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
     margin: 0;
     padding: 4px;
     list-style: none;
@@ -203,8 +280,8 @@
     border: 1px solid var(--border-strong);
     background: var(--card);
     box-shadow: var(--shadow-lg);
-    max-height: 280px;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .deck-color-select__option {

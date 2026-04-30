@@ -32,6 +32,11 @@ function getFocusable(node: HTMLElement): HTMLElement[] {
 export interface FocusTrapOptions {
   /** Element to focus on mount. Defaults to the first focusable child. */
   initialFocus?: HTMLElement | null;
+  /**
+   * Focus the trap root (`node`) first. Pair with `tabindex="-1"` on the root so the first
+   * focusable child (e.g. a search field) does not steal focus on open (mobile keyboard).
+   */
+  focusRoot?: boolean;
 }
 
 /**
@@ -43,6 +48,13 @@ export function focusTrap(node: HTMLElement, opts: FocusTrapOptions = {}) {
     document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
   const focusInitial = () => {
+    if (opts.focusRoot) {
+      if (!node.hasAttribute('tabindex')) {
+        node.setAttribute('tabindex', '-1');
+      }
+      node.focus({ preventScroll: true });
+      return;
+    }
     const target =
       opts.initialFocus && node.contains(opts.initialFocus)
         ? opts.initialFocus

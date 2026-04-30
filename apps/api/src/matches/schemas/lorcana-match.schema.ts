@@ -2,9 +2,9 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Game, GameSchema } from "./game.interface";
 import { Stage } from "./stages.enum";
-import { DeckColor } from "./deck-color.enum";
+import { DECK_COLOR_OPTIONS, type DeckColor } from "./deck-color.enum";
 
-const DECK_COLOR_SCHEMA_ENUM = [...Object.values(DeckColor), ""] as const;
+const DECK_COLOR_SCHEMA_ENUM = [...DECK_COLOR_OPTIONS, ""] as const;
 
 @Schema({ timestamps: true })
 export class Match extends Document {

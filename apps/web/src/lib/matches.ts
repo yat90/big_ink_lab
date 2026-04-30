@@ -1,24 +1,9 @@
+import { parseDeckColorLabel } from 'deck-ink';
+
+export { DECK_COLOR_OPTIONS, type DeckColorLabel as DeckColor } from 'deck-ink';
+
 /** Stage options for match forms (must match API enum) */
 export const STAGE_OPTIONS = ['Tournament', 'Casual', 'Practice', 'Online'] as const;
-
-/** Deck color options for match forms (must match API enum) */
-export const DECK_COLOR_OPTIONS = [
-  'Amber / Amethyst',
-  'Amber / Emerald',
-  'Amber / Ruby',
-  'Amber / Sapphire',
-  'Amber / Steel',
-  'Amethyst / Emerald',
-  'Amethyst / Ruby',
-  'Amethyst / Sapphire',
-  'Amethyst / Steel',
-  'Emerald / Ruby',
-  'Emerald / Sapphire',
-  'Emerald / Steel',
-  'Ruby / Sapphire',
-  'Ruby / Steel',
-  'Sapphire / Steel',
-] as const;
 
 /** Lorcana ink color image paths (under /ink/ in static) */
 export const INK_IMAGE: Record<string, string> = {
@@ -32,14 +17,14 @@ export const INK_IMAGE: Record<string, string> = {
 
 /** Return [color1, color2] for a deck color string, e.g. "Amber / Amethyst" → ["Amber", "Amethyst"] */
 export function getInkColors(label: string): [string, string] | null {
-  if (!label) return null;
-  const [a, b] = label.split(' / ').map((s) => s.trim());
-  if (a && b && INK_IMAGE[a] && INK_IMAGE[b]) return [a, b];
+  const p = parseDeckColorLabel(label);
+  if (!p) return null;
+  const [a, b] = p;
+  if (INK_IMAGE[a] && INK_IMAGE[b]) return [a, b];
   return null;
 }
 
 export type MatchStage = (typeof STAGE_OPTIONS)[number];
-export type DeckColor = (typeof DECK_COLOR_OPTIONS)[number];
 
 export type GameStatus = 'in_progress' | 'done';
 

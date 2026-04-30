@@ -2,7 +2,6 @@
   import { page } from '$app/stores';
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
   import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
-  import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconSparkle from '$lib/icons/IconSparkle.svelte';
   import IconMore from '$lib/icons/IconMore.svelte';
 
@@ -19,9 +18,6 @@
       $page.url.pathname !== '/matches/quick'
   );
   const isTournaments = $derived($page.url.pathname.startsWith('/tournaments'));
-  const isStats = $derived($page.url.pathname === '/stats');
-  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
-  const isStatsSection = $derived(isStats || isMyStatistics);
 </script>
 
 <div class="mobile-nav">
@@ -59,17 +55,6 @@
           <IconCrownOutline size={24} />
         </span>
         <span class="mobile-nav__item-label">Tournaments</span>
-      </a>
-      <a
-        href="/stats"
-        class="mobile-nav__item"
-        class:mobile-nav__item--active={isStatsSection}
-        aria-current={isStatsSection ? 'page' : undefined}
-      >
-        <span class="mobile-nav__item-icon" aria-hidden="true">
-          <IconBarChart size={24} />
-        </span>
-        <span class="mobile-nav__item-label">Statistics</span>
       </a>
       <button
         type="button"

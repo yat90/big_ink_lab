@@ -3,7 +3,12 @@ import { unzipSync } from 'fflate';
 import { Types } from 'mongoose';
 import type { Game, GameEvent } from './schemas/game.interface';
 import { GameEventType } from './schemas/game-event-type.enum';
-import { DeckColor } from './schemas/deck-color.enum';
+import {
+  DECK_COLOR_OPTIONS,
+  INK_ORDER,
+  INK_SLUG_TO_CANONICAL,
+  type DeckColor,
+} from './schemas/deck-color.enum';
 
 /** Root export format from duels.ink. */
 export const DUELS_REPLAY_FORMAT = 'duels-replay-v1' as const;
@@ -252,18 +257,9 @@ export function resolveOpponentNameFromReplays(
 /** Card-like object from duels.ink snapshot / frame patches (ink colors). */
 type DuelsCardColors = { colors?: unknown };
 
-const INK_CANON: Record<string, string> = {
-  amber: 'Amber',
-  amethyst: 'Amethyst',
-  emerald: 'Emerald',
-  ruby: 'Ruby',
-  sapphire: 'Sapphire',
-  steel: 'Steel',
-};
-
 function capitalizeInkToken(raw: string): string | null {
   const k = raw.trim().toLowerCase();
-  return INK_CANON[k] ?? null;
+  return INK_SLUG_TO_CANONICAL[k] ?? null;
 }
 
 function mergeInkCountsFromCards(cards: DuelsCardColors[], into: Map<string, number>): void {
@@ -296,9 +292,9 @@ function inkCountsToDeckColor(counts: Map<string, number>): DeckColor | '' {
   const a = capitalizeInkToken(distinct[0]);
   const b = capitalizeInkToken(distinct[1]);
   if (!a || !b) return '';
-  const [x, y] = [a, b].sort((p, q) => p.localeCompare(q));
+  const [x, y] = [a, b].sort((p, q) => (INK_ORDER[p] ?? 99) - (INK_ORDER[q] ?? 99));
   const label = `${x} / ${y}`;
-  return (Object.values(DeckColor) as string[]).includes(label) ? (label as DeckColor) : '';
+  return (DECK_COLOR_OPTIONS as readonly string[]).includes(label) ? (label as DeckColor) : '';
 }
 
 /** Opening hand cards for a seat; only the recording client's hand is present in `baseSnapshot`. */

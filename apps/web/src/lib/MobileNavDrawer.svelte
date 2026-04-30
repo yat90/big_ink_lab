@@ -18,6 +18,26 @@
   }
   let { open = false, closeMenu, logout }: Props = $props();
 
+  let showLogoutPrompt = $state(false);
+
+  function openLogoutPrompt() {
+    showLogoutPrompt = true;
+  }
+
+  function closeLogoutPrompt() {
+    showLogoutPrompt = false;
+  }
+
+  async function confirmLogout() {
+    closeLogoutPrompt();
+    closeMenu();
+    await logout();
+  }
+
+  $effect(() => {
+    if (!open) showLogoutPrompt = false;
+  });
+
   const isHome = $derived($page.url.pathname === '/');
   const isMatches = $derived(
     $page.url.pathname.startsWith('/matches') &&
@@ -37,8 +57,14 @@
 
   $effect(() => {
     if (!open) return;
+    const logoutPromptOpen = showLogoutPrompt;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeMenu();
+      if (e.key !== 'Escape') return;
+      if (logoutPromptOpen) {
+        closeLogoutPrompt();
+        return;
+      }
+      closeMenu();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -145,6 +171,16 @@
       </span>
       Players
     </a>
+    <button
+      type="button"
+      class="mobile-nav__drawer-link mobile-nav__drawer-link--button"
+      onclick={openLogoutPrompt}
+    >
+      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+        <IconLogOut size={24} />
+      </span>
+      Logout
+    </button>
     <div class="mobile-nav__drawer-divider" role="separator" aria-hidden="true"></div>
     <a
       href="/me"
@@ -160,13 +196,79 @@
     </a>
     <button
       type="button"
-      class="mobile-nav__drawer-link mobile-nav__drawer-link--button mobile-nav__drawer-link--bottom"
-      onclick={() => (closeMenu(), logout())}
+      class="mobile-nav__drawer-footer-close btn"
+      onclick={closeMenu}
     >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconLogOut size={24} />
-      </span>
-      Logout
+      <IconClose size={22} />
+      Close menu
     </button>
+
+    {#if showLogoutPrompt}
+      <div
+        class="mobile-nav-logout-modal delete-game-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logout-confirm-title"
+      >
+        <button
+          type="button"
+          class="delete-game-modal__backdrop"
+          aria-label="Cancel"
+          onclick={closeLogoutPrompt}
+        ></button>
+        <div class="delete-game-modal__card card" use:focusTrap={{ focusRoot: true }} use:scrollLock>
+          <h2 id="logout-confirm-title" class="delete-game-modal__title">Log out?</h2>
+          <p class="delete-game-modal__text muted">Do you really want to log out of Big Ink Lab?</p>
+          <div class="delete-game-modal__actions row">
+            <button type="button" class="btn btn--primary btn--icon" onclick={() => void confirmLogout()}>
+              <IconLogOut size={18} />
+              Log out
+            </button>
+            <button type="button" class="btn" onclick={closeLogoutPrompt}>Cancel</button>
+          </div>
+        </div>
+      </div>
+    {/if}
   </nav>
 {/if}
+
+<style>
+  .mobile-nav-logout-modal.delete-game-modal {
+    z-index: 1300;
+  }
+  .delete-game-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .delete-game-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .delete-game-modal__card {
+    position: relative;
+    z-index: 1;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+  .delete-game-modal__title {
+    font-size: 1.25rem;
+    margin: 0 0 8px;
+  }
+  .delete-game-modal__text {
+    margin: 0 0 20px;
+  }
+  .delete-game-modal__actions {
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+</style>

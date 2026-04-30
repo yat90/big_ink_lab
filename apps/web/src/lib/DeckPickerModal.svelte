@@ -3,6 +3,7 @@
   import { authMe } from '$lib/me';
   import { get } from 'svelte/store';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
+  import FilterCard from '$lib/FilterCard.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
@@ -54,6 +55,37 @@
   let error = $state('');
   /** Set to true after preset player is applied so first load uses it. */
   let presetReady = $state(false);
+  /** Filter inputs are hidden until expanded (collapsed by default). */
+  let filtersExpanded = $state(false);
+
+  const filterCardSummary = $derived(
+    loading ? 'Loading…' : `${total} deck${total === 1 ? '' : 's'}`
+  );
+  const selectedPlayerName = $derived(
+    filterPlayer ? (players.find((p) => p._id === filterPlayer)?.name ?? '') : ''
+  );
+  const filterBadges = $derived<string[]>(
+    [
+      filterName.trim() ? `Name: ${filterName.trim()}` : '',
+      filterColor.trim() ? filterColor.trim() : '',
+      selectedPlayerName ? `Player: ${selectedPlayerName}` : '',
+    ].filter((b) => b.length > 0)
+  );
+  const canClearDeckPickerFilters = $derived(!!(filterName.trim() || filterColor.trim()));
+
+  function clearDeckPickerFilters() {
+    filterName = '';
+    filterColor = '';
+    const explicit = (filterPlayerId ?? '').trim();
+    if (explicit) {
+      filterPlayer = explicit;
+    } else {
+      const me = get(authMe);
+      filterPlayer = (me?.player?._id ?? '').toString() || '';
+    }
+    currentPage = 1;
+    loadDecks();
+  }
 
   async function fetchPlayers() {
     try {
@@ -123,6 +155,7 @@
       presetReady = false;
       return;
     }
+    filtersExpanded = false;
     presetReady = false;
     const explicit = (filterPlayerId ?? '').trim();
     if (explicit) {
@@ -152,50 +185,72 @@
       aria-label="Close"
       onclick={onClose}
     ></button>
-    <div class="deck-picker-modal__card card" use:focusTrap use:scrollLock>
+    <div
+      class="deck-picker-modal__card card"
+      tabindex="-1"
+      use:focusTrap={{ focusRoot: true }}
+      use:scrollLock
+    >
       <h2 id="deck-picker-title" class="deck-picker-modal__title">{title}</h2>
       {#if forLabel}
         <p class="deck-picker-modal__for muted">Selecting deck for <strong>{forLabel}</strong></p>
       {/if}
 
-      <div class="deck-picker-modal__filters">
-        <label for="deck-picker-name" class="deck-picker-modal__label">Name</label>
-        <input
-          id="deck-picker-name"
-          type="text"
-          class="input deck-picker-modal__input"
-          placeholder="Search by name…"
-          bind:value={filterName}
-          oninput={onFiltersChange}
-          aria-label="Filter by deck name"
-        />
-        <label for="deck-picker-color" class="deck-picker-modal__label">Deck color</label>
-        <select
-          id="deck-picker-color"
-          class="input deck-picker-modal__select"
-          bind:value={filterColor}
-          onchange={onFiltersChange}
-          aria-label="Filter by deck color"
-        >
-          <option value="">All</option>
-          {#each DECK_COLOR_OPTIONS as color (color)}
-            <option value={color}>{color}</option>
-          {/each}
-        </select>
-        <label for="deck-picker-player" class="deck-picker-modal__label">Player</label>
-        <select
-          id="deck-picker-player"
-          class="input deck-picker-modal__select"
-          bind:value={filterPlayer}
-          onchange={onFiltersChange}
-          aria-label="Filter by player"
-        >
-          <option value="">All</option>
-          {#each players as p (p._id)}
-            <option value={p._id}>{p.name}</option>
-          {/each}
-        </select>
-      </div>
+      <FilterCard
+        bind:expanded={filtersExpanded}
+        summary={filterCardSummary}
+        badges={filterBadges}
+        panelId="deck-picker-filter-panel"
+        onClear={clearDeckPickerFilters}
+        canClear={canClearDeckPickerFilters}
+        showSummaryInExpandedPanel={false}
+      >
+        <div class="filters__row">
+          <label class="filters__label" for="deck-picker-name">
+            <span class="muted" style="font-size: 0.85rem;">Name</span>
+            <input
+              id="deck-picker-name"
+              type="search"
+              class="input filters__select"
+              placeholder="Search by name…"
+              bind:value={filterName}
+              oninput={onFiltersChange}
+              aria-label="Filter by deck name"
+              autocomplete="off"
+            />
+          </label>
+          <label class="filters__label" for="deck-picker-color">
+            <span class="muted" style="font-size: 0.85rem;">Deck color</span>
+            <select
+              id="deck-picker-color"
+              class="input filters__select"
+              bind:value={filterColor}
+              onchange={onFiltersChange}
+              aria-label="Filter by deck color"
+            >
+              <option value="">All</option>
+              {#each DECK_COLOR_OPTIONS as color (color)}
+                <option value={color}>{color}</option>
+              {/each}
+            </select>
+          </label>
+          <label class="filters__label" for="deck-picker-player">
+            <span class="muted" style="font-size: 0.85rem;">Player</span>
+            <select
+              id="deck-picker-player"
+              class="input filters__select"
+              bind:value={filterPlayer}
+              onchange={onFiltersChange}
+              aria-label="Filter by player"
+            >
+              <option value="">All</option>
+              {#each players as p (p._id)}
+                <option value={p._id}>{p.name}</option>
+              {/each}
+            </select>
+          </label>
+        </div>
+      </FilterCard>
 
       {#if loading}
         <p class="muted">Loading decks…</p>
@@ -292,23 +347,6 @@
   }
   .deck-picker-modal__for strong {
     color: var(--fg);
-  }
-  .deck-picker-modal__filters {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-sm);
-  }
-  .deck-picker-modal__label {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: var(--muted);
-  }
-  .deck-picker-modal__select {
-    min-width: 8rem;
-  }
-  .deck-picker-modal__input {
-    min-width: 10rem;
   }
   .deck-picker-modal__list {
     list-style: none;

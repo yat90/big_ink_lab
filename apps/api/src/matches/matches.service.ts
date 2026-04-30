@@ -5,7 +5,7 @@ import { Match } from './schemas/lorcana-match.schema';
 import { FindMatchesQueryDto } from './dto/find-matches-query.dto';
 import { TournamentBulkResultsDto } from './dto/tournament-bulk-results.dto';
 import { Stage } from './schemas/stages.enum';
-import { DeckColor } from './schemas/deck-color.enum';
+import { DEFAULT_DECK_COLOR } from './schemas/deck-color.enum';
 import { DecksService } from '../decks/decks.service';
 import { PlayersService } from '../players/players.service';
 import { TournamentsService } from '../tournaments/tournaments.service';
@@ -188,7 +188,7 @@ export class MatchesService {
         toCreate.p2DeckColor = deck.deckColor as Match['p2DeckColor'];
       }
     }
-    const defaultColor = DeckColor.AmberAmethyst;
+    const defaultColor = DEFAULT_DECK_COLOR;
     if (toCreate.p1DeckColor === undefined || toCreate.p1DeckColor === null) {
       toCreate.p1DeckColor = defaultColor;
     }
