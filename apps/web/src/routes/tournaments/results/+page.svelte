@@ -140,7 +140,7 @@
     try {
       const d = new Date(iso);
       if (Number.isNaN(d.getTime())) return iso;
-      return d.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+      return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
     } catch {
       return iso;
     }
