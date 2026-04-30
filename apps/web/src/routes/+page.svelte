@@ -1,6 +1,5 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { getAuthToken } from '$lib/auth';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
@@ -13,6 +12,9 @@
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
   import IconRefresh from '$lib/icons/IconRefresh.svelte';
+  import { ERR, messageFromFailedResponse } from '$lib/errors';
+  import { authMe } from '$lib/me';
+  import { get } from 'svelte/store';
 
   type Player = { _id: string; name: string; team?: string };
 
@@ -65,13 +67,13 @@
         }),
       });
       if (!res.ok) {
-        error = 'Could not create match';
+        error = await messageFromFailedResponse(res, ERR.createMatch);
         return;
       }
       const match = await res.json();
       goto(`/matches/${match._id}/lore`);
     } catch {
-      error = 'Could not reach API.';
+      error = ERR.network;
     } finally {
       loreTrackerLoading = false;
     }
@@ -110,69 +112,45 @@
   async function loadDashboard() {
     error = '';
     try {
-      const token = getAuthToken();
-      if (token) {
-        try {
-          const meRes = await fetch(`${apiUrl}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (meRes.ok) {
-            const me = await meRes.json();
-            if (me?.player?._id) myPlayerId = me.player._id;
-          }
-        } catch {
-          /* ignore */
-        }
-      }
+      const me = get(authMe);
+      if (me?.player?._id) myPlayerId = me.player._id;
       const day = localCalendarDay();
-      const [statsRes, playersRes, decksRes, matchesRes, twRes] = await Promise.all([
-        fetch(`${apiUrl}/matches/stats`),
-        fetch(`${apiUrl}/players`),
-        fetch(`${apiUrl}/decks`),
-        fetch(`${apiUrl}/matches?sort=newest`),
-        fetch(`${apiUrl}/tournaments/dashboard/window?day=${encodeURIComponent(day)}`),
-      ]);
-      if (statsRes.ok) {
-        const data = await statsRes.json();
-        stats = { totalMatches: data.totalMatches ?? 0, totalGames: data.totalGames ?? 0 };
+      const res = await fetch(`${apiUrl}/dashboard/summary?day=${encodeURIComponent(day)}`);
+      if (!res.ok) {
+        error = await messageFromFailedResponse(res, ERR.loadDashboard);
+        return;
       }
-      if (playersRes.ok) {
-        const players = await playersRes.json();
-        playerCount = Array.isArray(players) ? players.length : 0;
-      }
-      if (decksRes.ok) {
-        const decks = await decksRes.json();
-        deckCount = Array.isArray(decks) ? decks.length : 0;
-      }
-      if (matchesRes.ok) {
-        const matches = await matchesRes.json();
-        recentMatches = Array.isArray(matches) ? matches.slice(0, 5) : [];
-      }
-      if (twRes.ok) {
-        const tw = (await twRes.json()) as {
-          past?: DashboardTournament[];
-          upcoming?: DashboardTournament[];
-        };
-        const mapRow = (r: {
-          _id?: string;
-          name?: string;
-          date?: string;
-          location?: string;
-          url?: string;
-          meta?: string;
-        }) => ({
-          _id: String(r._id ?? ''),
-          name: String(r.name ?? ''),
-          date: String(r.date ?? ''),
-          location: r.location,
-          url: r.url,
-          meta: r.meta,
-        });
-        pastTournaments = (tw.past ?? []).map(mapRow).filter((r) => r._id);
-        upcomingTournaments = (tw.upcoming ?? []).map(mapRow).filter((r) => r._id);
-      }
+      const data = (await res.json()) as {
+        totals: { matches: number; games: number; players: number; decks: number };
+        recentMatches: LorcanaMatch[];
+        tournaments: { past?: DashboardTournament[]; upcoming?: DashboardTournament[] };
+      };
+      stats = {
+        totalMatches: data.totals.matches ?? 0,
+        totalGames: data.totals.games ?? 0,
+      };
+      playerCount = data.totals.players ?? 0;
+      deckCount = data.totals.decks ?? 0;
+      recentMatches = Array.isArray(data.recentMatches) ? data.recentMatches.slice(0, 5) : [];
+      const mapRow = (r: {
+        _id?: string;
+        name?: string;
+        date?: string;
+        location?: string;
+        url?: string;
+        meta?: string;
+      }) => ({
+        _id: String(r._id ?? ''),
+        name: String(r.name ?? ''),
+        date: String(r.date ?? ''),
+        location: r.location,
+        url: r.url,
+        meta: r.meta,
+      });
+      pastTournaments = (data.tournaments.past ?? []).map(mapRow).filter((r) => r._id);
+      upcomingTournaments = (data.tournaments.upcoming ?? []).map(mapRow).filter((r) => r._id);
     } catch {
-      error = 'Could not load dashboard.';
+      error = ERR.network;
     }
   }
 
@@ -195,12 +173,18 @@
     }
   }
 
-  onMount(async () => {
-    try {
-      await loadDashboard();
-    } finally {
-      loading = false;
-    }
+  onMount(() => {
+    const unsub = authMe.subscribe((m) => {
+      myPlayerId = m?.player?._id ?? null;
+    });
+    void (async () => {
+      try {
+        await loadDashboard();
+      } finally {
+        loading = false;
+      }
+    })();
+    return () => unsub();
   });
 </script>
 

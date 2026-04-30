@@ -1,6 +1,8 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { getAuthToken } from '$lib/auth';
+  import { authMe } from '$lib/me';
+  import { get } from 'svelte/store';
+  import { ERR, messageFromFailedResponse } from '$lib/errors';
   import FilterCard from '$lib/FilterCard.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import IconRefresh from '$lib/icons/IconRefresh.svelte';
@@ -72,7 +74,7 @@
       const url = `${apiUrl}/players?${params}`;
       const res = await fetch(url);
       if (!res.ok) {
-        error = 'Failed to load players';
+        error = await messageFromFailedResponse(res, ERR.loadPlayers);
         return;
       }
       const response = await res.json();
@@ -80,7 +82,7 @@
       totalPages = response.meta?.totalPages || 1;
       total = response.meta?.total || 0;
     } catch {
-      error = 'Could not reach API.';
+      error = ERR.network;
     } finally {
       loading = false;
     }
@@ -108,24 +110,12 @@
       return;
     }
     appliedDefaultTeamFilter = true;
-    const token = getAuthToken();
-    if (token) {
-      try {
-        const meRes = await fetch(`${apiUrl}/auth/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (meRes.ok) {
-          const me = await meRes.json();
-          const myTeam = (me?.player?.team ?? '').trim();
-          if (myTeam && teams.includes(myTeam)) {
-            filterTeam = myTeam;
-            currentPage = 1;
-            return;
-          }
-        }
-      } catch {
-        /* ignore */
-      }
+    const me = get(authMe);
+    const myTeam = (me?.player?.team ?? '').trim();
+    if (myTeam && teams.includes(myTeam)) {
+      filterTeam = myTeam;
+      currentPage = 1;
+      return;
     }
     if (teams.includes(DEFAULT_TEAM)) {
       filterTeam = DEFAULT_TEAM;

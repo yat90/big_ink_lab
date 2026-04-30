@@ -1,6 +1,7 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { getAuthToken } from '$lib/auth';
+  import { authMe } from '$lib/me';
+  import { get } from 'svelte/store';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
   import InkIcons from '$lib/InkIcons.svelte';
   import Pagination from '$lib/Pagination.svelte';
@@ -129,22 +130,11 @@
       presetReady = true;
       return;
     }
-    const token = getAuthToken();
-    if (token) {
-      fetch(`${apiUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((me: { player?: { _id: string } } | null) => {
-          const id = (me?.player?._id ?? '').toString();
-          if (id) filterPlayer = id;
-          presetReady = true;
-        })
-        .catch(() => {
-          presetReady = true;
-        });
-    } else {
-      filterPlayer = '';
-      presetReady = true;
-    }
+    const me = get(authMe);
+    const id = (me?.player?._id ?? '').toString();
+    if (id) filterPlayer = id;
+    else filterPlayer = '';
+    presetReady = true;
   });
 
   $effect(() => {

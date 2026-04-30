@@ -12,6 +12,7 @@
   import MobileNavBar from '$lib/MobileNavBar.svelte';
   import MobileNavDrawer from '$lib/MobileNavDrawer.svelte';
   import InstallPrompt from '$lib/InstallPrompt.svelte';
+  import { setAuthMe } from '$lib/me';
 
   let { children = undefined }: { children?: Snippet } = $props();
 
@@ -64,6 +65,7 @@
 
   async function logout() {
     clearAuthSession();
+    setAuthMe(null);
     isAuthenticated = false;
     authDisplayName = '';
     await goto('/login');
@@ -97,6 +99,7 @@
       const token = getAuthToken();
       const next = `${window.location.pathname}${window.location.search}`;
       if (!token) {
+        setAuthMe(null);
         isAuthenticated = false;
         authDisplayName = '';
         if (window.location.pathname !== '/login') {
@@ -113,6 +116,7 @@
         });
         if (!res.ok) throw new Error('Unauthorized');
         const data = await res.json();
+        setAuthMe(data);
         isAuthenticated = true;
         authDisplayName = data?.user?.name || data?.user?.email || getAuthUser()?.email || 'User';
         authReady = true;
@@ -121,6 +125,7 @@
         }
       } catch {
         clearAuthSession();
+        setAuthMe(null);
         isAuthenticated = false;
         authDisplayName = '';
         if (window.location.pathname !== '/login') {
@@ -168,7 +173,13 @@
   {#if authReady && isAuthenticated && !isAuthPage}
     <InstallPrompt />
   {/if}
-  <main id="main" class="main" class:main--full={isLorePage} tabindex="-1">
+  <main
+    id="main"
+    class="main"
+    class:main--full={isLorePage}
+    tabindex="-1"
+    aria-label={title === 'Big Ink Lab' ? 'Main content' : `Main content — ${title}`}
+  >
     {#if authReady || isAuthPage}
       {#if children}
         {@render children()}

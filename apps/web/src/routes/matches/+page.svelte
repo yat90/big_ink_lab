@@ -15,6 +15,8 @@
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
   import IconRefresh from '$lib/icons/IconRefresh.svelte';
+  import { ERR, messageFromFailedResponse } from '$lib/errors';
+  import { authMe } from '$lib/me';
 
   type Player = { _id: string; name: string; team?: string };
 
@@ -155,7 +157,7 @@
       const url = `${apiUrl}/matches${params.toString() ? `?${params}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
-        error = 'Failed to load matches';
+        error = await messageFromFailedResponse(res, ERR.loadMatches);
         return;
       }
       const response = await res.json();
@@ -163,7 +165,7 @@
       totalPages = response.meta?.totalPages || 1;
       total = response.meta?.total || 0;
     } catch {
-      error = 'Could not reach API.';
+      error = ERR.network;
     } finally {
       loading = false;
     }
@@ -201,25 +203,18 @@
     }
   });
 
-  onMount(async () => {
-    const token = getAuthToken();
-    if (!token) return;
-    try {
-      const meRes = await fetch(`${apiUrl}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (meRes.ok) {
-        const me = await meRes.json();
-        const p = me?.player;
-        if (p?._id) {
-          filterPlayerId = p._id;
-          filterPlayerName = (p.name ?? '').trim();
-          myPlayerId = p._id;
-        }
-      }
-    } catch {
-      /* non-blocking */
-    }
+  onMount(() => {
+    let applied = false;
+    const unsub = authMe.subscribe((me) => {
+      if (applied) return;
+      const p = me?.player;
+      if (!p?._id) return;
+      filterPlayerId = p._id;
+      filterPlayerName = (p.name ?? '').trim();
+      myPlayerId = p._id;
+      applied = true;
+    });
+    return () => unsub();
   });
 
   async function extractErrorMessage(res: Response, fallback: string): Promise<string> {

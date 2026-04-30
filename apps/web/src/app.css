@@ -305,8 +305,17 @@ a {
     transform 0.15s var(--ease),
     visibility 0.15s;
 }
-.desktop-nav__dropdown:hover .desktop-nav__dropdown-panel,
-.desktop-nav__dropdown:focus-within .desktop-nav__dropdown-panel {
+/* Open on hover (pointer) or explicit .desktop-nav__dropdown--open (click / keyboard) */
+@media (hover: hover) {
+  .desktop-nav__dropdown:hover .desktop-nav__dropdown-panel,
+  .desktop-nav__dropdown:focus-within .desktop-nav__dropdown-panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+}
+.desktop-nav__dropdown--open .desktop-nav__dropdown-panel {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;

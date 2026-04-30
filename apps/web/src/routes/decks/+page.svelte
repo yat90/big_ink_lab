@@ -1,6 +1,8 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { getAuthToken } from '$lib/auth';
+  import { authMe } from '$lib/me';
+  import { get } from 'svelte/store';
+  import { ERR, messageFromFailedResponse } from '$lib/errors';
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerName } from '$lib/decks';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
@@ -51,7 +53,7 @@
       const url = `${apiUrl}/decks?${params}`;
       const res = await fetch(url);
       if (!res.ok) {
-        error = 'Failed to load decks';
+        error = await messageFromFailedResponse(res, ERR.loadDecks);
         return;
       }
       const response = await res.json();
@@ -59,7 +61,7 @@
       totalPages = response.meta?.totalPages || 1;
       total = response.meta?.total || 0;
     } catch {
-      error = 'Could not reach API.';
+      error = ERR.network;
     } finally {
       loading = false;
     }
@@ -72,22 +74,15 @@
         const response = await playersRes.json();
         allPlayers = response.data || [];
       }
-      const token = getAuthToken();
-      if (token) {
-        try {
-          const meRes = await fetch(`${apiUrl}/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (meRes.ok) {
-            const me = await meRes.json();
-            const myId = me?.player?._id;
-            if (myId && allPlayers.some((p) => (p.team ?? '').trim() === BIG_INK_THEORY_TEAM && p._id === myId)) {
-              filterPlayer = myId;
-            }
-          }
-        } catch {
-          /* non-blocking */
-        }
+      const me = get(authMe);
+      const myId = me?.player?._id;
+      if (
+        myId &&
+        allPlayers.some(
+          (p) => (p.team ?? '').trim() === BIG_INK_THEORY_TEAM && p._id === myId,
+        )
+      ) {
+        filterPlayer = myId;
       }
     } catch {
       // non-blocking

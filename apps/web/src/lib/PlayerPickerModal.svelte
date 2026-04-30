@@ -1,6 +1,8 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { getAuthToken } from '$lib/auth';
+  import { authMe } from '$lib/me';
+  import { get } from 'svelte/store';
+  import { ERR, messageFromFailedResponse } from '$lib/errors';
   import Pagination from '$lib/Pagination.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
 
@@ -61,7 +63,7 @@
       params.set('limit', String(PAGE_SIZE));
       const res = await fetch(`${apiUrl}/players?${params}`);
       if (!res.ok) {
-        error = 'Failed to load players';
+        error = await messageFromFailedResponse(res, ERR.loadPlayers);
         players = [];
         return;
       }
@@ -69,7 +71,7 @@
       players = json.data ?? [];
       totalPages = json.meta?.totalPages ?? 1;
     } catch {
-      error = 'Could not load players.';
+      error = ERR.network;
       players = [];
     } finally {
       loading = false;
@@ -103,21 +105,7 @@
       presetReady = true;
       return;
     }
-    const token = getAuthToken();
-    if (token) {
-      fetch(`${apiUrl}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((me: { player?: { team?: string } } | null) => {
-          const team = (me?.player?.team ?? '').trim();
-          if (team) filterTeam = team;
-          presetReady = true;
-        })
-        .catch(() => {
-          presetReady = true;
-        });
-    } else {
-      presetReady = true;
-    }
+    presetReady = true;
   });
 
   $effect(() => {

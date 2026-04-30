@@ -34,7 +34,7 @@
 
   async function fetchTournamentRows() {
     try {
-      const res = await fetch(`${apiUrl}/tournaments?limit=200&page=1`);
+      const res = await fetch(`${apiUrl}/tournaments?limit=100&page=1`);
       if (res.ok) {
         const json = await res.json();
         const data: unknown[] = Array.isArray(json) ? json : (json?.data ?? []);

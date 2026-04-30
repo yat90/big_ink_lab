@@ -1,12 +1,13 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
-  import { getAuthToken } from '$lib/auth';
   import { config } from '$lib/config';
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
   import DeckPickerModal from '$lib/DeckPickerModal.svelte';
+  import IconUsers from '$lib/icons/IconUsers.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
   import TournamentPickerModal from '$lib/TournamentPickerModal.svelte';
+  import { authMe } from '$lib/me';
   import { STAGE_OPTIONS } from '$lib/matches';
   import { onMount } from 'svelte';
 
@@ -17,12 +18,14 @@
   let players = $state<Player[]>([]);
   let p1 = $state('');
   let p2 = $state('');
+  let p2SearchText = $state('');
+  let p2SearchHint = $state('');
+  let p2SearchGen = 0;
   let p1DeckId = $state('');
   let p2DeckId = $state('');
   let p1DeckDisplayName = $state('');
   let p2DeckDisplayName = $state('');
   let playerPickerOpen = $state(false);
-  let playerPickerRole = $state<'p1' | 'p2'>('p1');
   let deckPickerOpen = $state(false);
   let deckPickerRole = $state<'p1' | 'p2'>('p1');
   let stage = $state('Casual');
@@ -49,25 +52,24 @@
   let loading = $state(false);
   let error = $state('');
 
-  let showAddPlayer = $state(false);
-  let newPlayerName = $state('');
-  let newPlayerTeam = $state('');
-  let addPlayerLoading = $state(false);
-  let addPlayerError = $state('');
+  let p2OfferGuestCreate = $state(false);
+  let createGuestLoading = $state(false);
+  let createGuestError = $state('');
 
   const apiUrl = config.apiUrl ?? '/api';
 
   const BIG_INK_TEAM = 'The Big Ink Theory';
 
+  let p1Team = $state('');
+  let myPlayerName = $state('');
+
   function getPlayerTeam(playerId: string): string {
     return (players.find((pl) => pl._id === playerId)?.team ?? '').trim();
   }
-  const showP1DeckSelect = $derived(!!p1 && getPlayerTeam(p1) === BIG_INK_TEAM);
+  const showP1DeckSelect = $derived(!!p1 && p1Team === BIG_INK_TEAM);
   const showP2DeckSelect = $derived(!!p2 && getPlayerTeam(p2) === BIG_INK_TEAM);
 
-  const p1PlayerDisplayName = $derived(
-    p1 ? (players.find((pl) => pl._id === p1)?.name ?? 'Player 1') : 'Player 1'
-  );
+  const p1PlayerDisplayName = $derived(myPlayerName.trim() || 'You');
   const p2PlayerDisplayName = $derived(
     p2 ? (players.find((pl) => pl._id === p2)?.name ?? 'Player 2') : 'Player 2'
   );
@@ -89,16 +91,175 @@
     return null;
   }
 
-  function openPlayerPicker(role: 'p1' | 'p2') {
-    playerPickerRole = role;
+  function mergePlayers(rows: Player[]) {
+    const byId: Record<string, Player> = {};
+    for (const p of players) byId[p._id] = p;
+    for (const r of rows) {
+      byId[r._id] = {
+        _id: r._id,
+        name: r.name,
+        team: (r.team ?? '').trim(),
+      };
+    }
+    players = Object.values(byId);
+  }
+
+  function openPlayerPicker() {
     playerPickerOpen = true;
   }
 
-  function handlePlayerSelect(playerId: string) {
-    if (playerPickerRole === 'p1') p1 = playerId;
-    else p2 = playerId;
-    playerPickerOpen = false;
+  function handlePlayerSelect(
+    playerId: string,
+    player?: { name: string; team?: string }
+  ) {
+    if (!playerId.trim()) {
+      p2 = '';
+      p2SearchText = '';
+      p2SearchHint = '';
+      p2OfferGuestCreate = false;
+      return;
+    }
+    if (playerId === p1) return;
+    p2 = playerId;
+    p2SearchHint = '';
+    p2OfferGuestCreate = false;
+    if (player?.name) p2SearchText = player.name;
+    mergePlayers([
+      { _id: playerId, name: player?.name ?? '', team: (player?.team ?? '').trim() },
+    ]);
   }
+
+  /** True when the search box text exactly matches the resolved opponent's name (keeps picker selection). */
+  function p2TextMatchesResolvedPlayer(q: string): boolean {
+    if (!p2.trim()) return false;
+    const pl = players.find((x) => x._id === p2);
+    if (!pl) return false;
+    return pl.name.trim().toLowerCase() === q.trim().toLowerCase();
+  }
+
+  async function searchP2ByName(q: string) {
+    const gen = ++p2SearchGen;
+    try {
+      const params = new URLSearchParams({
+        name: q,
+        page: '1',
+        limit: '50',
+        includeGuests: 'true',
+      });
+      const res = await fetch(`${apiUrl}/players?${params}`);
+      if (!res.ok) {
+        if (gen === p2SearchGen) p2OfferGuestCreate = false;
+        return;
+      }
+      const json = await res.json();
+      if (gen !== p2SearchGen) return;
+      const rows: Player[] = (json?.data ?? []).map((r: Player) => ({
+        _id: r._id,
+        name: r.name,
+        team: (r.team ?? '').trim(),
+      }));
+      const rowsNoSelf = rows.filter((r) => r._id !== p1);
+      mergePlayers(rowsNoSelf);
+
+      const qLower = q.toLowerCase();
+      const exact = rowsNoSelf.filter((p) => p.name.trim().toLowerCase() === qLower);
+      if (exact.length === 1) {
+        p2 = exact[0]._id;
+        p2SearchHint = '';
+        p2OfferGuestCreate = false;
+      } else if (exact.length > 1) {
+        if (!p2TextMatchesResolvedPlayer(q)) p2 = '';
+        p2SearchHint =
+          'Multiple players match this name — use the list button to choose one.';
+        p2OfferGuestCreate = false;
+      } else if (rowsNoSelf.length === 0) {
+        if (!p2TextMatchesResolvedPlayer(q)) {
+          p2 = '';
+          p2SearchHint =
+            'No player found — create a guest player with this name or pick from the list.';
+          p2OfferGuestCreate = true;
+        } else {
+          p2SearchHint = '';
+          p2OfferGuestCreate = false;
+        }
+      } else {
+        p2OfferGuestCreate = false;
+        if (!p2TextMatchesResolvedPlayer(q)) {
+          p2 = '';
+          p2SearchHint =
+            rowsNoSelf.length > 1
+              ? 'Pick from the list or type the full name to match one player.'
+              : 'No exact name match — use the list button or correct the spelling.';
+        } else {
+          p2SearchHint = '';
+        }
+      }
+    } catch {
+      if (gen === p2SearchGen) {
+        p2SearchHint = 'Could not search players. Try again.';
+        p2OfferGuestCreate = false;
+      }
+    }
+  }
+
+  async function createGuestOpponent() {
+    const name = p2SearchText.trim();
+    if (!name) return;
+    createGuestError = '';
+    createGuestLoading = true;
+    try {
+      const res = await fetch(`${apiUrl}/players`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, team: '', isGuest: true }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        createGuestError =
+          (typeof data.message === 'string' ? data.message : null) ??
+          `Could not create player (${res.status}).`;
+        return;
+      }
+      const created = await res.json();
+      const id = String(created._id ?? '');
+      const createdName = String(created.name ?? name).trim();
+      const team = String(created.team ?? '').trim();
+      mergePlayers([{ _id: id, name: createdName, team }]);
+      p2 = id;
+      p2SearchText = createdName;
+      p2SearchHint = '';
+      p2OfferGuestCreate = false;
+    } catch {
+      createGuestError = 'Could not reach API.';
+    } finally {
+      createGuestLoading = false;
+    }
+  }
+
+  let p2SearchDebounce: ReturnType<typeof setTimeout> | null = null;
+  $effect(() => {
+    void p1;
+    const raw = p2SearchText;
+    if (p2SearchDebounce) {
+      clearTimeout(p2SearchDebounce);
+      p2SearchDebounce = null;
+    }
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      p2 = '';
+      p2SearchHint = '';
+      p2OfferGuestCreate = false;
+      createGuestError = '';
+      return;
+    }
+    p2SearchDebounce = setTimeout(() => {
+      p2SearchDebounce = null;
+      void searchP2ByName(trimmed);
+    }, 350);
+    return () => {
+      if (p2SearchDebounce) clearTimeout(p2SearchDebounce);
+    };
+  });
 
   function openDeckPicker(role: 'p1' | 'p2') {
     deckPickerRole = role;
@@ -129,34 +290,6 @@
       p2 = '';
     }
   });
-
-  async function fetchPlayers() {
-    try {
-      const res = await fetch(`${apiUrl}/players?limit=100`);
-      if (res.ok) {
-        const json = await res.json();
-        players = Array.isArray(json) ? json : (json?.data ?? []);
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-
-  async function preselectMyPlayer() {
-    const token = getAuthToken();
-    if (!token) return;
-    try {
-      const res = await fetch(`${apiUrl}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data?.player?._id) p1 = data.player._id;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
 
   async function ensureTournamentsLoaded() {
     if (tournamentsLoading || tournaments.length > 0) return;
@@ -224,54 +357,35 @@
     void ensureTournamentsLoaded();
   });
 
-  onMount(async () => {
-    await fetchPlayers();
-    await preselectMyPlayer();
+  onMount(() => {
+    return authMe.subscribe((me) => {
+      if (me?.player?._id) p1 = me.player._id;
+      else p1 = '';
+      p1Team = (me?.player?.team ?? '').trim();
+      myPlayerName = (me?.player?.name ?? '').trim();
+    });
   });
-
-  async function onAddPlayer(e: Event) {
-    e.preventDefault();
-    addPlayerError = '';
-    if (!newPlayerName.trim()) return;
-    addPlayerLoading = true;
-    try {
-      const res = await fetch(`${apiUrl}/players`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newPlayerName.trim(),
-          team: newPlayerTeam.trim(),
-          isGuest: false,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        addPlayerError = data.message ?? 'Failed to add player';
-        addPlayerLoading = false;
-        return;
-      }
-      const created = await res.json();
-      await fetchPlayers();
-      newPlayerName = '';
-      newPlayerTeam = '';
-      showAddPlayer = false;
-      if (!p1) p1 = created._id;
-      else if (!p2) p2 = created._id;
-    } catch {
-      addPlayerError = 'Could not reach API.';
-    } finally {
-      addPlayerLoading = false;
-    }
-  }
 
   async function onSubmit(e: Event) {
     e.preventDefault();
     error = '';
+    if (!p1?.trim()) {
+      error = 'Your account has no linked player. Link a player before creating a match.';
+      return;
+    }
+    if (!p2?.trim()) {
+      error = 'Enter or select an opponent.';
+      return;
+    }
+    if (p2 === p1) {
+      error = 'Opponent must be different from you.';
+      return;
+    }
     loading = true;
     try {
       const body: Record<string, unknown> = {
         p1,
-        p2: p2 || undefined,
+        p2,
         stage,
         playedAt: playedAt ? new Date(playedAt).toISOString() : new Date().toISOString(),
         p1DeckColor: p1DeckColor || undefined,
@@ -320,7 +434,7 @@
         <label class="label" for="stage">
           Stage
           <select id="stage" class="input" bind:value={stage}>
-            {#each STAGE_OPTIONS as s}
+            {#each STAGE_OPTIONS as s (s)}
               <option value={s}>{s}</option>
             {/each}
           </select>
@@ -359,17 +473,21 @@
 
     <!-- Player 1 -->
     <section class="card stack new-match__card new-match__card--player" aria-labelledby="p1-card-title">
-      <h3 id="p1-card-title" class="card__title new-match__card-title">Player 1</h3>
-      <label class="label" for="p1">Player</label>
-      <button
+      <h3 id="p1-card-title" class="card__title new-match__card-title">Player 1 (you)</h3>
+      <p class="label" id="p1-label">Player</p>
+      <div
         id="p1"
-        type="button"
-        class="input new-match__select-btn"
-        onclick={() => openPlayerPicker('p1')}
-        title="Click to choose player"
+        class="input new-match__you-display"
+        aria-labelledby="p1-label"
+        aria-live="polite"
       >
         {p1PlayerDisplayName}
-      </button>
+      </div>
+      {#if !p1}
+        <p class="card__sub muted" role="status">
+          No player linked to your account. Link a player in your profile before creating a match.
+        </p>
+      {/if}
       {#if showP1DeckSelect}
         <label class="label" for="p1Deck">Deck</label>
         <button
@@ -389,16 +507,50 @@
     <!-- Player 2 -->
     <section class="card stack new-match__card new-match__card--player" aria-labelledby="p2-card-title">
       <h3 id="p2-card-title" class="card__title new-match__card-title">Player 2</h3>
-      <label class="label" for="p2">Player</label>
-      <button
-        id="p2"
-        type="button"
-        class="input new-match__select-btn"
-        onclick={() => openPlayerPicker('p2')}
-        title="Click to choose player"
-      >
-        {p2PlayerDisplayName}
-      </button>
+      <label class="label" for="p2-opponent">Opponent</label>
+      <div class="new-match__opponent-row">
+        <input
+          id="p2-opponent"
+          type="text"
+          class="input new-match__opponent-input"
+          maxlength="120"
+          bind:value={p2SearchText}
+          placeholder="Opponent name"
+          aria-label="Opponent name"
+          autocomplete="off"
+        />
+        <button
+          type="button"
+          class="btn new-match__opponent-pick-btn"
+          onclick={() => openPlayerPicker()}
+          title="Select player from list"
+          aria-label="Select opponent from list"
+        >
+          <IconUsers size={20} />
+        </button>
+      </div>
+      {#if p2SearchHint}
+        <p class="card__sub muted" role="status">{p2SearchHint}</p>
+      {/if}
+      {#if p2OfferGuestCreate}
+        <div class="new-match__guest-create">
+          <button
+            type="button"
+            class="btn btn--primary"
+            disabled={createGuestLoading || !p2SearchText.trim()}
+            onclick={createGuestOpponent}
+          >
+            {createGuestLoading ? 'Creating…' : 'Create guest player'}
+          </button>
+          <p class="card__sub muted new-match__guest-create-help">
+            Adds “{p2SearchText.trim()}” as a guest (no login). Guest players are hidden from the
+            default roster unless you filter for them.
+          </p>
+          {#if createGuestError}
+            <p class="alert" role="alert">{createGuestError}</p>
+          {/if}
+        </div>
+      {/if}
       {#if showP2DeckSelect}
         <label class="label" for="p2Deck">Deck</label>
         <button
@@ -410,56 +562,6 @@
         >
           {p2DeckButtonLabel}
         </button>
-      {/if}
-
-      <div class="row new-match__add-player-row">
-        <button
-          type="button"
-          class="btn"
-          onclick={() => (showAddPlayer = !showAddPlayer)}
-          aria-expanded={showAddPlayer}
-        >
-          {showAddPlayer ? 'Cancel' : '+ Add new player'}
-        </button>
-      </div>
-
-      {#if showAddPlayer}
-        <div class="card stack new-match__card new-match__add-player-card">
-          <p class="card__sub" style="margin: 0;">
-            Create a player and they'll be added to the list.
-          </p>
-          <div class="stack formgrid" style="margin-top: 10px;">
-            <label class="label" for="newPlayerName">Name</label>
-            <input
-              id="newPlayerName"
-              type="text"
-              class="input"
-              bind:value={newPlayerName}
-              placeholder="Player name"
-            />
-            <label class="label" for="newPlayerTeam">Team</label>
-            <input
-              id="newPlayerTeam"
-              type="text"
-              class="input"
-              bind:value={newPlayerTeam}
-              placeholder="Optional"
-            />
-            {#if addPlayerError}
-              <p class="alert" style="grid-column: 1 / -1;">{addPlayerError}</p>
-            {/if}
-            <div class="row" style="grid-column: 1 / -1;">
-              <button
-                type="button"
-                class="btn btn--primary"
-                disabled={addPlayerLoading}
-                onclick={onAddPlayer}
-              >
-                {addPlayerLoading ? 'Adding…' : 'Add player'}
-              </button>
-            </div>
-          </div>
-        </div>
       {/if}
 
       <label class="label" for="p2DeckColor">Deck color</label>
@@ -480,9 +582,10 @@
 
   <PlayerPickerModal
     bind:open={playerPickerOpen}
-    title="Select player"
-    forLabel={playerPickerRole === 'p1' ? 'Player 1' : 'Player 2'}
-    excludePlayerId={playerPickerRole === 'p1' ? p2 : p1}
+    title="Select opponent"
+    forLabel="Opponent"
+    excludePlayerId={p1}
+    presetTeamFromMe={false}
     onSelect={handlePlayerSelect}
     onClose={() => (playerPickerOpen = false)}
   />
@@ -535,12 +638,6 @@
     font-size: 1rem;
     margin-bottom: 0.75rem;
   }
-  .new-match__add-player-row {
-    margin-bottom: var(--space-sm, 0.5rem);
-  }
-  .new-match__add-player-card {
-    margin-bottom: var(--space-md, 1rem);
-  }
   .new-match__actions {
     margin-top: var(--space-md, 1rem);
     gap: 0.75rem;
@@ -560,8 +657,6 @@
     .new-match__form .new-match__card:first-of-type {
       grid-column: 1 / -1;
     }
-    .new-match__form .new-match__add-player-row,
-    .new-match__form .new-match__add-player-card,
     .new-match__form .alert,
     .new-match__form .new-match__actions {
       grid-column: 1 / -1;
@@ -571,5 +666,41 @@
     text-align: left;
     cursor: pointer;
     width: 100%;
+  }
+  .new-match__you-display {
+    margin: 0;
+    cursor: default;
+    display: flex;
+    align-items: center;
+    min-height: 2.5rem;
+    font-weight: 600;
+  }
+  .new-match__opponent-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+  .new-match__opponent-input {
+    flex: 1;
+    min-width: 0;
+  }
+  .new-match__opponent-pick-btn {
+    flex-shrink: 0;
+    padding: 0 0.65rem;
+    min-width: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .new-match__guest-create {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+  .new-match__guest-create-help {
+    margin: 0;
+    max-width: 42ch;
   }
 </style>

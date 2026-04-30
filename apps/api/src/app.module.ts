@@ -10,6 +10,7 @@ import { DecksModule } from './decks/decks.module';
 import { AuthModule } from './auth/auth.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { TournamentsModule } from './tournaments/tournaments.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import { DEFAULT_MONGODB_URI, DEFAULT_DB_NAME } from './constants';
 
 @Module({
@@ -30,6 +31,7 @@ import { DEFAULT_MONGODB_URI, DEFAULT_DB_NAME } from './constants';
     AuthModule,
     AnalyticsModule,
     TournamentsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
