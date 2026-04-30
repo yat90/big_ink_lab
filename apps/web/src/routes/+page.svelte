@@ -12,6 +12,7 @@
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
+  import IconRefresh from '$lib/icons/IconRefresh.svelte';
 
   type Player = { _id: string; name: string; team?: string };
 
@@ -184,6 +185,16 @@
     }
   }
 
+  async function refreshDashboard() {
+    loading = true;
+    error = '';
+    try {
+      await loadDashboard();
+    } finally {
+      loading = false;
+    }
+  }
+
   onMount(async () => {
     try {
       await loadDashboard();
@@ -231,6 +242,14 @@
             <p class="card__sub">Track matches, players, and Lorcana stats.</p>
           </div>
           <div class="row" style="gap: 8px; flex-wrap: wrap;">
+            <button
+              type="button"
+              class="btn btn--sm page-header__refresh"
+              onclick={() => refreshDashboard()}
+              aria-label="Refresh dashboard"
+            >
+              <IconRefresh size={20} />
+            </button>
             <button
               type="button"
               class="btn"

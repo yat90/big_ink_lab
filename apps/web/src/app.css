@@ -1111,10 +1111,12 @@ a {
   }
 }
 
-.card:hover {
-  box-shadow: var(--shadow);
-  border-color: var(--border-strong);
-  background: var(--glass-bg-strong);
+@media (hover: hover) {
+  .card:hover {
+    box-shadow: var(--shadow);
+    border-color: var(--border-strong);
+    background: var(--glass-bg-strong);
+  }
 }
 
 .card__title {
@@ -1190,9 +1192,11 @@ a {
     0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
-.btn:hover:not(:disabled) {
-  background: var(--glass-bg-strong);
-  border-color: var(--border-strong);
+@media (hover: hover) {
+  .btn:hover:not(:disabled) {
+    background: var(--glass-bg-strong);
+    border-color: var(--border-strong);
+  }
 }
 
 .btn:active:not(:disabled) {
@@ -1508,9 +1512,11 @@ select.input option {
     background var(--transition);
 }
 
-.playercard:hover {
-  box-shadow: var(--shadow);
-  background: var(--glass-bg-strong);
+@media (hover: hover) {
+  .playercard:hover {
+    box-shadow: var(--shadow);
+    background: var(--glass-bg-strong);
+  }
 }
 
 a.playercard,
@@ -1543,10 +1549,12 @@ a[class*='playercard']::after {
 a.matchcard::after {
   display: none;
 }
-a.playercard:hover::after,
-a[class*='playercard']:hover::after {
-  opacity: 1;
-  border-color: var(--primary);
+@media (hover: hover) {
+  a.playercard:hover::after,
+  a[class*='playercard']:hover::after {
+    opacity: 1;
+    border-color: var(--primary);
+  }
 }
 a.playercard:active,
 a[class*='playercard']:active {
@@ -1930,4 +1938,60 @@ a[class*='playercard']:active {
 .app-tabs__tab--active {
   color: var(--fg);
   background: var(--glass-bg-strong, rgba(0, 0, 0, 0.08));
+}
+
+/* List page headers: title + refresh icon */
+.page-header__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.page-header__refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+/* PWA install hint (above mobile bottom nav) */
+.install-prompt {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  max-width: min(520px, calc(100vw - 24px));
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg-strong);
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow);
+}
+.install-prompt__text {
+  margin: 0;
+  flex: 1 1 12rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: var(--fg);
+}
+@media (max-width: 639px) {
+  .install-prompt {
+    bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+@media (min-width: 640px) {
+  .install-prompt {
+    bottom: 24px;
+  }
 }

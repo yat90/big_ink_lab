@@ -11,6 +11,7 @@
   import DesktopNavBar from '$lib/DesktopNavBar.svelte';
   import MobileNavBar from '$lib/MobileNavBar.svelte';
   import MobileNavDrawer from '$lib/MobileNavDrawer.svelte';
+  import InstallPrompt from '$lib/InstallPrompt.svelte';
 
   let { children = undefined }: { children?: Snippet } = $props();
 
@@ -193,6 +194,9 @@
 {/if}
 
 <div class="app">
+  {#if authReady && isAuthenticated && !isAuthPage}
+    <InstallPrompt />
+  {/if}
   <main id="main" class="main" class:main--full={isLorePage} tabindex="-1">
     {#if authReady || isAuthPage}
       {#if children}

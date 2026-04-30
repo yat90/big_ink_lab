@@ -3,6 +3,7 @@
   import { getAuthToken } from '$lib/auth';
   import FilterCard from '$lib/FilterCard.svelte';
   import Pagination from '$lib/Pagination.svelte';
+  import IconRefresh from '$lib/icons/IconRefresh.svelte';
 
   let players = $state<Array<{ _id: string; name: string; team: string; isGuest?: boolean }>>([]);
   let teamNames = $state<string[]>([]);
@@ -164,7 +165,17 @@
     </div>
   {:else}
     <div class="page-header">
-      <h2 class="card__title" style="margin: 0;">Players</h2>
+      <div class="page-header__title-row">
+        <h2 class="card__title" style="margin: 0;">Players</h2>
+        <button
+          type="button"
+          class="btn btn--sm page-header__refresh"
+          onclick={() => fetchPlayers()}
+          aria-label="Refresh list"
+        >
+          <IconRefresh size={20} />
+        </button>
+      </div>
       <a href="/players/new" class="btn btn--primary">New player</a>
     </div>
 

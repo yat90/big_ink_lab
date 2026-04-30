@@ -61,7 +61,7 @@
     aria-current={isTournaments ? 'page' : undefined}
   >
     <span class="desktop-nav__link-icon" aria-hidden="true">
-      <IconCrownOutline size={26} />
+      <IconCrownOutline size={28} />
     </span>
     <span class="desktop-nav__link-label">Tournaments</span>
   </a>
@@ -95,7 +95,7 @@
     aria-current={isDecks ? 'page' : undefined}
   >
     <span class="desktop-nav__link-icon" aria-hidden="true">
-      <IconDecks size={24} />
+      <IconDecks size={28} />
     </span>
     <span class="desktop-nav__link-label">Decks</span>
   </a>

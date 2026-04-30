@@ -7,6 +7,7 @@
   import FilterCard from '$lib/FilterCard.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
   import Pagination from '$lib/Pagination.svelte';
+  import IconRefresh from '$lib/icons/IconRefresh.svelte';
 
   const BIG_INK_THEORY_TEAM = 'The Big Ink Theory';
   type Player = { _id: string; name: string; team?: string };
@@ -153,7 +154,17 @@
     </div>
   {:else}
     <div class="page-header">
-      <h2 class="card__title" style="margin: 0;">Decks</h2>
+      <div class="page-header__title-row">
+        <h2 class="card__title" style="margin: 0;">Decks</h2>
+        <button
+          type="button"
+          class="btn btn--sm page-header__refresh"
+          onclick={() => loadDecks()}
+          aria-label="Refresh list"
+        >
+          <IconRefresh size={20} />
+        </button>
+      </div>
       <a href="/decks/new" class="btn btn--primary">New deck</a>
     </div>
 
