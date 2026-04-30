@@ -1,7 +1,7 @@
 <script lang="ts">
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
-  import IconFilter from '$lib/icons/IconFilter.svelte';
+  import FilterCard from '$lib/FilterCard.svelte';
   import Pagination from '$lib/Pagination.svelte';
 
   let players = $state<Array<{ _id: string; name: string; team: string; isGuest?: boolean }>>([]);
@@ -17,12 +17,15 @@
   let includeGuests = $state(false);
   let appliedDefaultTeamFilter = $state(false);
 
-  /** Filter panel starts collapsed (same pattern as tournaments list). */
+  /** Filter panel starts collapsed (shared FilterCard pattern). */
   let filtersExpanded = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
 
-  const hasGuestFilterOn = $derived(includeGuests);
+  const filterBadges = $derived<string[]>(includeGuests ? ['Guests'] : []);
+  const filterSummary = $derived(
+    `${total} player${total === 1 ? '' : 's'}${includeGuests ? '' : ' (guests hidden)'}`
+  );
 
   async function fetchPlayers() {
     loading = true;
@@ -30,7 +33,7 @@
     try {
       const params = new URLSearchParams();
       params.set('page', String(currentPage));
-      params.set('limit', '20');
+      params.set('limit', '15');
       const team = filterTeam.trim();
       if (team) {
         params.set('team', team);
@@ -105,6 +108,14 @@
     currentPage = page;
   }
 
+  function clearPlayerFilters() {
+    filterTeam = '';
+    includeGuests = false;
+    currentPage = 1;
+  }
+
+  const canClearPlayerFilters = $derived(!!(filterTeam.trim() || includeGuests));
+
   $effect(() => {
     includeGuests;
     void (async () => {
@@ -157,72 +168,45 @@
       <a href="/players/new" class="btn btn--primary">New player</a>
     </div>
 
-    <div class="players-page__filters-wrap">
-      <div class="card stack players-page__filters">
-        <button
-          type="button"
-          class="players-page__filters-toggle"
-          aria-expanded={filtersExpanded}
-          aria-controls="players-filters-panel"
-          onclick={() => (filtersExpanded = !filtersExpanded)}
-        >
-          <span class="players-page__filters-toggle-main">
-            <span class="players-page__filters-toggle-icon" aria-hidden="true">
-              <IconFilter size={20} />
-            </span>
-            <span class="players-page__filters-toggle-label">Filters</span>
-            {#if hasGuestFilterOn}
-              <span class="players-page__filters-toggle-badge" aria-hidden="true">Guests</span>
-            {/if}
-          </span>
-          <span class="players-page__filters-chevron" aria-hidden="true"
-            >{filtersExpanded ? '▼' : '▶'}</span
+    <FilterCard
+      bind:expanded={filtersExpanded}
+      summary={filterSummary}
+      badges={filterBadges}
+      panelId="players-filters-panel"
+      onClear={clearPlayerFilters}
+      canClear={canClearPlayerFilters}
+    >
+      <div class="filters__row">
+        <label class="filters__label" for="filter-team">
+          <span class="muted" style="font-size: 0.85rem;">Team</span>
+          <select
+            id="filter-team"
+            class="input filters__select"
+            bind:value={filterTeam}
+            onchange={() => (currentPage = 1)}
+            aria-label="Filter by team"
           >
-        </button>
-        {#if filtersExpanded}
-          <div id="players-filters-panel" class="players-page__filters-panel">
-            <div class="filters__row">
-              <label class="filters__label" for="filter-team">
-                <span class="muted" style="font-size: 0.85rem;">Team</span>
-                <select
-                  id="filter-team"
-                  class="input filters__select"
-                  bind:value={filterTeam}
-                  onchange={() => (currentPage = 1)}
-                  aria-label="Filter by team"
-                >
-                  <option value="">All teams</option>
-                  {#each teamNames as team}
-                    <option value={team}>{team}</option>
-                  {/each}
-                </select>
-              </label>
-              <label
-                class="filters__label filters__label--checkbox"
-                for="filter-include-guests"
-                style="display: flex; align-items: center; gap: 0.35rem;"
-              >
-                <input
-                  id="filter-include-guests"
-                  type="checkbox"
-                  bind:checked={includeGuests}
-                  onchange={() => (currentPage = 1)}
-                />
-                <span class="muted" style="font-size: 0.85rem;">Show guests</span>
-              </label>
-            </div>
-            <p class="filters__count muted" style="margin: 0;">
-              {total} player{total === 1 ? '' : 's'}{includeGuests ? '' : ' (guests hidden)'}
-            </p>
-          </div>
-        {/if}
+            <option value="">All teams</option>
+            {#each teamNames as team}
+              <option value={team}>{team}</option>
+            {/each}
+          </select>
+        </label>
+        <label
+          class="filters__label filters__label--checkbox"
+          for="filter-include-guests"
+          style="display: flex; align-items: center; gap: 0.35rem;"
+        >
+          <input
+            id="filter-include-guests"
+            type="checkbox"
+            bind:checked={includeGuests}
+            onchange={() => (currentPage = 1)}
+          />
+          <span class="muted" style="font-size: 0.85rem;">Show guests</span>
+        </label>
       </div>
-      {#if !filtersExpanded}
-        <p class="muted players-page__filters-summary">
-          {total} player{total === 1 ? '' : 's'}{includeGuests ? '' : ' (guests hidden)'}
-        </p>
-      {/if}
-    </div>
+    </FilterCard>
 
     {#if players.length === 0 && filterTeam.trim()}
       <div class="card stack">
@@ -269,82 +253,5 @@
 <style>
   .players-page {
     max-width: 720px;
-  }
-  .players-page__filters-wrap {
-    margin-top: var(--space-md, 1rem);
-    margin-bottom: var(--space-md, 1rem);
-  }
-  .players-page__filters {
-    gap: 0;
-  }
-  .players-page__filters-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    gap: 0.75rem;
-    padding: 0.65rem 0.35rem;
-    margin: 0;
-    border: none;
-    border-radius: var(--radius-sm, 6px);
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.15s ease;
-  }
-  .players-page__filters-toggle:hover {
-    background: var(--glass-bg-strong, rgba(255, 255, 255, 0.06));
-  }
-  .players-page__filters-toggle-main {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 0;
-  }
-  .players-page__filters-toggle-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    color: var(--muted);
-  }
-  .players-page__filters-toggle:hover .players-page__filters-toggle-icon {
-    color: var(--fg);
-  }
-  .players-page__filters-toggle-label {
-    flex-shrink: 0;
-  }
-  .players-page__filters-toggle-badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.15rem 0.45rem;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--color-accent, #3b82f6) 18%, transparent);
-    color: var(--fg);
-  }
-  .players-page__filters-chevron {
-    flex-shrink: 0;
-    font-size: 0.75rem;
-    color: var(--muted);
-    width: 1.25rem;
-    text-align: center;
-  }
-  .players-page__filters-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-    padding-top: 0.35rem;
-    border-top: 1px solid color-mix(in srgb, var(--color-fg, #111) 10%, transparent);
-    margin-top: 0.35rem;
-  }
-  .players-page__filters-summary {
-    margin: 0.35rem 0 0;
-    padding: 0 0.35rem;
-    font-size: 0.875rem;
-    line-height: 1.4;
   }
 </style>

@@ -1,4 +1,4 @@
-export const DEFAULT_PORT = 3001;
+export const DEFAULT_PORT = 3301;
 export const DEFAULT_MONGODB_URI = 'mongodb://localhost:27017/big-ink-lab';
 export const MONGO_READY_STATE_CONNECTED = 1;
 
