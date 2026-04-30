@@ -97,6 +97,14 @@
     currentPage = 1;
   }
 
+  function clearDeckFilters() {
+    filterColor = '';
+    filterPlayer = '';
+    currentPage = 1;
+  }
+
+  const canClearDeckFilters = $derived(!!(filterColor.trim() || filterPlayer.trim()));
+
   function handlePageChange(page: number) {
     currentPage = page;
   }
@@ -154,6 +162,8 @@
       summary={filterSummary}
       badges={filterBadges}
       panelId="decks-filters-panel"
+      onClear={clearDeckFilters}
+      canClear={canClearDeckFilters}
     >
       <div class="filters__row">
         <label class="filters__label" for="filter-color">

@@ -15,6 +15,12 @@
     children?: Snippet;
     /** Stable id used to link the toggle button to the panel for assistive tech. */
     panelId?: string;
+    /** When set, a Clear control is shown next to the collapsed summary so filters can be reset without expanding. */
+    onClear?: () => void;
+    /** Whether {@link onClear} should be enabled. Required when `onClear` is used. */
+    canClear?: boolean;
+    /** Label for the collapsed (and optional) clear control. */
+    clearLabel?: string;
   }
 
   let {
@@ -24,6 +30,9 @@
     badges = [],
     children,
     panelId = 'filter-card-panel',
+    onClear,
+    canClear = false,
+    clearLabel = 'Clear filters',
   }: Props = $props();
 
   function toggle() {
@@ -60,7 +69,21 @@
       </div>
     {/if}
   </div>
-  {#if !expanded && summary}
-    <p class="muted filter-card__summary">{summary}</p>
+  {#if !expanded && (summary || onClear)}
+    <div class="filter-card__collapsed-row">
+      {#if summary}
+        <p class="muted filter-card__summary filter-card__summary--inline">{summary}</p>
+      {/if}
+      {#if onClear}
+        <button
+          type="button"
+          class="btn filter-card__clear"
+          onclick={() => onClear?.()}
+          disabled={!canClear}
+        >
+          {clearLabel}
+        </button>
+      {/if}
+    </div>
   {/if}
 </div>

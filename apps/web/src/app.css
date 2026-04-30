@@ -924,7 +924,7 @@ a {
   font-size: 0.9rem;
 }
 
-/* Shared collapsible filter card – used by /matches, /players, /decks (FilterCard.svelte). */
+/* Shared collapsible filter card – used by /matches, /players, /decks, /tournaments/[id] (FilterCard.svelte). */
 .filter-card-wrap {
   margin-top: var(--space-md, 1rem);
   margin-bottom: var(--space-md, 1rem);
@@ -1006,6 +1006,23 @@ a {
   padding: 0 0.35rem;
   font-size: 0.875rem;
   line-height: 1.4;
+}
+.filter-card__collapsed-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-top: 0.35rem;
+  padding: 0 0.35rem;
+}
+.filter-card__summary--inline {
+  margin: 0;
+  flex: 1;
+  min-width: min(100%, 12rem);
+}
+.filter-card__clear {
+  flex-shrink: 0;
 }
 
 .game-line {

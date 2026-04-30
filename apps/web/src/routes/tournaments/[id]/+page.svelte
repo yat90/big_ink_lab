@@ -583,6 +583,8 @@
               summary={tournamentFilterSummary}
               badges={tournamentFilterBadges}
               panelId="tournament-detail-round-filters"
+              onClear={clearTournamentViewFilters}
+              canClear={canClearTournamentFilters}
             >
               <div class="stack" style="gap: 0.5rem;">
                 <span class="tournament-detail__filters-label muted">Round</span>
@@ -642,6 +644,8 @@
               summary={tournamentFilterSummary}
               badges={tournamentFilterBadges}
               panelId="tournament-detail-player-filters"
+              onClear={clearTournamentViewFilters}
+              canClear={canClearTournamentFilters}
             >
               <label class="label tournament-detail__filters-label" for="tournament-player-filter"
                 >Player 1</label

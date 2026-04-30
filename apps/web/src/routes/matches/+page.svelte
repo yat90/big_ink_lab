@@ -165,6 +165,10 @@
     filterPlayerName = '';
   }
 
+  const canClearFilters = $derived(
+    !!(filterStage || filterTime || filterPlayerId || filterTournamentId),
+  );
+
   $effect(() => {
     const tid = $page.url.searchParams.get('tournamentId');
     const s = $page.url.searchParams.get('stage');
@@ -400,6 +404,8 @@
       summary={filterSummary}
       badges={filterBadges}
       panelId="matches-filters-panel"
+      onClear={clearFilters}
+      canClear={canClearFilters}
     >
       <div class="filters__row">
         <label class="filters__label" for="filter-player-btn">

@@ -108,6 +108,14 @@
     currentPage = page;
   }
 
+  function clearPlayerFilters() {
+    filterTeam = '';
+    includeGuests = false;
+    currentPage = 1;
+  }
+
+  const canClearPlayerFilters = $derived(!!(filterTeam.trim() || includeGuests));
+
   $effect(() => {
     includeGuests;
     void (async () => {
@@ -165,6 +173,8 @@
       summary={filterSummary}
       badges={filterBadges}
       panelId="players-filters-panel"
+      onClear={clearPlayerFilters}
+      canClear={canClearPlayerFilters}
     >
       <div class="filters__row">
         <label class="filters__label" for="filter-team">
