@@ -1014,10 +1014,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     gap: 8px;
     z-index: 2;
     pointer-events: none;
+    margin-top: 36px;
   }
 
   .lore-score-pill-wrap .lore-score-pill__events-btn {
@@ -1049,8 +1050,6 @@
   }
 
   .lore-score-pill {
-    flex: 1 1 0;
-    min-height: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1070,8 +1069,6 @@
     font-weight: 700;
     letter-spacing: 0.05em;
     flex-shrink: 0;
-    text-align: center;
-    width: 100%;
   }
 
   .lore-panel {
