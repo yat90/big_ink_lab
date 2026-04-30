@@ -212,21 +212,21 @@
       </div>
 
       <div class="card stack dashboard__tournaments">
-        <div class="row" style="justify-content: space-between;">
+        <div class="row row--between">
           <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
-          <div class="row" style="gap: 8px;">
+          <div class="row gap-sm">
             <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
             <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
           </div>
         </div>
         <div class="loading-skeleton__line loading-skeleton__line--sub"></div>
         <div class="loading-skeleton__tournaments-cols">
-          <div class="stack" style="gap: var(--space-sm);">
+          <div class="stack stack--sm">
             <div class="loading-skeleton__line loading-skeleton__line--micro"></div>
             <div class="loading-skeleton__line"></div>
             <div class="loading-skeleton__line loading-skeleton__line--short"></div>
           </div>
-          <div class="stack" style="gap: var(--space-sm);">
+          <div class="stack stack--sm">
             <div class="loading-skeleton__line loading-skeleton__line--micro"></div>
             <div class="loading-skeleton__line"></div>
             <div class="loading-skeleton__line loading-skeleton__line--short"></div>
@@ -244,11 +244,11 @@
       </div>
 
       <div class="card stack">
-        <div class="row" style="justify-content: space-between;">
+        <div class="row row--between">
           <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
           <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
         </div>
-        <div class="stack" style="gap: var(--space-sm);">
+        <div class="stack stack--sm">
           {#each [0, 1, 2] as i (i)}
             <div class="loading-skeleton__match-block"></div>
           {/each}
@@ -258,10 +258,10 @@
   {:else if error}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
-      <div class="row" style="gap: 12px; margin-top: 12px;">
+      <div class="row gap-12 margin-top-md">
         <button type="button" class="btn btn--primary" onclick={retry} disabled={retrying}>
           {#if retrying}
-            <span class="spinner" aria-hidden="true" style="margin-right: 8px;"></span>
+            <span class="spinner margin-right-sm" aria-hidden="true"></span>
             Retrying…
           {:else}
             Try again
@@ -274,8 +274,8 @@
   {:else}
     <div class="dashboard">
       <div class="card stack dashboard__header">
-        <div class="row dashboard__header-top" style="justify-content: space-between; align-items: flex-start; gap: 12px;">
-          <div class="stack" style="gap: 4px;">
+        <div class="row dashboard__header-top row--between row--start gap-12">
+          <div class="stack stack--xs">
             <h2 class="card__title">Big Ink Lab</h2>
             <p class="card__sub">Track matches, players, and Lorcana stats.</p>
           </div>
@@ -308,14 +308,14 @@
       </div>
 
       <div class="card stack dashboard__tournaments">
-        <div class="row" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-          <h3 class="dashboard__section-title" style="margin: 0;">Tournaments</h3>
-          <div class="row" style="gap: 8px; flex-wrap: wrap;">
-            <a href="/tournaments/new" class="btn btn--sm" style="font-size: 0.9rem;">New</a>
-            <a href="/tournaments" class="btn btn--sm" style="font-size: 0.9rem;">All</a>
+        <div class="row row--between row--center-y gap-sm">
+          <h3 class="dashboard__section-title margin-0">Tournaments</h3>
+          <div class="row gap-sm">
+            <a href="/tournaments/new" class="btn btn--sm text-90">New</a>
+            <a href="/tournaments" class="btn btn--sm text-90">All</a>
           </div>
         </div>
-        <p class="card__sub muted" style="margin: 0 0 var(--space-sm) 0;">
+        <p class="card__sub muted margin-0 margin-bottom-sm">
           Recent tournaments and what&apos;s coming up.
         </p>
         <div class="dashboard__tournaments-grid">
@@ -388,9 +388,9 @@
 
       {#if recentMatches.length > 0}
         <div class="card stack">
-          <div class="row" style="justify-content: space-between; align-items: center;">
+          <div class="row row--between row--center-y">
             <h3 class="dashboard__section-title">Recent matches</h3>
-            <a href="/matches" class="btn btn--sm" style="font-size: 0.9rem;">View all</a>
+            <a href="/matches" class="btn btn--sm text-90">View all</a>
           </div>
           <div class="stack">
             {#each recentMatches as match}
@@ -399,8 +399,7 @@
               {@const winnerId = matchWinnerId(match)}
               <a
                 href="/matches/{match._id}"
-                class="card playercard matchcard dashboard__match"
-                style="text-decoration: none; color: inherit;"
+                class="card playercard matchcard dashboard__match link-inherit"
               >
                 <div class="matchcard__top muted">
                   {DateDisplay.formatRelative(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
@@ -450,7 +449,7 @@
       {:else}
         <div class="card stack">
           <p class="card__sub muted">No matches yet. Create your first match to get started.</p>
-          <a href="/matches/new" class="btn btn--primary" style="align-self: flex-start;">New match</a>
+          <a href="/matches/new" class="btn btn--primary align-self-start">New match</a>
         </div>
       {/if}
     </div>

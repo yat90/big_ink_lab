@@ -1,18 +1,27 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { authMe } from '$lib/me';
-  import { get } from 'svelte/store';
-  import { ERR, messageFromFailedResponse } from '$lib/errors';
+  import DeckColorSelect from '$lib/DeckColorSelect.svelte';
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerName } from '$lib/decks';
-  import { DECK_COLOR_OPTIONS } from '$lib/matches';
+  import { ERR, messageFromFailedResponse } from '$lib/errors';
   import FilterCard from '$lib/FilterCard.svelte';
-  import InkIcons from '$lib/InkIcons.svelte';
-  import Pagination from '$lib/Pagination.svelte';
   import IconRefresh from '$lib/icons/IconRefresh.svelte';
+  import InkIcons from '$lib/InkIcons.svelte';
+  import { authMe } from '$lib/me';
+  import Pagination from '$lib/Pagination.svelte';
+  import Select from '$lib/Select.svelte';
+  import { SvelteURLSearchParams } from 'svelte/reactivity';
+  import { get } from 'svelte/store';
 
   const BIG_INK_THEORY_TEAM = 'The Big Ink Theory';
   type Player = { _id: string; name: string; team?: string };
+
+  const DECK_SORT_OPTIONS = [
+    { value: 'newest', label: 'Newest updated' },
+    { value: 'name', label: 'Name (A–Z)' },
+    { value: 'winrate', label: 'Win rate' },
+    { value: 'matches', label: 'Most matches' },
+  ];
 
   let decks = $state<Deck[]>([]);
   let allPlayers = $state<Player[]>([]);
@@ -21,6 +30,7 @@
   let error = $state('');
   let filterColor = $state('');
   let filterPlayer = $state('');
+  let filterSort = $state('newest');
   let currentPage = $state(1);
   let totalPages = $state(1);
   let total = $state(0);
@@ -32,22 +42,32 @@
 
   const filterSummary = $derived(`${total} deck${total === 1 ? '' : 's'}`);
   const selectedPlayerName = $derived(
-    filterPlayer ? (players.find((p) => p._id === filterPlayer)?.name ?? '') : ''
+    filterPlayer ? (players.find((p) => p._id === filterPlayer)?.name ?? '') : '',
   );
   const filterBadges = $derived<string[]>(
     [
       filterColor ? `Color: ${filterColor}` : '',
       selectedPlayerName ? `Player: ${selectedPlayerName}` : '',
-    ].filter((b) => b.length > 0)
+    ].filter((b) => b.length > 0),
   );
+
+  function winRateBand(
+    rate: number | null | undefined,
+  ): 'high' | 'low' | 'mid' | 'none' {
+    if (rate == null || Number.isNaN(rate)) return 'none';
+    if (rate >= 0.6) return 'high';
+    if (rate <= 0.4) return 'low';
+    return 'mid';
+  }
 
   async function loadDecks() {
     loading = true;
     error = '';
     try {
-      const params = new URLSearchParams();
+      const params = new SvelteURLSearchParams();
       if (filterColor.trim()) params.set('color', filterColor.trim());
       if (filterPlayer.trim()) params.set('player', filterPlayer.trim());
+      params.set('sort', filterSort);
       params.set('page', String(currentPage));
       params.set('limit', '15');
       const url = `${apiUrl}/decks?${params}`;
@@ -93,6 +113,10 @@
     currentPage = 1;
   }
 
+  function onSortChange() {
+    currentPage = 1;
+  }
+
   function clearDeckFilters() {
     filterColor = '';
     filterPlayer = '';
@@ -110,9 +134,6 @@
   });
 
   $effect(() => {
-    filterColor;
-    filterPlayer;
-    currentPage;
     loadDecks();
   });
 </script>
@@ -123,13 +144,28 @@
 
 <div class="page">
   {#if loading}
-    <div class="card">
-      <div class="loading-skeleton" aria-busy="true" aria-live="polite">
-        <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-        <div class="loading-skeleton__line loading-skeleton__line--short"></div>
-        <div class="loading-skeleton__line"></div>
+    <div class="decks-page decks-page--skeleton" aria-busy="true" aria-live="polite" aria-label="Loading decks">
+      <div class="page-header">
+        <div class="page-header__title-row">
+          <div class="loading-skeleton__line loading-skeleton__line--title"></div>
+          <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
+        </div>
+        <div class="loading-skeleton__line loading-skeleton__line--primary-btn decks-page__skel-new"></div>
       </div>
-      <p class="muted" style="margin-top: var(--space-md);">Loading decks…</p>
+      <div class="card stack margin-bottom-md">
+        <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
+        <div class="filters__row">
+          <div class="loading-skeleton__field" aria-hidden="true"></div>
+          <div class="loading-skeleton__field" aria-hidden="true"></div>
+          <div class="loading-skeleton__field" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="stack">
+        {#each [0, 1, 2, 3] as i (i)}
+          <div class="loading-skeleton__match-block" aria-hidden="true"></div>
+        {/each}
+      </div>
+      <p class="muted margin-top-md">Loading decks…</p>
     </div>
   {:else if error}
     <div class="card" role="alert" aria-live="assertive">
@@ -139,18 +175,14 @@
     <div class="card stack">
       <h2 class="card__title">No decks yet</h2>
       <p class="card__sub">Create a deck with name and card list.</p>
-      <a
-        href="/decks/new"
-        class="btn btn--primary"
-        style="align-self: flex-start; margin-top: var(--space-sm);"
-      >
+      <a href="/decks/new" class="btn btn--primary margin-top-sm align-self-start">
         New deck
       </a>
     </div>
   {:else}
     <div class="page-header">
       <div class="page-header__title-row">
-        <h2 class="card__title" style="margin: 0;">Decks</h2>
+        <h2 class="card__title card-title-reset">Decks</h2>
         <button
           type="button"
           class="btn btn--sm page-header__refresh"
@@ -172,23 +204,19 @@
       canClear={canClearDeckFilters}
     >
       <div class="filters__row">
-        <label class="filters__label" for="filter-color">
-          <span class="muted" style="font-size: 0.85rem;">Deck color</span>
-          <select
-            id="filter-color"
-            class="input filters__select"
-            bind:value={filterColor}
-            onchange={onFilterChange}
-            aria-label="Filter by deck color"
-          >
-            <option value="">All</option>
-            {#each DECK_COLOR_OPTIONS as color (color)}
-              <option value={color}>{color}</option>
-            {/each}
-          </select>
+        <label class="filters__label" for="filter-deck-color">
+          <span class="muted text-sm">Deck color</span>
+          <div class="filters__select">
+            <DeckColorSelect
+              id="filter-deck-color"
+              bind:value={filterColor}
+              ariaLabel="Filter by deck color"
+              onchange={onFilterChange}
+            />
+          </div>
         </label>
         <label class="filters__label" for="filter-player">
-          <span class="muted" style="font-size: 0.85rem;">Player</span>
+          <span class="muted text-sm">Player</span>
           <select
             id="filter-player"
             class="input filters__select"
@@ -202,21 +230,34 @@
             {/each}
           </select>
         </label>
+        <label class="filters__label" for="filter-deck-sort">
+          <span class="muted text-sm">Sort</span>
+          <div class="filters__select">
+            <Select
+              id="filter-deck-sort"
+              bind:value={filterSort}
+              options={DECK_SORT_OPTIONS}
+              ariaLabel="Sort decks"
+              onchange={onSortChange}
+            />
+          </div>
+        </label>
       </div>
     </FilterCard>
 
     <div class="stack">
       {#if decks.length === 0 && (filterColor || filterPlayer)}
-        <p class="muted">No decks match the selected filter.</p>
+        <div class="card stack decks-page__empty-filtered">
+          <p class="card__sub margin-0">No decks match the selected filters.</p>
+          {#if canClearDeckFilters}
+            <button type="button" class="btn" onclick={clearDeckFilters}>Clear filters</button>
+          {/if}
+        </div>
       {:else}
-        {#each decks as deck}
-          <a
-            href="/decks/{deck._id}"
-            class="card deckcard"
-            style="text-decoration: none; color: inherit;"
-          >
+        {#each decks as deck (deck._id)}
+          <a href="/decks/{deck._id}" class="card deckcard link-inherit">
             <div class="deckcard__name">{deck.name}</div>
-            <div class="deckcard__meta row" style="gap: var(--space-md); flex-wrap: wrap;">
+            <div class="deckcard__meta row row--md">
               {#if deck.deckColor}
                 <span class="deckcard__ink" title={deck.deckColor} aria-hidden="true">
                   <InkIcons deckColor={deck.deckColor} />
@@ -226,10 +267,21 @@
                 <span class="muted">{getDeckPlayerName(deck)}</span>
               {/if}
               {#if deck.totalMatches !== undefined || deck.winRate != null}
-                <span class="deckcard__winrate" title="Matches and win rate">
-                  {deck.totalMatches ?? 0} match{(deck.totalMatches ?? 0) === 1 ? '' : 'es'}
+                <span class="deckcard__stats row row--sm">
+                  <span class="deckcard__matches muted" title="Matches recorded">
+                    {deck.totalMatches ?? 0} match{(deck.totalMatches ?? 0) === 1 ? '' : 'es'}
+                  </span>
                   {#if deck.winRate != null}
-                    · {(deck.winRate * 100).toFixed(1)}% win rate
+                    {@const band = winRateBand(deck.winRate)}
+                    <span
+                      class="deckcard__win-chip"
+                      class:deckcard__win-chip--high={band === 'high'}
+                      class:deckcard__win-chip--low={band === 'low'}
+                      class:deckcard__win-chip--mid={band === 'mid'}
+                      title="Win rate"
+                    >
+                      {(deck.winRate * 100).toFixed(1)}% WR
+                    </span>
                   {/if}
                 </span>
               {/if}
@@ -255,9 +307,40 @@
   .deckcard__ink {
     font-size: 1rem;
   }
-  .deckcard__winrate {
+  .deckcard__stats {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .deckcard__matches {
     font-size: 0.9rem;
     font-weight: 600;
+  }
+  .deckcard__win-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--border);
     color: var(--muted);
+  }
+  .deckcard__win-chip--high {
+    color: var(--ok);
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.12);
+  }
+  .deckcard__win-chip--low {
+    color: var(--big);
+    border-color: rgba(220, 38, 38, 0.35);
+    background: var(--danger-soft);
+  }
+  .deckcard__win-chip--mid {
+    color: var(--fg);
+    border-color: var(--border-strong);
+  }
+  .decks-page__skel-new {
+    max-width: 9rem;
   }
 </style>

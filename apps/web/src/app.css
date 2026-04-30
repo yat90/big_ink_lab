@@ -1176,6 +1176,87 @@ a {
   gap: 12px;
 }
 
+/* Layout / typography utilities (#20) */
+.row--sm {
+  gap: var(--space-sm);
+}
+.row--md {
+  gap: var(--space-md);
+}
+.row--between {
+  justify-content: space-between;
+}
+.row--start {
+  align-items: flex-start;
+}
+.row--center-y {
+  align-items: center;
+}
+.row--nowrap {
+  flex-wrap: nowrap;
+}
+.stack--xs {
+  gap: var(--space-xs);
+}
+.stack--sm {
+  gap: var(--space-sm);
+}
+.gap-xs {
+  gap: var(--space-xs);
+}
+.gap-sm {
+  gap: var(--space-sm);
+}
+.gap-md {
+  gap: var(--space-md);
+}
+.gap-12 {
+  gap: 12px;
+}
+.text-xs {
+  font-size: 0.8125rem;
+}
+.text-sm {
+  font-size: 0.85rem;
+}
+.text-90 {
+  font-size: 0.9rem;
+}
+.margin-0 {
+  margin: 0;
+}
+.margin-top-sm {
+  margin-top: var(--space-sm);
+}
+.margin-top-md {
+  margin-top: var(--space-md);
+}
+.margin-right-sm {
+  margin-right: var(--space-sm);
+}
+.margin-bottom-sm {
+  margin-bottom: var(--space-sm);
+}
+.margin-bottom-md {
+  margin-bottom: var(--space-md);
+}
+.align-self-start {
+  align-self: flex-start;
+}
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.link-inherit {
+  text-decoration: none;
+  color: inherit;
+}
+.card-title-reset {
+  margin: 0;
+}
+
 /**
  * Buttons: default (glass), primary (ink gradient), danger (destructive), danger-outline (secondary destructive).
  * Use .btn--danger for irreversible / high-impact deletes; .btn--danger-outline for remove-from-list actions.
@@ -1578,9 +1659,28 @@ select.input option {
   height: 4.5rem;
   border-radius: var(--radius);
 }
+.loading-skeleton__field {
+  min-height: 46px;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 140px;
+  border-radius: var(--radius);
+  background: linear-gradient(
+    90deg,
+    var(--glass-bg-strong) 25%,
+    var(--glass-bg) 50%,
+    var(--glass-bg-strong) 75%
+  );
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.2s ease-in-out infinite;
+}
+.loading-skeleton__field--wide {
+  min-width: min(100%, 16rem);
+}
 @media (prefers-reduced-motion: reduce) {
   .loading-skeleton__stat-block,
-  .loading-skeleton__match-block {
+  .loading-skeleton__match-block,
+  .loading-skeleton__field {
     animation: none;
   }
 }

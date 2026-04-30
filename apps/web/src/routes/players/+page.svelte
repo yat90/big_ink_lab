@@ -166,14 +166,30 @@
 
 <div class="page players-page">
   {#if loading}
-    <div class="card">
-      <div class="loading-skeleton" aria-busy="true" aria-live="polite">
-        <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-        <div class="loading-skeleton__line loading-skeleton__line--short"></div>
-        <div class="loading-skeleton__line"></div>
-        <div class="loading-skeleton__line"></div>
+    <div class="players-page players-page--skeleton" aria-busy="true" aria-live="polite" aria-label="Loading players">
+      <div class="page-header">
+        <div class="players-page__header-main">
+          <div class="page-header__title-row">
+            <div class="loading-skeleton__line loading-skeleton__line--title"></div>
+            <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
+          </div>
+        </div>
+        <div class="loading-skeleton__line loading-skeleton__line--primary-btn players-page__skel-new"></div>
       </div>
-      <p class="muted" style="margin-top: var(--space-md);">Loading players…</p>
+      <div class="card stack margin-bottom-md">
+        <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
+        <div class="filters__row filters__row--wrap">
+          <div class="loading-skeleton__field" aria-hidden="true"></div>
+          <div class="loading-skeleton__field" aria-hidden="true"></div>
+          <div class="loading-skeleton__field loading-skeleton__field--wide"></div>
+        </div>
+      </div>
+      <div class="stack">
+        {#each [0, 1, 2, 3] as i (i)}
+          <div class="loading-skeleton__match-block" aria-hidden="true"></div>
+        {/each}
+      </div>
+      <p class="muted margin-top-md">Loading players…</p>
     </div>
   {:else if error}
     <div class="card" role="alert" aria-live="assertive">
@@ -186,7 +202,7 @@
         Roster view hides guests by default. Use <strong>Guests</strong> or <strong>All</strong> below to
         list guest profiles (e.g. from tournament results), or add a roster player.
       </p>
-      <div class="row" style="margin-top: var(--space-sm); flex-wrap: wrap; gap: 0.5rem;">
+      <div class="row margin-top-sm gap-sm">
         <div
           class="players-page__segment"
           role="group"
@@ -233,7 +249,7 @@
     <div class="page-header">
       <div class="players-page__header-main">
         <div class="page-header__title-row">
-          <h2 class="card__title" style="margin: 0;">Players</h2>
+          <h2 class="card__title card-title-reset">Players</h2>
           <button
             type="button"
             class="btn btn--sm page-header__refresh"
@@ -270,7 +286,7 @@
     >
       <div class="filters__row filters__row--wrap">
         <label class="filters__label" for="filter-name">
-          <span class="muted" style="font-size: 0.85rem;">Name</span>
+          <span class="muted text-sm">Name</span>
           <input
             id="filter-name"
             type="search"
@@ -283,7 +299,7 @@
           />
         </label>
         <label class="filters__label" for="filter-team">
-          <span class="muted" style="font-size: 0.85rem;">Team</span>
+          <span class="muted text-sm">Team</span>
           <select
             id="filter-team"
             class="input filters__select"
@@ -298,7 +314,7 @@
           </select>
         </label>
         <div class="filters__label filters__label--segment">
-          <span class="muted" style="font-size: 0.85rem;">Show</span>
+          <span class="muted text-sm">Show</span>
           <div
             class="players-page__segment players-page__segment--in-filters"
             role="group"
@@ -350,13 +366,11 @@
     {:else}
       <div class="stack">
         {#each players as player}
-          <a href="/players/{player._id}" class="card playercard" style="text-decoration: none; color: inherit;">
+          <a href="/players/{player._id}" class="card playercard link-inherit">
             <div class="playercard__name">
               {player.name}
               {#if player.isGuest}
-                <span class="muted" style="font-size: 0.8rem; font-weight: 500; margin-left: 0.35rem;"
-                  >(guest)</span
-                >
+                <span class="muted playercard__guest">(guest)</span>
               {/if}
             </div>
             {#if player.team}
@@ -374,6 +388,16 @@
 <style>
   .players-page {
     max-width: 720px;
+  }
+
+  .players-page__skel-new {
+    max-width: 10rem;
+  }
+
+  .playercard__guest {
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-left: 0.35rem;
   }
 
   .players-page__header-main {

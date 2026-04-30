@@ -25,10 +25,16 @@ export class DecksService {
     private readonly analyticsService: AnalyticsService
   ) {}
 
+  /** Random Lorcana-themed label for the create-deck form (same generator as implicit default name). */
+  suggestName(): string {
+    return generateLorcanaDeckName();
+  }
+
   async findAll(
     filters?: { color?: string; player?: string; name?: string },
     page = 1,
-    limit = 5
+    limit = 5,
+    sort: 'newest' | 'name' | 'winrate' | 'matches' = 'newest',
   ): Promise<{ data: (Deck & { winRate?: number | null })[]; total: number }> {
     const query: Record<string, unknown> = {};
     if (filters?.color?.trim()) {
@@ -43,10 +49,13 @@ export class DecksService {
 
     const skip = (page - 1) * limit;
 
+    const mongoSort: Record<string, 1 | -1> =
+      sort === 'name' ? { name: 1 } : { updatedAt: -1 };
+
     const [rawData, total] = await Promise.all([
       this.deckModel
         .find(query)
-        .sort({ updatedAt: -1 })
+        .sort(mongoSort)
         .populate('player')
         .populate('cards.card')
         .skip(skip)
@@ -67,8 +76,19 @@ export class DecksService {
       })
     );
 
+    const enriched = data as unknown as (Deck & {
+      winRate?: number | null;
+      totalMatches?: number;
+    })[];
+
+    if (sort === 'winrate') {
+      enriched.sort((a, b) => (b.winRate ?? -1) - (a.winRate ?? -1));
+    } else if (sort === 'matches') {
+      enriched.sort((a, b) => (b.totalMatches ?? 0) - (a.totalMatches ?? 0));
+    }
+
     return {
-      data: data as unknown as (Deck & { winRate?: number | null; totalMatches?: number })[],
+      data: enriched,
       total,
     };
   }

@@ -108,20 +108,20 @@
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         <div class="loading-skeleton__line"></div>
       </div>
-      <p class="muted" style="margin-top: var(--space-md);">Loading statistics…</p>
+      <p class="muted margin-top-md">Loading statistics…</p>
     </div>
   {:else if error}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
-      <div class="row" style="gap: var(--space-sm); flex-wrap: wrap; margin-top: var(--space-md);">
+      <div class="row row--sm margin-top-md">
         <a href="/me/statistics" class="btn">My statistics</a>
         <a href="/" class="btn">Back to home</a>
       </div>
     </div>
   {:else if stats}
-    <div class="row" style="justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: var(--space-md);">
-      <h2 class="card__title" style="margin: 0;">Statistics</h2>
-      <div class="row" style="gap: var(--space-sm); flex-wrap: wrap;">
+    <div class="row row--between row--center-y gap-md margin-bottom-md">
+      <h2 class="card__title card-title-reset">Statistics</h2>
+      <div class="row row--sm">
         <a href="/me/statistics" class="btn">My statistics</a>
         <a href="/" class="btn">Back to home</a>
       </div>
@@ -160,7 +160,7 @@
         </div>
       {/if}
       {#if selectedStages.length < STAGE_OPTIONS.length}
-        <p class="muted" style="margin: var(--space-sm) 0 0; font-size: 0.85rem;">
+        <p class="muted margin-top-sm text-sm">
           Showing stats for: {selectedStages.length === 0 ? 'all stages' : selectedStages.join(', ')}
           {#if selectedTournamentLabel}
             · {selectedTournamentLabel}

@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 /** Query DTO for listing decks with optional filters. */
@@ -17,4 +17,9 @@ export class FindDecksQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   name?: string;
+
+  /** Sort order: DB-backed `newest` / `name`; `winrate` / `matches` sort only within the current page after stats enrichment. */
+  @IsOptional()
+  @IsIn(['newest', 'name', 'winrate', 'matches'])
+  sort?: 'newest' | 'name' | 'winrate' | 'matches';
 }

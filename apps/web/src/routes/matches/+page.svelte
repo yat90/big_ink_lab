@@ -11,6 +11,7 @@
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import IconUpload from '$lib/icons/IconUpload.svelte';
   import FilterCard from '$lib/FilterCard.svelte';
+  import Select from '$lib/Select.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
@@ -49,6 +50,18 @@
   let duelsHelpOpen = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
+
+  const STAGE_FILTER_OPTIONS = [
+    { value: '', label: 'All stages' },
+    ...STAGE_OPTIONS.map((s) => ({ value: s, label: s })),
+  ];
+
+  const TIME_FILTER_OPTIONS = [
+    { value: '', label: 'All time' },
+    { value: '7', label: 'Last 7 days' },
+    { value: '30', label: 'Last 30 days' },
+    { value: '90', label: 'Last 90 days' },
+  ];
 
   const filterSummary = $derived(`${total} total match${total === 1 ? '' : 'es'}`);
   const filterBadges = $derived<string[]>(
@@ -318,15 +331,31 @@
     />
   {/if}
   {#if loading}
-    <div class="card">
-      <div class="loading-skeleton" aria-busy="true" aria-live="polite">
-        <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-        <div class="loading-skeleton__line loading-skeleton__line--short"></div>
-        <div class="loading-skeleton__line"></div>
-        <div class="loading-skeleton__line"></div>
-        <div class="loading-skeleton__line"></div>
+    <div class="matches-page matches-page--skeleton" aria-busy="true" aria-live="polite" aria-label="Loading matches">
+      <div class="row matches-header row--between">
+        <div class="page-header__title-row">
+          <div class="loading-skeleton__line loading-skeleton__line--title"></div>
+          <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
+        </div>
+        <div class="row row--sm">
+          <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
+          <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
+          <div class="loading-skeleton__line loading-skeleton__line--primary-btn"></div>
+        </div>
       </div>
-      <p class="muted" style="margin-top: var(--space-md);">Loading matches…</p>
+      <div class="card stack margin-bottom-md">
+        <div class="filters__row">
+          <div class="loading-skeleton__field" aria-hidden="true"></div>
+          <div class="loading-skeleton__field" aria-hidden="true"></div>
+          <div class="loading-skeleton__field" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="stack">
+        {#each [0, 1, 2, 3] as i (i)}
+          <div class="loading-skeleton__match-block" aria-hidden="true"></div>
+        {/each}
+      </div>
+      <p class="muted margin-top-md">Loading matches…</p>
     </div>
   {:else if error}
     <div class="card" role="alert" aria-live="assertive">
@@ -389,9 +418,9 @@
       {/if}
     </div>
   {:else}
-    <div class="row matches-header">
+    <div class="row matches-header row--between">
       <div class="page-header__title-row">
-        <h2 class="card__title" style="margin: 0;">Matches</h2>
+        <h2 class="card__title card-title-reset">Matches</h2>
         <button
           type="button"
           class="btn btn--sm page-header__refresh"
@@ -401,7 +430,7 @@
           <IconRefresh size={20} />
         </button>
       </div>
-      <div class="row" style="gap: var(--space-sm); flex-wrap: wrap;">
+      <div class="row row--sm">
         <a href="/matches/quick" class="btn">Quick match</a>
         <a href="/tournaments" class="btn">Tournaments</a>
         {#if myPlayerId}
@@ -436,7 +465,7 @@
     >
       <div class="filters__row">
         <label class="filters__label" for="filter-player-btn">
-          <span class="muted" style="font-size: 0.85rem;">Player</span>
+          <span class="muted text-sm">Player</span>
           <button
             id="filter-player-btn"
             type="button"
@@ -448,32 +477,26 @@
           </button>
         </label>
         <label class="filters__label" for="filter-stage">
-          <span class="muted" style="font-size: 0.85rem;">Stage</span>
-          <select
-            id="filter-stage"
-            class="input filters__select"
-            bind:value={filterStage}
-            aria-label="Filter by stage"
-          >
-            <option value="">All stages</option>
-            {#each STAGE_OPTIONS as s}
-              <option value={s}>{s}</option>
-            {/each}
-          </select>
+          <span class="muted text-sm">Stage</span>
+          <div class="filters__select">
+            <Select
+              id="filter-stage"
+              bind:value={filterStage}
+              options={STAGE_FILTER_OPTIONS}
+              ariaLabel="Filter by stage"
+            />
+          </div>
         </label>
         <label class="filters__label" for="filter-time">
-          <span class="muted" style="font-size: 0.85rem;">Time</span>
-          <select
-            id="filter-time"
-            class="input filters__select"
-            bind:value={filterTime}
-            aria-label="Filter by time range"
-          >
-            <option value="">All time</option>
-            <option value="7">Last 7 days</option>
-            <option value="30">Last 30 days</option>
-            <option value="90">Last 90 days</option>
-          </select>
+          <span class="muted text-sm">Time</span>
+          <div class="filters__select">
+            <Select
+              id="filter-time"
+              bind:value={filterTime}
+              options={TIME_FILTER_OPTIONS}
+              ariaLabel="Filter by time range"
+            />
+          </div>
         </label>
       </div>
       <div class="filters__footer">
@@ -533,8 +556,7 @@
             </div>
             <a
               href="/matches/{match._id}"
-              class="matchcard__row matchcard__main-link"
-              style="text-decoration: none; color: inherit;"
+              class="matchcard__row matchcard__main-link link-inherit"
               aria-label="Open match: {playerName(match.p1)} vs {playerName(match.p2)}"
             >
               <div

@@ -36,8 +36,15 @@ export class DecksController {
       { color: query.color, player: query.player, name: query.name },
       page,
       limit,
+      query.sort ?? 'newest',
     );
     return createPaginatedResponse(data, total, page, limit);
+  }
+
+  /** Suggested deck name for the create form (client may edit before POST). */
+  @Get('suggest-name')
+  suggestName(): { name: string } {
+    return { name: this.decksService.suggestName() };
   }
 
   /** Returns stats for a deck by id. */
