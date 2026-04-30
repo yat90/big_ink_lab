@@ -9,6 +9,7 @@
     getMatchRoundKey,
     matchStageOrTournamentLabel,
   } from '$lib/lorcana-match';
+  import FilterCard from '$lib/FilterCard.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
 
@@ -60,6 +61,9 @@
   let roundFilter = $state<RoundFilter>('all');
   let playerFilterId = $state('');
 
+  /** Collapsible filter card (shared pattern with /matches, /decks). */
+  let filtersExpanded = $state(false);
+
   function compareRoundKeys(a: string, b: string): number {
     const na = Number(a);
     const nb = Number(b);
@@ -104,6 +108,31 @@
     const pid = playerFilterId.trim();
     return matches.filter((m) => getLorcanaMatchPlayerId(m.p1) === pid);
   });
+
+  const tournamentFilterSummary = $derived(
+    `${displayedMatches.length} of ${matches.length} shown`,
+  );
+
+  const tournamentFilterBadges = $derived.by(() => {
+    const badges: string[] = [];
+    if (activeView === 'rounds') {
+      if (roundFilter === 'none') badges.push('Round: No round');
+      else if (roundFilter !== 'all') badges.push(`Round: ${formatMatchRoundLabel(roundFilter)}`);
+    } else if (playerFilterId.trim()) {
+      const pair = tournamentPlayers.find(([id]) => id === playerFilterId.trim());
+      if (pair) badges.push(`P1: ${pair[1]}`);
+    }
+    return badges;
+  });
+
+  const canClearTournamentFilters = $derived(
+    activeView === 'rounds' ? roundFilter !== 'all' : !!playerFilterId.trim(),
+  );
+
+  function clearTournamentViewFilters(): void {
+    if (activeView === 'rounds') roundFilter = 'all';
+    else playerFilterId = '';
+  }
 
   function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
     if (!p) return '–';
@@ -545,61 +574,101 @@
       {#if activeView === 'rounds'}
         <div
           id="panel-tournament-rounds"
-          class="card stack tournament-detail__filters"
           role="tabpanel"
           aria-labelledby="tab-tournament-rounds"
         >
-          <span class="tournament-detail__filters-label muted">Round</span>
-          <div class="tournament-detail__chips" aria-label="Filter by round">
-            <button
-              type="button"
-              class="tournament-detail__chip"
-              class:tournament-detail__chip--active={roundFilter === 'all'}
-              onclick={() => (roundFilter = 'all')}
+          <div class="tournament-detail__filters">
+            <FilterCard
+              bind:expanded={filtersExpanded}
+              summary={tournamentFilterSummary}
+              badges={tournamentFilterBadges}
+              panelId="tournament-detail-round-filters"
             >
-              All
-            </button>
-            {#if hasUnassignedRound}
-              <button
-                type="button"
-                class="tournament-detail__chip"
-                class:tournament-detail__chip--active={roundFilter === 'none'}
-                onclick={() => (roundFilter = 'none')}
-              >
-                No round
-              </button>
-            {/if}
-            {#each roundNumbers as r (r)}
-              <button
-                type="button"
-                class="tournament-detail__chip"
-                class:tournament-detail__chip--active={roundFilter === r}
-                onclick={() => (roundFilter = r)}
-              >
-                {formatMatchRoundLabel(r)}
-              </button>
-            {/each}
+              <div class="stack" style="gap: 0.5rem;">
+                <span class="tournament-detail__filters-label muted">Round</span>
+                <div class="tournament-detail__chips" aria-label="Filter by round">
+                  <button
+                    type="button"
+                    class="tournament-detail__chip"
+                    class:tournament-detail__chip--active={roundFilter === 'all'}
+                    onclick={() => (roundFilter = 'all')}
+                  >
+                    All
+                  </button>
+                  {#if hasUnassignedRound}
+                    <button
+                      type="button"
+                      class="tournament-detail__chip"
+                      class:tournament-detail__chip--active={roundFilter === 'none'}
+                      onclick={() => (roundFilter = 'none')}
+                    >
+                      No round
+                    </button>
+                  {/if}
+                  {#each roundNumbers as r (r)}
+                    <button
+                      type="button"
+                      class="tournament-detail__chip"
+                      class:tournament-detail__chip--active={roundFilter === r}
+                      onclick={() => (roundFilter = r)}
+                    >
+                      {formatMatchRoundLabel(r)}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+              <div class="filters__footer">
+                <button
+                  type="button"
+                  class="btn"
+                  onclick={clearTournamentViewFilters}
+                  disabled={!canClearTournamentFilters}
+                >
+                  Clear filters
+                </button>
+              </div>
+            </FilterCard>
           </div>
         </div>
       {:else}
         <div
           id="panel-tournament-players"
-          class="card stack tournament-detail__filters"
           role="tabpanel"
           aria-labelledby="tab-tournament-players"
         >
-          <label class="label tournament-detail__filters-label" for="tournament-player-filter">Player 1</label>
-          <select
-            id="tournament-player-filter"
-            class="input"
-            bind:value={playerFilterId}
-            aria-label="Filter matches by player 1 (left seat)"
-          >
-            <option value="">All matches</option>
-            {#each tournamentPlayers as [pid, label] (pid)}
-              <option value={pid}>{label}</option>
-            {/each}
-          </select>
+          <div class="tournament-detail__filters">
+            <FilterCard
+              bind:expanded={filtersExpanded}
+              summary={tournamentFilterSummary}
+              badges={tournamentFilterBadges}
+              panelId="tournament-detail-player-filters"
+            >
+              <label class="label tournament-detail__filters-label" for="tournament-player-filter"
+                >Player 1</label
+              >
+              <select
+                id="tournament-player-filter"
+                class="input"
+                bind:value={playerFilterId}
+                aria-label="Filter matches by player 1 (left seat)"
+              >
+                <option value="">All matches</option>
+                {#each tournamentPlayers as [pid, label] (pid)}
+                  <option value={pid}>{label}</option>
+                {/each}
+              </select>
+              <div class="filters__footer">
+                <button
+                  type="button"
+                  class="btn"
+                  onclick={clearTournamentViewFilters}
+                  disabled={!canClearTournamentFilters}
+                >
+                  Clear filters
+                </button>
+              </div>
+            </FilterCard>
+          </div>
         </div>
       {/if}
 
@@ -610,9 +679,6 @@
           </p>
         </div>
       {:else}
-        <p class="muted tournament-detail__filter-meta">
-          Showing {displayedMatches.length} of {matches.length} loaded
-        </p>
         <div class="stack">
           {#each displayedMatches as match (match._id)}
             {@const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1}
@@ -804,10 +870,6 @@
   .tournament-detail__chip--active {
     border-color: var(--color-accent, #3b82f6);
     background: color-mix(in srgb, var(--color-accent, #3b82f6) 12%, transparent);
-  }
-  .tournament-detail__filter-meta {
-    margin: 0 0 var(--space-sm, 0.5rem) 0;
-    font-size: 0.8125rem;
   }
 
   .tournament-detail__delete-modal {
