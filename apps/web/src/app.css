@@ -2045,6 +2045,20 @@ a[class*='playercard']:active {
   opacity: 0.95;
 }
 
+/** Intentional draw (short label; use title on element for full wording). */
+.matchcard__pill--id {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+  color: color-mix(in srgb, var(--ok-glow) 75%, var(--muted));
+}
+
 .matchcard__ink {
   font-size: 1.25rem;
   line-height: 1;

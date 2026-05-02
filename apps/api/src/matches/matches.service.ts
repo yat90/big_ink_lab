@@ -327,6 +327,7 @@ export class MatchesService {
             playedAt,
             games: [] as unknown as Game[],
             matchWinner: null as unknown as Match['matchWinner'],
+            intentionalDraw: true,
           });
           created.push(match);
         } catch (e) {

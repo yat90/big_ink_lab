@@ -12,6 +12,7 @@
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
+    isIntentionalDrawMatch,
     matchStageOrTournamentLabel,
   } from '$lib/lorcana-match';
   import type { Deck } from '$lib/decks';
@@ -113,6 +114,7 @@
         ? match.matchWinner._id
         : match.matchWinner)
   );
+  const isIntentionalDraw = $derived(!!match && isIntentionalDrawMatch(match));
 
   function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
     if (!p) return '–';
@@ -690,6 +692,13 @@
           {#if getMatchRoundKey(match.round) != null}
             <span class="matchcard__top-inner">· {formatMatchRoundLabel(match.round)}</span>
           {/if}
+          {#if isIntentionalDraw}
+            <span
+              class="matchcard__pill--id"
+              title="Intentional draw (not counted in win/loss statistics)"
+              >ID</span
+            >
+          {/if}
 
           {#if canEditMatch}
             <div class="matchcard__top-actions">
@@ -765,12 +774,12 @@
           <div class="matchcard__row">
             <div
               class="matchcard__player matchcard__player--left"
-              class:matchcard__player--winner={matchWinnerId === p1Id}
+              class:matchcard__player--winner={!isIntentionalDraw && matchWinnerId === p1Id}
             >
               <span class="matchcard__name">
                 <span class="matchcard__name_text">
                   {displayPlayerName(match.p1, 'Player 1')}
-                  {#if matchWinnerId === p1Id}
+                  {#if !isIntentionalDraw && matchWinnerId === p1Id}
                     <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">
                       <IconCrown size={16} />
                     </span>
@@ -800,7 +809,7 @@
             <div class="matchcard__vs" aria-hidden="true">VS.</div>
             <div
               class="matchcard__player matchcard__player--right"
-              class:matchcard__player--winner={matchWinnerId === p2Id}
+              class:matchcard__player--winner={!isIntentionalDraw && matchWinnerId === p2Id}
             >
               <span class="matchcard__wins muted" title="Games won"
                 >{gamesWon(match, p2Id ?? '')}</span
@@ -808,7 +817,7 @@
               <span class="matchcard__name">
                 <span class="matchcard__name_text">
                   {displayPlayerName(match.p2, 'Player 2')}
-                  {#if matchWinnerId === p2Id}
+                  {#if !isIntentionalDraw && matchWinnerId === p2Id}
                     <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">
                       <IconCrown size={16} />
                     </span>

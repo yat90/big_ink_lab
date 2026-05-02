@@ -29,6 +29,8 @@ export type LorcanaMatch = {
   p1Deck?: LorcanaMatchDeckRef | string;
   p2Deck?: LorcanaMatchDeckRef | string;
   matchWinner?: LorcanaMatchPlayer | string;
+  /** Tournament intentional draw — omitted from statistics on the server. */
+  intentionalDraw?: boolean;
   games?: Game[];
   notes?: string;
 };
@@ -119,6 +121,14 @@ export function getLorcanaMatchWinnerId(m: LorcanaMatch): string | undefined {
   return typeof w === 'object' && w !== null ? w._id : w;
 }
 
+/** True for intentional tournament draws (explicit flag or legacy empty pairing). */
+export function isIntentionalDrawMatch(m: LorcanaMatch): boolean {
+  if (m.intentionalDraw === true) return true;
+  if (m.stage !== 'Tournament') return false;
+  if (getLorcanaMatchWinnerId(m)) return false;
+  return (m.games?.length ?? 0) === 0;
+}
+
 /** Resolves game winner id from API-shaped rows (string id or populated `{ _id }`). */
 export function getLorcanaGameWinnerId(g: { winner?: unknown }): string | undefined {
   const w = g.winner;
@@ -135,6 +145,8 @@ export type MatchLineRowPerspective =
 
 export type MatchLineRowView = {
   won: boolean;
+  /** Intentional draw — no win/loss; show “ID” in row UI. */
+  isIntentionalDraw: boolean;
   stage: string;
   gamesWon: number;
   gamesPlayed: number;
@@ -150,6 +162,7 @@ export function getMatchLineRowView(
   const stage = match.stage ?? '–';
   const playedAt = match.playedAt;
   const games = match.games ?? [];
+  const isIntentionalDraw = isIntentionalDrawMatch(match);
 
   if (perspective.matchupMode === 'opponent-only') {
     const deckId = perspective.deckId;
@@ -170,6 +183,7 @@ export function getMatchLineRowView(
       : 0;
     return {
       won,
+      isIntentionalDraw,
       stage,
       gamesWon: ourWins,
       gamesPlayed: total,
@@ -199,6 +213,7 @@ export function getMatchLineRowView(
   const ourWins = games.filter((g) => getLorcanaGameWinnerId(g) === playerId).length;
   return {
     won,
+    isIntentionalDraw,
     stage,
     gamesWon: ourWins,
     gamesPlayed: total,

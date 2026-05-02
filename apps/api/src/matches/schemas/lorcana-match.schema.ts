@@ -48,6 +48,10 @@ export class Match extends Document {
 	@Prop({ type: Types.ObjectId, ref: "Player" })
 	matchWinner: string;
 
+	/** Intentional draw — excluded from player, deck, and global statistics. */
+	@Prop({ type: Boolean, default: false })
+	intentionalDraw?: boolean;
+
 	@Prop({ default: "" })
 	notes: string;
 }

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Match } from '../matches/schemas/lorcana-match.schema';
+import { withStatsEligibleMatches } from '../matches/stats-eligible-match.filter';
 import { Player } from '../matches/schemas/player.schema';
 import { Deck } from '../decks/schemas/deck.schema';
 import { Stage } from '../matches/schemas/stages.enum';
@@ -47,7 +48,11 @@ export class AnalyticsService {
   /** Decks this player has used in at least one match (p1Deck or p2Deck). */
   private async getDecksUsed(playerId: string): Promise<DeckUsed[]> {
     const matches = await this.matchModel
-      .find({ $or: [{ p1: playerId }, { p2: playerId }] })
+      .find(
+        withStatsEligibleMatches({
+          $or: [{ p1: playerId }, { p2: playerId }],
+        }),
+      )
       .select('p1 p2 p1Deck p2Deck')
       .lean()
       .exec();
@@ -97,10 +102,10 @@ export class AnalyticsService {
     if (!player) throw new NotFoundException('Player not found');
 
     const dateFilter = this.buildDateFilter(query.fromDate, query.toDate);
-    const matchFilter = {
+    const matchFilter = withStatsEligibleMatches({
       $or: [{ p1: playerId }, { p2: playerId }],
       ...dateFilter,
-    };
+    });
 
     const matches = await this.matchModel
       .find(matchFilter)
@@ -297,10 +302,10 @@ export class AnalyticsService {
     if (!player) throw new NotFoundException('Player not found');
 
     const dateFilter = this.buildDateFilter(query.fromDate, query.toDate);
-    const matchFilter = {
+    const matchFilter = withStatsEligibleMatches({
       $or: [{ p1: playerId }, { p2: playerId }],
       ...dateFilter,
-    };
+    });
 
     const matches = await this.matchModel
       .find(matchFilter)
@@ -437,9 +442,11 @@ export class AnalyticsService {
     deckId: string
   ): Promise<{ totalMatches: number; wins: number; losses: number; winRate: number | null }> {
     const matches = await this.matchModel
-      .find({
-        $or: [{ p1Deck: deckId }, { p2Deck: deckId }],
-      })
+      .find(
+        withStatsEligibleMatches({
+          $or: [{ p1Deck: deckId }, { p2Deck: deckId }],
+        }),
+      )
       .select('p1 p2 matchWinner p1Deck p2Deck')
       .lean()
       .exec();
@@ -549,9 +556,11 @@ export class AnalyticsService {
       }
     }
     const matches = await this.matchModel
-      .find({
-        $or: [{ p1Deck: deckId }, { p2Deck: deckId }],
-      })
+      .find(
+        withStatsEligibleMatches({
+          $or: [{ p1Deck: deckId }, { p2Deck: deckId }],
+        }),
+      )
       .select('p1 p2 matchWinner p1Deck p2Deck p1DeckColor p2DeckColor')
       .lean()
       .exec();
@@ -607,7 +616,7 @@ export class AnalyticsService {
       filter.tournament = new Types.ObjectId(tid);
     }
     const matches = await this.matchModel
-      .find(filter)
+      .find(withStatsEligibleMatches(filter))
       .select('stage matchWinner games p1DeckColor p2DeckColor p1 p2')
       .lean()
       .exec();
@@ -698,7 +707,7 @@ export class AnalyticsService {
       ];
     }
     const matches = await this.matchModel
-      .find(matchFilter)
+      .find(withStatsEligibleMatches(matchFilter))
       .select('p1 p2 matchWinner p1DeckColor p2DeckColor games')
       .lean()
       .exec();

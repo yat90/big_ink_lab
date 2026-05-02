@@ -6,6 +6,7 @@
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
+    isIntentionalDrawMatch,
     matchStageOrTournamentLabel,
   } from '$lib/lorcana-match';
   import InkIcons from '$lib/InkIcons.svelte';
@@ -392,22 +393,32 @@
               {@const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1}
               {@const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2}
               {@const winnerId = matchWinnerId(match)}
+              {@const idMatch = isIntentionalDrawMatch(match)}
               <a
                 href="/matches/{match._id}"
                 class="card playercard matchcard dashboard__match link-inherit"
               >
-                <div class="matchcard__top muted">
-                  {DateDisplay.formatRelative(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
+                <div class="matchcard__top muted dashboard__match-top">
+                  <span>
+                    {DateDisplay.formatRelative(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
                     · {formatMatchRoundLabel(match.round)}{/if}
+                  </span>
+                  {#if idMatch}
+                    <span
+                      class="matchcard__pill--id"
+                      title="Intentional draw (not counted in win/loss statistics)"
+                      >ID</span
+                    >
+                  {/if}
                 </div>
                 <div class="matchcard__row">
                   <div
                     class="matchcard__player matchcard__player--left"
-                    class:matchcard__player--winner={winnerId === p1Id}
+                    class:matchcard__player--winner={!idMatch && winnerId === p1Id}
                   >
                     <span class="matchcard__name">
                       {playerName(match.p1)}
-                      {#if winnerId === p1Id}
+                      {#if !idMatch && winnerId === p1Id}
                         <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"><IconCrown size={16} /></span>
                       {/if}
                     </span>
@@ -421,7 +432,7 @@
                   <div class="matchcard__vs" aria-hidden="true">VS.</div>
                   <div
                     class="matchcard__player matchcard__player--right"
-                    class:matchcard__player--winner={winnerId === p2Id}
+                    class:matchcard__player--winner={!idMatch && winnerId === p2Id}
                   >
                     <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p2Id ?? '')}</span>
                     {#if match.p2DeckColor}
@@ -431,7 +442,7 @@
                     {/if}
                     <span class="matchcard__name">
                       {playerName(match.p2)}
-                      {#if winnerId === p2Id}
+                      {#if !idMatch && winnerId === p2Id}
                         <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"><IconCrown size={16} /></span>
                       {/if}
                     </span>
@@ -598,6 +609,13 @@
 
   .dashboard__match {
     padding: var(--space-md);
+  }
+
+  .dashboard__match-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.6rem;
   }
 
   .btn--sm {

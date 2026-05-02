@@ -25,14 +25,20 @@
 
 <li class="match-line-row__item">
   <a href="/matches/{match._id}" class="match-line-row__link">
-    <span
-      class="match-line-row__result"
-      class:won={row.won}
-      class:lost={!row.won}
-      title={row.won ? 'Win' : 'Loss'}
-    >
-      {row.won ? 'W' : 'L'}
-    </span>
+    {#if row.isIntentionalDraw}
+      <span class="match-line-row__result match-line-row__result--id" title="Intentional draw">
+        ID
+      </span>
+    {:else}
+      <span
+        class="match-line-row__result"
+        class:won={row.won}
+        class:lost={!row.won}
+        title={row.won ? 'Win' : 'Loss'}
+      >
+        {row.won ? 'W' : 'L'}
+      </span>
+    {/if}
     <span class="match-line-row__matchup">
       {#if showBothDecks}
         <span class="match-line-row__deck-color" title={row.myDeckColor ?? ''}>
@@ -106,6 +112,14 @@
   .match-line-row__result.lost {
     background: var(--color-error-bg, rgba(239, 68, 68, 0.2));
     color: var(--color-error, #dc2626);
+  }
+
+  .match-line-row__result--id {
+    background: color-mix(in srgb, var(--muted) 18%, transparent);
+    color: color-mix(in srgb, var(--fg) 72%, var(--muted));
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    min-width: 1.75rem;
   }
 
   .match-line-row__matchup {
