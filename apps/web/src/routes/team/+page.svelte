@@ -5,13 +5,15 @@
   import TeamMembersTab from './TeamMembersTab.svelte';
   import TeamRankingTab from './TeamRankingTab.svelte';
   import TeamFinanceTab from './TeamFinanceTab.svelte';
+  import TeamPenaltiesTab from './TeamPenaltiesTab.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
 
-  type TabId = 'members' | 'ranking' | 'finance';
+  type TabId = 'members' | 'ranking' | 'penalties' | 'finance';
   const TABS: { id: TabId; label: string }[] = [
     { id: 'members', label: 'Members' },
     { id: 'ranking', label: 'Ranking' },
+    { id: 'penalties', label: 'Strafen' },
     { id: 'finance', label: 'Finance' },
   ];
 
@@ -167,6 +169,18 @@
     </div>
 
     <div
+      id="team-panel-penalties"
+      class="team-panel"
+      role="tabpanel"
+      aria-labelledby="team-tab-penalties"
+      hidden={activeTab !== 'penalties'}
+    >
+      {#if activeTab === 'penalties'}
+        <TeamPenaltiesTab isAdmin={isAdmin} />
+      {/if}
+    </div>
+
+    <div
       id="team-panel-finance"
       class="team-panel"
       role="tabpanel"
@@ -188,6 +202,7 @@
 <style>
   .page--team {
     max-width: 960px;
+    padding-bottom: 25px;
   }
 
   .team-skeleton {

@@ -30,9 +30,16 @@ export interface TeamBalance {
   monthlyDues: number;
 }
 
+export interface TeamPenalty {
+  id: string;
+  description: string;
+  amount: number;
+}
+
 export interface TeamSettings {
   team: string;
   monthlyDues: number;
+  penalties: TeamPenalty[];
 }
 
 export interface TeamInternalRankingRow {
@@ -235,6 +242,7 @@ export async function fetchTeamSettings(): Promise<TeamSettings> {
 
 export async function updateTeamSettings(patch: {
   monthlyDues?: number;
+  penalties?: { id?: string; description: string; amount: number }[];
 }): Promise<TeamSettings> {
   const res = await fetch(`${apiUrl}/team/settings`, {
     method: 'PATCH',
