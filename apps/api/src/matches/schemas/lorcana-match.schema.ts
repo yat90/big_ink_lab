@@ -52,6 +52,10 @@ export class Match extends Document {
 	@Prop({ type: Boolean, default: false })
 	intentionalDraw?: boolean;
 
+	/** Tournament bye (free win vs placeholder opponent). */
+	@Prop({ type: Boolean, default: false })
+	bye?: boolean;
+
 	@Prop({ default: "" })
 	notes: string;
 }

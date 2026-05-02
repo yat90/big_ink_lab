@@ -15,10 +15,12 @@
     p2Lore: string;
     notes: string;
   };
+  type TournamentRoundResultMode = 'match' | 'intentionalDraw' | 'bye';
+
   type RoundRow = {
     round: string;
-    /** When true, this round is skipped when creating matches (intentional draw). */
-    intentionalDraw: boolean;
+    /** `match` = played games; `intentionalDraw` = ID; `bye` = free win. */
+    resultMode: TournamentRoundResultMode;
     /** Opponent name; API resolves to existing player or creates a guest. */
     opponentName: string;
     p2DeckColor: string;
@@ -75,7 +77,7 @@
   function emptyRound(label: string): RoundRow {
     return {
       round: label,
-      intentionalDraw: false,
+      resultMode: 'match',
       opponentName: '',
       p2DeckColor: '',
       notes: '',
@@ -86,6 +88,10 @@
   function roundP2Label(r: RoundRow): string {
     const t = r.opponentName.trim();
     return t || 'Opponent';
+  }
+
+  function setRoundResultMode(roundIndex: number, mode: TournamentRoundResultMode) {
+    rounds = rounds.map((row, i) => (i === roundIndex ? { ...row, resultMode: mode } : row));
   }
 
   async function fetchDeck(deckId: string): Promise<{ name: string; deckColor: string } | null> {
@@ -358,6 +364,11 @@
         }
       | {
           round: string;
+          bye: true;
+          notes?: string;
+        }
+      | {
+          round: string;
           opponentName: string;
           p2DeckColor?: string;
           notes?: string;
@@ -376,7 +387,15 @@
         error = 'Every round needs a label (e.g. round number or name).';
         return;
       }
-      if (r.intentionalDraw) {
+      if (r.resultMode === 'bye') {
+        bodyRounds.push({
+          round: roundLabel,
+          bye: true,
+          ...(r.notes.trim() ? { notes: r.notes.trim() } : {}),
+        });
+        continue;
+      }
+      if (r.resultMode === 'intentionalDraw') {
         const oppId = r.opponentName.trim();
         if (!oppId) {
           error = `Round “${roundLabel}”: intentional draw needs an opponent name (match is saved without games or winner).`;
@@ -459,10 +478,20 @@
       if (failed.length) {
         resultMessage = `Created ${created.length} match(es). Failed: ${failed.map((f) => `${f.round}: ${f.message}`).join('; ')}`;
       } else {
-        const idRounds = rounds.filter((r) => r.intentionalDraw).length;
+        const intentionalDrawRounds = rounds.filter((r) => r.resultMode === 'intentionalDraw').length;
+        const byeRounds = rounds.filter((r) => r.resultMode === 'bye').length;
+        const parts: string[] = [];
+        if (intentionalDrawRounds > 0) {
+          parts.push(
+            `${intentionalDrawRounds} intentional draw${intentionalDrawRounds === 1 ? '' : 's'} (no winner; excluded from stats)`,
+          );
+        }
+        if (byeRounds > 0) {
+          parts.push(`${byeRounds} bye${byeRounds === 1 ? '' : 's'} (free win)`);
+        }
         resultMessage =
-          idRounds > 0
-            ? `Created ${created.length} match(es) (${idRounds} intentional draw${idRounds === 1 ? '' : 's'}, no winner).`
+          parts.length > 0
+            ? `Created ${created.length} match(es) · ${parts.join(' · ')}.`
             : `Created ${created.length} match(es).`;
       }
       if (!failed.length) {
@@ -668,81 +697,95 @@
 
             <div class="tournament-results__id-field">
               <p class="label tournament-results__id-field-label" id="tr-round-mode-label-{roundIndex}">
-                Round result
+                Pairing result
               </p>
               <div
-                class="tournament-results__id-chips"
+                class="tournament-results__id-chips tournament-results__mode-chips"
                 role="radiogroup"
                 aria-labelledby="tr-round-mode-label-{roundIndex}"
               >
                 <label
                   class="tournament-results__id-chip"
-                  class:tournament-results__id-chip--active={!r.intentionalDraw}
+                  class:tournament-results__id-chip--active={r.resultMode === 'match'}
                 >
                   <input
                     type="radio"
                     class="tournament-results__id-chip-input"
                     name="tr-round-mode-{roundIndex}"
-                    checked={!r.intentionalDraw}
-                    onchange={() => {
-                      rounds = rounds.map((row, i) =>
-                        i === roundIndex ? { ...row, intentionalDraw: false } : row
-                      );
-                    }}
+                    checked={r.resultMode === 'match'}
+                    onchange={() => setRoundResultMode(roundIndex, 'match')}
                   />
-                  <span class="tournament-results__id-chip-text">Match played</span>
+                  <span class="tournament-results__id-chip-text">Match</span>
                 </label>
                 <label
                   class="tournament-results__id-chip"
-                  class:tournament-results__id-chip--active={r.intentionalDraw}
+                  class:tournament-results__id-chip--active={r.resultMode === 'intentionalDraw'}
                 >
                   <input
                     type="radio"
                     class="tournament-results__id-chip-input"
                     name="tr-round-mode-{roundIndex}"
-                    checked={r.intentionalDraw}
-                    onchange={() => {
-                      rounds = rounds.map((row, i) =>
-                        i === roundIndex ? { ...row, intentionalDraw: true } : row
-                      );
-                    }}
+                    checked={r.resultMode === 'intentionalDraw'}
+                    onchange={() => setRoundResultMode(roundIndex, 'intentionalDraw')}
                   />
                   <span class="tournament-results__id-chip-text">Intentional draw</span>
                 </label>
+                <label
+                  class="tournament-results__id-chip"
+                  class:tournament-results__id-chip--active={r.resultMode === 'bye'}
+                >
+                  <input
+                    type="radio"
+                    class="tournament-results__id-chip-input"
+                    name="tr-round-mode-{roundIndex}"
+                    checked={r.resultMode === 'bye'}
+                    onchange={() => setRoundResultMode(roundIndex, 'bye')}
+                  />
+                  <span class="tournament-results__id-chip-text">Bye</span>
+                </label>
               </div>
               <p class="card__sub muted tournament-results__id-help">
-                {#if r.intentionalDraw}
-                  Creates a tournament match with <strong>no games</strong> and <strong>no winner</strong>.
-                  Enter your paired opponent below.
+                {#if r.resultMode === 'intentionalDraw'}
+                  <strong>No games</strong>, <strong>no winner</strong>. Counts as pairing only (ID);
+                  excluded from win/loss statistics. Enter your paired opponent below.
+                {:else if r.resultMode === 'bye'}
+                  You received a <strong>bye</strong> (free win). No games are stored; you are recorded as
+                  match winner vs placeholder opponent <strong>BYE</strong>. Counts as a match win in statistics.
                 {:else}
-                  Record games below; match results are saved when you submit.
+                  Record games below; results are saved when you submit.
                 {/if}
               </p>
             </div>
 
-            <label class="label" for="opponent-{roundIndex}">Opponent</label>
-            <input
-              id="opponent-{roundIndex}"
-              type="text"
-              class="input"
-              maxlength="120"
-              value={r.opponentName}
-              oninput={(e) => {
-                const v = e.currentTarget.value;
-                rounds = rounds.map((row, i) =>
-                  i === roundIndex ? { ...row, opponentName: v } : row
-                );
-              }}
-              placeholder={r.intentionalDraw ? 'Paired opponent (required)' : 'Opponent name'}
-              aria-label="Opponent name"
-            />
+            {#if r.resultMode === 'bye'}
+              <p class="card__sub muted" style="margin: 0 0 0.35rem 0;">
+                No opposing player this round.
+              </p>
+            {:else}
+              <label class="label" for="opponent-{roundIndex}">Opponent</label>
+              <input
+                id="opponent-{roundIndex}"
+                type="text"
+                class="input"
+                maxlength="120"
+                value={r.opponentName}
+                oninput={(e) => {
+                  const v = e.currentTarget.value;
+                  rounds = rounds.map((row, i) =>
+                    i === roundIndex ? { ...row, opponentName: v } : row
+                  );
+                }}
+                placeholder={r.resultMode === 'intentionalDraw' ? 'Paired opponent (required)' : 'Opponent name'}
+                aria-label="Opponent name"
+              />
 
-            <label class="label" for="p2c-{roundIndex}">Opponent deck color</label>
-            <DeckColorSelect
-              id="p2c-{roundIndex}"
-              bind:value={r.p2DeckColor}
-              ariaLabel="Opponent deck color"
-            />
+              <label class="label" for="p2c-{roundIndex}">Opponent deck color</label>
+              <DeckColorSelect
+                id="p2c-{roundIndex}"
+                bind:value={r.p2DeckColor}
+                ariaLabel="Opponent deck color"
+              />
+            {/if}
 
             <label class="label" for="mnotes-{roundIndex}">Match notes</label>
             <textarea
@@ -753,7 +796,7 @@
               placeholder="Optional notes for this match"
             ></textarea>
 
-            {#if !r.intentionalDraw}
+            {#if r.resultMode === 'match'}
             <div class="tournament-results__games-head row">
               <h3 class="tournament-results__games-title">Games</h3>
               <button
@@ -910,10 +953,16 @@
             >
               + Add game
             </button>
-            {:else}
+            {:else if r.resultMode === 'intentionalDraw'}
               <div class="tournament-results__id-games-skip card stack">
                 <p class="card__sub muted" style="margin: 0;">
-                  No game rows for an intentional draw — the match is still created without a winner.
+                  No game rows for an intentional draw — the match is created without a winner (ID).
+                </p>
+              </div>
+            {:else if r.resultMode === 'bye'}
+              <div class="tournament-results__id-games-skip card stack">
+                <p class="card__sub muted" style="margin: 0;">
+                  Bye is a match result only — no game rows. You are saved as the match winner.
                 </p>
               </div>
             {/if}

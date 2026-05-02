@@ -12,6 +12,7 @@
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
+    isByeMatch,
     isIntentionalDrawMatch,
     matchStageOrTournamentLabel,
   } from '$lib/lorcana-match';
@@ -115,6 +116,7 @@
         : match.matchWinner)
   );
   const isIntentionalDraw = $derived(!!match && isIntentionalDrawMatch(match));
+  const isBye = $derived(!!match && isByeMatch(match));
 
   function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
     if (!p) return '–';
@@ -698,6 +700,8 @@
               title="Intentional draw (not counted in win/loss statistics)"
               >ID</span
             >
+          {:else if isBye}
+            <span class="matchcard__pill--bye" title="Bye (free win)">Bye</span>
           {/if}
 
           {#if canEditMatch}

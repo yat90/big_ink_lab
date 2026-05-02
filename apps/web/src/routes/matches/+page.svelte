@@ -9,6 +9,7 @@
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
+    isByeMatch,
     isIntentionalDrawMatch,
   } from '$lib/lorcana-match';
   import InkIcons from '$lib/InkIcons.svelte';
@@ -528,6 +529,7 @@
           {@const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2}
           {@const winnerId = matchWinnerId(match)}
           {@const idMatch = isIntentionalDrawMatch(match)}
+          {@const byeMatch = isByeMatch(match)}
           {@const stagePill = matchStagePillLabel(match)}
           {@const tournamentLink = matchTournamentChip(match)}
           <div class="card playercard matchcard">
@@ -541,6 +543,8 @@
                   title="Intentional draw (not counted in win/loss statistics)"
                   >ID</span
                 >
+              {:else if byeMatch}
+                <span class="matchcard__pill--bye" title="Bye (free win)">Bye</span>
               {/if}
               <span
                 class="matchcard__date-chip"

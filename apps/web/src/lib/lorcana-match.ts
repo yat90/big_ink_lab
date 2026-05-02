@@ -31,6 +31,8 @@ export type LorcanaMatch = {
   matchWinner?: LorcanaMatchPlayer | string;
   /** Tournament intentional draw — omitted from statistics on the server. */
   intentionalDraw?: boolean;
+  /** Tournament bye (free win vs placeholder opponent). */
+  bye?: boolean;
   games?: Game[];
   notes?: string;
 };
@@ -123,10 +125,19 @@ export function getLorcanaMatchWinnerId(m: LorcanaMatch): string | undefined {
 
 /** True for intentional tournament draws (explicit flag or legacy empty pairing). */
 export function isIntentionalDrawMatch(m: LorcanaMatch): boolean {
+  if (m.bye === true) return false;
   if (m.intentionalDraw === true) return true;
   if (m.stage !== 'Tournament') return false;
   if (getLorcanaMatchWinnerId(m)) return false;
   return (m.games?.length ?? 0) === 0;
+}
+
+/** Tournament bye (free win); counts toward statistics as a win for the human player. */
+export function isByeMatch(m: LorcanaMatch): boolean {
+  if (m.bye === true) return true;
+  const name =
+    typeof m.p2 === 'object' && m.p2 != null ? (m.p2.name ?? '').trim().toUpperCase() : '';
+  return m.stage === 'Tournament' && (name === 'BYE' || name === '(BYE)');
 }
 
 /** Resolves game winner id from API-shaped rows (string id or populated `{ _id }`). */
@@ -147,6 +158,8 @@ export type MatchLineRowView = {
   won: boolean;
   /** Intentional draw — no win/loss; show “ID” in row UI. */
   isIntentionalDraw: boolean;
+  /** Bye (free win); show “BYE” in row UI instead of W/L. */
+  isBye: boolean;
   stage: string;
   gamesWon: number;
   gamesPlayed: number;
@@ -163,6 +176,7 @@ export function getMatchLineRowView(
   const playedAt = match.playedAt;
   const games = match.games ?? [];
   const isIntentionalDraw = isIntentionalDrawMatch(match);
+  const isBye = isByeMatch(match);
 
   if (perspective.matchupMode === 'opponent-only') {
     const deckId = perspective.deckId;
@@ -184,6 +198,7 @@ export function getMatchLineRowView(
     return {
       won,
       isIntentionalDraw,
+      isBye,
       stage,
       gamesWon: ourWins,
       gamesPlayed: total,
@@ -214,6 +229,7 @@ export function getMatchLineRowView(
   return {
     won,
     isIntentionalDraw,
+    isBye,
     stage,
     gamesWon: ourWins,
     gamesPlayed: total,

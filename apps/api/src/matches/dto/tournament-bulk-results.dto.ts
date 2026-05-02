@@ -55,8 +55,16 @@ export class TournamentBulkRoundDto {
   @IsBoolean()
   intentionalDraw?: boolean;
 
+  /**
+   * When true, you had a bye (free win): one game, you win vs placeholder opponent `BYE`.
+   * Mutually exclusive with `intentionalDraw`.
+   */
+  @IsOptional()
+  @IsBoolean()
+  bye?: boolean;
+
   /** Opponent display name; API resolves to an existing player or creates a guest player. */
-  @ValidateIf((o: TournamentBulkRoundDto) => !o.intentionalDraw)
+  @ValidateIf((o: TournamentBulkRoundDto) => !o.intentionalDraw && !o.bye)
   @Transform(({ value }) =>
     value === null || value === undefined || value === ''
       ? value
@@ -79,7 +87,7 @@ export class TournamentBulkRoundDto {
   @IsString()
   notes?: string;
 
-  @ValidateIf((o: TournamentBulkRoundDto) => !o.intentionalDraw)
+  @ValidateIf((o: TournamentBulkRoundDto) => !o.intentionalDraw && !o.bye)
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })

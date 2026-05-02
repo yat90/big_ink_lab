@@ -10,6 +10,7 @@ import { DecksService } from '../decks/decks.service';
 import { PlayersService } from '../players/players.service';
 import { TournamentsService } from '../tournaments/tournaments.service';
 import { Game } from './schemas/game.interface';
+import { TOURNAMENT_BYE_OPPONENT_NAME } from './tournament-bulk.constants';
 
 @Injectable()
 export class MatchesService {
@@ -294,6 +295,51 @@ export class MatchesService {
       throw new BadRequestException('p1 is required');
     }
     for (const r of dto.rounds) {
+      if (r.intentionalDraw && r.bye) {
+        failed.push({
+          round: r.round,
+          message: 'Cannot combine intentional draw and bye',
+        });
+        continue;
+      }
+      if (r.bye) {
+        try {
+          const p2Player = await this.playersService.resolveTournamentOpponentByName(
+            TOURNAMENT_BYE_OPPONENT_NAME,
+          );
+          const p2Id = p2Player._id.toString();
+          if (p1 === p2Id) {
+            failed.push({
+              round: r.round,
+              message: 'Invalid bye pairing',
+            });
+            continue;
+          }
+          const match = await this.create({
+            stage: Stage.Tournament,
+            tournament: tournamentRef,
+            round: r.round,
+            p1,
+            p2: p2Id,
+            p1Deck: dto.p1Deck ? dto.p1Deck : undefined,
+            p2Deck: undefined,
+            p1DeckColor: (dto.p1DeckColor as Match['p1DeckColor']) ?? undefined,
+            p2DeckColor: '' as Match['p2DeckColor'],
+            notes: r.notes?.trim() ?? '',
+            playedAt,
+            games: [] as unknown as Game[],
+            matchWinner: p1 as unknown as Match['matchWinner'],
+            bye: true,
+          });
+          created.push(match);
+        } catch (e) {
+          failed.push({
+            round: r.round,
+            message: e instanceof Error ? e.message : String(e),
+          });
+        }
+        continue;
+      }
       if (r.intentionalDraw) {
         try {
           const oppName = (r.opponentName ?? '').trim();

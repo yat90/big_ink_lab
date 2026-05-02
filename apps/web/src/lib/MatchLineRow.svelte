@@ -29,6 +29,10 @@
       <span class="match-line-row__result match-line-row__result--id" title="Intentional draw">
         ID
       </span>
+    {:else if row.isBye}
+      <span class="match-line-row__result match-line-row__result--bye" title="Bye (free win)">
+        BYE
+      </span>
     {:else}
       <span
         class="match-line-row__result"
@@ -56,7 +60,11 @@
       {row.stage}
     </span>
     <span class="match-line-row__meta muted">
-      <span class="match-line-row__score">{row.gamesWon}/{row.gamesPlayed}</span> games
+      {#if row.isBye}
+        <span title="Bye has no game rows">No games</span>
+      {:else}
+        <span class="match-line-row__score">{row.gamesWon}/{row.gamesPlayed}</span> games
+      {/if}
     </span>
     <span class="match-line-row__date muted">{DateDisplay.formatRelativeDate(row.playedAt)}</span>
   </a>
@@ -120,6 +128,15 @@
     font-size: 0.72rem;
     letter-spacing: 0.04em;
     min-width: 1.75rem;
+  }
+
+  .match-line-row__result--bye {
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    color: var(--primary, #3b82f6);
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    min-width: 2.1rem;
   }
 
   .match-line-row__matchup {

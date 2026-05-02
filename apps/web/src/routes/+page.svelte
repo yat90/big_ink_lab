@@ -6,6 +6,7 @@
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
+    isByeMatch,
     isIntentionalDrawMatch,
     matchStageOrTournamentLabel,
   } from '$lib/lorcana-match';
@@ -394,6 +395,7 @@
               {@const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2}
               {@const winnerId = matchWinnerId(match)}
               {@const idMatch = isIntentionalDrawMatch(match)}
+              {@const byeMatch = isByeMatch(match)}
               <a
                 href="/matches/{match._id}"
                 class="card playercard matchcard dashboard__match link-inherit"
@@ -409,6 +411,8 @@
                       title="Intentional draw (not counted in win/loss statistics)"
                       >ID</span
                     >
+                  {:else if byeMatch}
+                    <span class="matchcard__pill--bye" title="Bye (free win)">Bye</span>
                   {/if}
                 </div>
                 <div class="matchcard__row">
