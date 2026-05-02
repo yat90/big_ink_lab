@@ -1,17 +1,9 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Patch,
-  Post,
-  Req,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { Request } from 'express';
+import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { AuthService } from './auth.service';
-import { Public } from './public.decorator';
+import { CurrentUser } from './current-user.decorator';
 import { JwtPayload } from './jwt.strategy';
+import { Public } from './public.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -30,22 +22,13 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@Req() req: Request & { user?: JwtPayload }) {
-    if (!req.user?.sub) {
-      throw new UnauthorizedException('Invalid token.');
-    }
-    return this.authService.me(req.user.sub);
+  me(@CurrentUser() user: JwtPayload) {
+    return this.authService.me(user.sub);
   }
 
   @Patch('me')
-  async updateMe(
-    @Req() req: Request & { user?: JwtPayload },
-    @Body() body: { team?: string },
-  ) {
-    if (!req.user?.sub) {
-      throw new UnauthorizedException('Invalid token.');
-    }
-    const player = await this.authService.updateMyTeam(req.user.sub, body.team ?? '');
+  async updateMe(@CurrentUser() user: JwtPayload, @Body() body: { team?: string }) {
+    const player = await this.authService.updateMyTeam(user.sub, body.team ?? '');
     return { player };
   }
 }

@@ -3,9 +3,12 @@ import { writable, type Writable } from 'svelte/store';
 /** Linked player from `GET /auth/me`. */
 export type MePlayer = { _id: string; name: string; team?: string };
 
+/** App-wide role embedded in the auth response. */
+export type MeRole = 'admin' | 'member';
+
 /** Payload returned by `GET /auth/me` after login (shape used across the web app). */
 export type AuthMePayload = {
-  user: { name?: string; email?: string };
+  user: { name?: string; email?: string; role?: MeRole };
   player: MePlayer | null;
 };
 

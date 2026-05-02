@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { DEFAULT_ROLE, ROLE_VALUES, Role } from '../roles.enum';
 
 @Schema({ timestamps: true, collection: 'users' })
 export class User extends Document {
@@ -18,6 +19,10 @@ export class User extends Document {
   /** Linked Player (one per user, created on registration). */
   @Prop({ type: Types.ObjectId, ref: 'Player' })
   player?: Types.ObjectId;
+
+  /** App-wide role: 'admin' may manage team finances and members; defaults to 'member'. */
+  @Prop({ type: String, enum: [...ROLE_VALUES], default: DEFAULT_ROLE, index: true })
+  role!: Role;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

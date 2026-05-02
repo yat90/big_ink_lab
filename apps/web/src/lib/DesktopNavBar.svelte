@@ -5,6 +5,7 @@
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
   import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
+  import IconTeam from '$lib/icons/IconTeam.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
@@ -27,6 +28,7 @@
   const isPlayers = $derived(
     $page.url.pathname === '/players' || $page.url.pathname.startsWith('/players/')
   );
+  const isTeam = $derived($page.url.pathname.startsWith('/team'));
   const isDecks = $derived(
     $page.url.pathname === '/decks' || $page.url.pathname.startsWith('/decks/')
   );
@@ -162,6 +164,17 @@
       <IconUsers size={28} />
     </span>
     <span class="desktop-nav__link-label">Players</span>
+  </a>
+  <a
+    href="/team"
+    class="desktop-nav__link"
+    class:desktop-nav__link--active={isTeam}
+    aria-current={isTeam ? 'page' : undefined}
+  >
+    <span class="desktop-nav__link-icon" aria-hidden="true">
+      <IconTeam size={28} />
+    </span>
+    <span class="desktop-nav__link-label">Team</span>
   </a>
   <a
     href="/me"

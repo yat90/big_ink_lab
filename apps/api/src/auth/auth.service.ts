@@ -12,11 +12,13 @@ import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { User } from './schemas/user.schema';
 import { JwtPayload } from './jwt.strategy';
 import { PlayersService } from '../players/players.service';
+import { DEFAULT_ROLE, Role } from './roles.enum';
 
 type PublicUser = {
   id: string;
   email: string;
   name: string;
+  role: Role;
 };
 
 type AuthResponse = {
@@ -25,6 +27,14 @@ type AuthResponse = {
 };
 
 export type MePlayer = { _id: string; name: string; team: string };
+
+/** Compact identity for routes that need both account + linked player. */
+export interface CurrentUserContext {
+  userId: string;
+  role: Role;
+  playerId: string | null;
+  team: string;
+}
 
 @Injectable()
 export class AuthService {
@@ -50,11 +60,17 @@ export class AuthService {
     return { email, password, name: (dto.name ?? '').trim() };
   }
 
-  private asPublicUser(user: { _id: { toString(): string }; email: string; name?: string }): PublicUser {
+  private asPublicUser(user: {
+    _id: { toString(): string };
+    email: string;
+    name?: string;
+    role?: Role;
+  }): PublicUser {
     return {
       id: user._id.toString(),
       email: user.email,
       name: user.name ?? '',
+      role: user.role ?? DEFAULT_ROLE,
     };
   }
 
@@ -67,7 +83,12 @@ export class AuthService {
     return this.jwtService.sign(payload);
   }
 
-  private toAuthResponse(user: { _id: { toString(): string }; email: string; name?: string }): AuthResponse {
+  private toAuthResponse(user: {
+    _id: { toString(): string };
+    email: string;
+    name?: string;
+    role?: Role;
+  }): AuthResponse {
     const publicUser = this.asPublicUser(user);
     return {
       accessToken: this.signAccessToken(publicUser),
@@ -101,7 +122,7 @@ export class AuthService {
     const { email, password } = this.ensureCredentials(dto);
     const user = await this.userModel
       .findOne({ email })
-      .select('_id email name passwordHash enabled')
+      .select('_id email name passwordHash enabled role')
       .exec();
     if (!user) {
       throw new UnauthorizedException('Invalid email or password.');
@@ -132,7 +153,7 @@ export class AuthService {
   async me(userId: string): Promise<{ user: PublicUser; player: MePlayer | null }> {
     const user = await this.userModel
       .findById(userId)
-      .select('_id email name player')
+      .select('_id email name player role')
       .populate('player')
       .lean()
       .exec();
@@ -158,8 +179,41 @@ export class AuthService {
           }
         : null;
     return {
-      user: this.asPublicUser(user as { _id: { toString(): string }; email: string; name?: string }),
+      user: this.asPublicUser(
+        user as { _id: { toString(): string }; email: string; name?: string; role?: Role },
+      ),
       player,
+    };
+  }
+
+  /**
+   * Returns the current user's role + linked player + team.
+   * Used by team management routes that scope data to the user's team.
+   */
+  async getCurrentContext(userId: string): Promise<CurrentUserContext> {
+    if (!Types.ObjectId.isValid(userId)) {
+      throw new UnauthorizedException('Invalid token.');
+    }
+    const user = await this.userModel
+      .findById(userId)
+      .select('_id role player')
+      .populate({ path: 'player', select: 'team' })
+      .lean()
+      .exec();
+    if (!user) {
+      throw new UnauthorizedException('Invalid token.');
+    }
+    const playerRef = (user as { player?: { _id: unknown; team?: string } | null }).player;
+    const playerId =
+      playerRef && typeof playerRef === 'object' && playerRef._id != null
+        ? String(playerRef._id)
+        : null;
+    const team = (playerRef?.team ?? '').trim();
+    return {
+      userId: String(user._id),
+      role: (user as { role?: Role }).role ?? DEFAULT_ROLE,
+      playerId,
+      team,
     };
   }
 

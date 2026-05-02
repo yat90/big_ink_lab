@@ -6,6 +6,7 @@
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
+  import IconTeam from '$lib/icons/IconTeam.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import IconClose from '$lib/icons/IconClose.svelte';
@@ -53,6 +54,7 @@
   const isPlayers = $derived(
     $page.url.pathname === '/players' || $page.url.pathname.startsWith('/players/')
   );
+  const isTeam = $derived($page.url.pathname.startsWith('/team'));
   const isMe = $derived($page.url.pathname === '/me');
 
   $effect(() => {
@@ -170,6 +172,18 @@
         <IconUsers size={24} />
       </span>
       Players
+    </a>
+    <a
+      href="/team"
+      class="mobile-nav__drawer-link"
+      class:mobile-nav__drawer-link--active={isTeam}
+      aria-current={isTeam ? 'page' : undefined}
+      onclick={closeMenu}
+    >
+      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+        <IconTeam size={24} />
+      </span>
+      Team
     </a>
     <button
       type="button"
