@@ -53,6 +53,16 @@ export class TeamMembersController {
     return this.membersService.addMember(ctx.team, dto);
   }
 
+  @Post(':playerId/reset-password')
+  @Roles(Role.Admin)
+  async resetPassword(
+    @CurrentUser() user: JwtPayload,
+    @Param('playerId') playerId: string,
+  ): Promise<{ temporaryPassword: string }> {
+    const ctx = await this.contextService.getRequiredContext(user.sub);
+    return this.membersService.resetMemberPassword(ctx.team, playerId);
+  }
+
   @Patch(':playerId')
   @Roles(Role.Admin)
   async update(

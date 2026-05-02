@@ -14,7 +14,15 @@ async function bootstrap(): Promise<void> {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  app.enableCors({ origin: true });
+  /**
+   * Browser requests from the web app use JSON bodies + `Authorization` → preflight (OPTIONS).
+   * Reflect request origin (works with separate Vercel deployments); allow bearer auth header explicitly.
+   */
+  app.enableCors({
+    origin: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  });
   const port = Number(process.env.PORT) || DEFAULT_PORT;
   await app.listen(port);
 }

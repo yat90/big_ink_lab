@@ -2,8 +2,10 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { randomInt } from 'node:crypto';
 import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -46,6 +48,47 @@ export class AuthService {
 
   private normalizeEmail(email: string | undefined): string {
     return (email ?? '').trim().toLowerCase();
+  }
+
+  private generateTemporaryPassword(): string {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    let out = '';
+    for (let i = 0; i < 14; i += 1) {
+      out += chars[randomInt(chars.length)];
+    }
+    return out;
+  }
+
+  /**
+   * Team admin: set a new random password for the user linked to a roster player on the team.
+   * Returns the plain password once for the admin to share with the member.
+   */
+  async adminResetPasswordForTeamMember(
+    team: string,
+    playerId: string,
+  ): Promise<{ temporaryPassword: string }> {
+    if (!Types.ObjectId.isValid(playerId)) {
+      throw new BadRequestException('Invalid player id.');
+    }
+    const player = await this.playersService.findOne(playerId);
+    if (!player) {
+      throw new NotFoundException('Player not found.');
+    }
+    if ((player.team ?? '').trim() !== team) {
+      throw new NotFoundException('Player is not part of your team.');
+    }
+    const user = await this.userModel
+      .findOne({ player: player._id })
+      .select('_id')
+      .lean()
+      .exec();
+    if (!user) {
+      throw new BadRequestException('This member has no login account.');
+    }
+    const temporaryPassword = this.generateTemporaryPassword();
+    const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+    await this.userModel.updateOne({ _id: user._id }, { $set: { passwordHash } }).exec();
+    return { temporaryPassword };
   }
 
   private ensureCredentials(dto: AuthCredentialsDto) {

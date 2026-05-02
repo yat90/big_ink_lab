@@ -20,6 +20,7 @@ import {
   TransactionType,
 } from './team.constants';
 import { TeamMember } from './interfaces/team-member.interface';
+import { AuthService } from '../auth/auth.service';
 import { TeamSettingsService } from './team-settings.service';
 
 interface PlayerLean {
@@ -51,7 +52,16 @@ export class TeamMembersService {
     @InjectModel(TeamTransaction.name)
     private readonly transactionModel: Model<TeamTransaction>,
     private readonly settingsService: TeamSettingsService,
+    private readonly authService: AuthService,
   ) {}
+
+  /** Admin: issue a new temporary login password for a member with a linked account. */
+  resetMemberPassword(
+    team: string,
+    playerId: string,
+  ): Promise<{ temporaryPassword: string }> {
+    return this.authService.adminResetPasswordForTeamMember(team, playerId);
+  }
 
   /** List of members for the given team. Always sourced from Players where `team === team`. */
   async listForTeam(team: string): Promise<TeamMember[]> {

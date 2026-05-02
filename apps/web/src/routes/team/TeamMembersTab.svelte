@@ -5,9 +5,11 @@
     formatDate,
     formatMoney,
     removeTeamMember,
+    resetTeamMemberPassword,
     type TeamMember,
   } from '$lib/team';
   import IconEdit from '$lib/icons/IconEdit.svelte';
+  import IconRefresh from '$lib/icons/IconRefresh.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
   import MemberEditModal from './MemberEditModal.svelte';
   import AddMemberModal from './AddMemberModal.svelte';
@@ -28,6 +30,10 @@
   let adding = $state(false);
   let removingPlayerId = $state<string | null>(null);
   let removeError = $state('');
+  let passwordResetError = $state('');
+  let resettingPlayerId = $state<string | null>(null);
+  let resetPasswordFor = $state<{ name: string; temporaryPassword: string } | null>(null);
+  let resetPasswordCopied = $state(false);
 
   const filteredMembers = $derived.by(() => {
     const q = search.trim().toLowerCase();
@@ -84,6 +90,39 @@
     adding = false;
     await load();
     onChange();
+  }
+
+  async function confirmResetPassword(member: TeamMember) {
+    const ok = window.confirm(
+      `Reset the login password for ${member.name}? You'll see a temporary password to share with them once.`,
+    );
+    if (!ok) return;
+    passwordResetError = '';
+    resettingPlayerId = member.playerId;
+    try {
+      const { temporaryPassword } = await resetTeamMemberPassword(member.playerId);
+      resetPasswordFor = { name: member.name, temporaryPassword };
+      resetPasswordCopied = false;
+    } catch (err) {
+      passwordResetError = err instanceof Error ? err.message : "Couldn't reset password.";
+    } finally {
+      resettingPlayerId = null;
+    }
+  }
+
+  async function copyResetPassword() {
+    if (!resetPasswordFor) return;
+    try {
+      await navigator.clipboard.writeText(resetPasswordFor.temporaryPassword);
+      resetPasswordCopied = true;
+    } catch {
+      resetPasswordCopied = false;
+    }
+  }
+
+  function closeResetPasswordModal() {
+    resetPasswordFor = null;
+    resetPasswordCopied = false;
   }
 
   onMount(load);
@@ -143,6 +182,9 @@
     {#if removeError}
       <p class="alert" role="alert">{removeError}</p>
     {/if}
+    {#if passwordResetError}
+      <p class="alert" role="alert">{passwordResetError}</p>
+    {/if}
     <ul class="member-list" role="list">
       {#each filteredMembers as member (member.playerId)}
         <li class="card member-row">
@@ -191,6 +233,18 @@
               </button>
               <button
                 type="button"
+                class="btn btn--icon"
+                aria-label="Reset login password"
+                disabled={!member.hasAccount || resettingPlayerId === member.playerId}
+                title={!member.hasAccount
+                  ? 'No login account linked to this player'
+                  : 'Set a new temporary password'}
+                onclick={() => void confirmResetPassword(member)}
+              >
+                <IconRefresh size={16} className="icon-inline" />
+              </button>
+              <button
+                type="button"
                 class="btn btn--icon btn--danger"
                 aria-label="Remove member"
                 disabled={removingPlayerId === member.playerId || member.playerId === currentPlayerId}
@@ -223,6 +277,45 @@
     onClose={() => (adding = false)}
     onAdded={handleAdded}
   />
+{/if}
+
+{#if resetPasswordFor}
+  <div
+    class="reset-pw-backdrop"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="reset-pw-title"
+    tabindex="-1"
+    onclick={(e) => e.target === e.currentTarget && closeResetPasswordModal()}
+    onkeydown={(e) => {
+      if (e.key === 'Escape') closeResetPasswordModal();
+    }}
+  >
+    <div class="card reset-pw-dialog">
+      <h2 id="reset-pw-title" class="card__title">New temporary password</h2>
+      <p class="card__sub">
+        Share this with <strong>{resetPasswordFor.name}</strong> once. They can log in at the usual
+        login page.
+      </p>
+      <div class="reset-pw-value" role="group" aria-label="Temporary password">
+        <code class="reset-pw-code">{resetPasswordFor.temporaryPassword}</code>
+        <button type="button" class="btn btn--primary" onclick={() => void copyResetPassword()}>
+          {resetPasswordCopied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      {#if resetPasswordCopied}
+        <p class="muted text-sm reset-pw-copied" role="status">Copied to clipboard.</p>
+      {/if}
+      <p class="muted text-sm">
+        For security, this dialog won’t appear again — store or send the password before closing.
+      </p>
+      <div class="reset-pw-actions">
+        <button type="button" class="btn btn--primary" onclick={closeResetPasswordModal}>
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
 {/if}
 
 <style>
@@ -372,5 +465,48 @@
 
   .text-sm {
     font-size: 0.85rem;
+  }
+
+  .reset-pw-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-md);
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .reset-pw-dialog {
+    max-width: 28rem;
+    width: 100%;
+  }
+
+  .reset-pw-value {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    align-items: center;
+    margin: var(--space-md) 0;
+  }
+
+  .reset-pw-code {
+    flex: 1;
+    min-width: 0;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--glass-bg-strong);
+    border: 1px solid var(--border);
+    font-size: 0.95rem;
+    word-break: break-all;
+  }
+
+  .reset-pw-copied {
+    margin: 0 0 var(--space-sm) 0;
+  }
+
+  .reset-pw-actions {
+    margin-top: var(--space-lg);
   }
 </style>

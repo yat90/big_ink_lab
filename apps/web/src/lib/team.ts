@@ -128,6 +128,15 @@ export async function removeTeamMember(playerId: string): Promise<void> {
   return noContentOrThrow(res, "Couldn't remove member.");
 }
 
+export async function resetTeamMemberPassword(
+  playerId: string,
+): Promise<{ temporaryPassword: string }> {
+  const res = await fetch(`${apiUrl}/team/members/${playerId}/reset-password`, {
+    method: 'POST',
+  });
+  return jsonOrThrow(res, "Couldn't reset password.");
+}
+
 export async function fetchTeamTransactions(
   params: { page?: number; limit?: number; type?: TransactionType; playerId?: string } = {},
 ): Promise<PaginatedResult<TeamTransaction>> {
