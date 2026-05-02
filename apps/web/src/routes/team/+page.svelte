@@ -3,13 +3,15 @@
   import { authMe } from '$lib/me';
   import { fetchTeamOverview, formatMoney, type TeamOverview } from '$lib/team';
   import TeamMembersTab from './TeamMembersTab.svelte';
+  import TeamRankingTab from './TeamRankingTab.svelte';
   import TeamFinanceTab from './TeamFinanceTab.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
 
-  type TabId = 'members' | 'finance';
+  type TabId = 'members' | 'ranking' | 'finance';
   const TABS: { id: TabId; label: string }[] = [
     { id: 'members', label: 'Members' },
+    { id: 'ranking', label: 'Ranking' },
     { id: 'finance', label: 'Finance' },
   ];
 
@@ -149,6 +151,22 @@
     </div>
 
     <div
+      id="team-panel-ranking"
+      class="team-panel"
+      role="tabpanel"
+      aria-labelledby="team-tab-ranking"
+      hidden={activeTab !== 'ranking'}
+    >
+      {#if activeTab === 'ranking' && overview.internalRanking && overview.internalHeadToHead}
+        <TeamRankingTab
+          rows={overview.internalRanking}
+          matrix={overview.internalHeadToHead}
+          currentPlayerId={overview.playerId}
+        />
+      {/if}
+    </div>
+
+    <div
       id="team-panel-finance"
       class="team-panel"
       role="tabpanel"
@@ -259,6 +277,12 @@
     margin: var(--space-lg) 0 var(--space-md) 0;
     border-bottom: 1px solid var(--border);
     overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .team-tabs::-webkit-scrollbar {
+    display: none;
   }
 
   .team-tab {

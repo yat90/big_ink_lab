@@ -35,12 +35,34 @@ export interface TeamSettings {
   monthlyDues: number;
 }
 
+export interface TeamInternalRankingRow {
+  playerId: string;
+  name: string;
+  wins: number;
+  losses: number;
+  matches: number;
+  winRate: number | null;
+}
+
+export interface TeamHeadToHeadMatrixCell {
+  wins: number;
+  losses: number;
+}
+
+export interface TeamHeadToHeadMatrix {
+  playerIds: string[];
+  names: string[];
+  cells: (TeamHeadToHeadMatrixCell | null)[][];
+}
+
 export interface TeamOverview {
   team: string;
   role: MeRole;
   playerId: string | null;
   hasTeam: boolean;
   balance: TeamBalance | null;
+  internalRanking: TeamInternalRankingRow[] | null;
+  internalHeadToHead: TeamHeadToHeadMatrix | null;
 }
 
 export interface TeamTransaction {

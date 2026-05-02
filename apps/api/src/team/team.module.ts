@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from '../auth/auth.module';
 import { Player, PlayerSchema } from '../matches/schemas/player.schema';
+import { Match, MatchSchema } from '../matches/schemas/lorcana-match.schema';
 import { User, UserSchema } from '../auth/schemas/user.schema';
 import { MemberProfile, MemberProfileSchema } from './schemas/member-profile.schema';
 import { TeamSettings, TeamSettingsSchema } from './schemas/team-settings.schema';
@@ -13,12 +14,14 @@ import { TeamTransactionsService } from './team-transactions.service';
 import { TeamController } from './team.controller';
 import { TeamMembersController } from './team-members.controller';
 import { TeamTransactionsController } from './team-transactions.controller';
+import { TeamInternalRankingService } from './team-internal-ranking.service';
 
 @Module({
   imports: [
     AuthModule,
     MongooseModule.forFeature([
       { name: Player.name, schema: PlayerSchema },
+      { name: Match.name, schema: MatchSchema },
       { name: User.name, schema: UserSchema },
       { name: MemberProfile.name, schema: MemberProfileSchema },
       { name: TeamSettings.name, schema: TeamSettingsSchema },
@@ -31,6 +34,7 @@ import { TeamTransactionsController } from './team-transactions.controller';
     TeamMembersService,
     TeamSettingsService,
     TeamTransactionsService,
+    TeamInternalRankingService,
   ],
 })
 export class TeamModule {}
