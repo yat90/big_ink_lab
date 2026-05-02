@@ -79,7 +79,9 @@ export class TeamTransactionsService {
     const filter = {
       team,
       player: new Types.ObjectId(playerId),
-      type: TransactionType.Contribution,
+      type: {
+        $in: [TransactionType.Contribution, TransactionType.PenaltyFine],
+      },
     };
     const [data, total] = await Promise.all([
       this.transactionModel
@@ -174,15 +176,17 @@ export class TeamTransactionsService {
         { $group: { _id: '$type', total: { $sum: '$amount' } } },
       ])
       .exec();
-    const totals = { contributions: 0, income: 0, expenses: 0 };
+    const totals = { contributions: 0, income: 0, expenses: 0, penaltyFines: 0 };
     for (const row of rows) {
       if (row._id === TransactionType.Contribution) totals.contributions = row.total;
       else if (row._id === TransactionType.Income) totals.income = row.total;
       else if (row._id === TransactionType.Expense) totals.expenses = row.total;
+      else if (row._id === TransactionType.PenaltyFine) totals.penaltyFines = row.total;
     }
     const balance =
       this.round2(totals.contributions) +
-      this.round2(totals.income) -
+      this.round2(totals.income) +
+      this.round2(totals.penaltyFines) -
       this.round2(totals.expenses);
     return {
       team,
@@ -191,6 +195,7 @@ export class TeamTransactionsService {
         contributions: this.round2(totals.contributions),
         income: this.round2(totals.income),
         expenses: this.round2(totals.expenses),
+        penaltyFines: this.round2(totals.penaltyFines),
       },
       outstandingTotal: this.round2(outstandingTotal),
       memberCount,
@@ -203,9 +208,13 @@ export class TeamTransactionsService {
     type: TransactionType,
     playerId: string | undefined,
   ): Promise<Types.ObjectId | null> {
-    if (type === TransactionType.Contribution) {
+    if (type === TransactionType.Contribution || type === TransactionType.PenaltyFine) {
       if (!playerId) {
-        throw new BadRequestException('A contribution must reference a player.');
+        throw new BadRequestException(
+          type === TransactionType.PenaltyFine
+            ? 'A penalty fine must reference the paying member.'
+            : 'A contribution must reference a player.',
+        );
       }
       if (!Types.ObjectId.isValid(playerId)) {
         throw new BadRequestException('Invalid player id.');

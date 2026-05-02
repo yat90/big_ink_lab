@@ -37,7 +37,7 @@ export class CreateTransactionDto {
   @IsDateString()
   occurredAt?: string;
 
-  /** Required when `type === 'contribution'`. */
+  /** Required when `type` is `contribution` or `penalty_fine`. */
   @IsOptional()
   @IsMongoId()
   playerId?: string;

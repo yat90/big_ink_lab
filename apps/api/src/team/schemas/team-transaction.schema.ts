@@ -15,7 +15,7 @@ export class TeamTransaction extends Document {
   @Prop({ type: String, enum: [...TRANSACTION_TYPE_VALUES], required: true, index: true })
   type!: TransactionType;
 
-  /** Always positive; sign on the balance is derived from `type` (expense = negative). */
+  /** Always positive; sign on the balance is derived from `type` (expense = negative; other types add to treasury). */
   @Prop({ type: Number, required: true, min: 0 })
   amount!: number;
 
@@ -25,7 +25,7 @@ export class TeamTransaction extends Document {
   @Prop({ type: Date, default: () => new Date(), index: true })
   occurredAt!: Date;
 
-  /** Required for `type: contribution`, optional for income/expense. */
+  /** Required for `contribution` and `penalty_fine`, optional for income/expense. */
   @Prop({ type: Types.ObjectId, ref: 'Player', index: true })
   player?: Types.ObjectId;
 

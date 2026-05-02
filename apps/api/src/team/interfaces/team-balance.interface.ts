@@ -6,6 +6,7 @@ export interface TeamBalance {
     contributions: number;
     income: number;
     expenses: number;
+    penaltyFines: number;
   };
   outstandingTotal: number;
   memberCount: number;

@@ -4,7 +4,7 @@ import type { MeRole } from './me';
 const apiUrl = config.apiUrl ?? '/api';
 
 export type MemberStatus = 'active' | 'padawan' | 'inactive';
-export type TransactionType = 'contribution' | 'income' | 'expense';
+export type TransactionType = 'contribution' | 'income' | 'expense' | 'penalty_fine';
 
 export interface TeamMember {
   playerId: string;
@@ -23,7 +23,12 @@ export interface TeamMember {
 export interface TeamBalance {
   team: string;
   balance: number;
-  totals: { contributions: number; income: number; expenses: number };
+  totals: {
+    contributions: number;
+    income: number;
+    expenses: number;
+    penaltyFines: number;
+  };
   outstandingTotal: number;
   memberCount: number;
   /** Team-wide monthly dues per member (0 if not configured). */
@@ -34,6 +39,21 @@ export interface TeamPenalty {
   id: string;
   description: string;
   amount: number;
+}
+
+export type AccusationStatus = 'open' | 'dismissed' | 'upheld';
+
+export interface TeamAccusation {
+  id: string;
+  status: AccusationStatus;
+  accuser: { playerId: string; name: string };
+  accused: { playerId: string; name: string };
+  penaltyId: string;
+  penaltyDescription: string;
+  penaltyAmount: number;
+  details: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface TeamSettings {
@@ -250,6 +270,40 @@ export async function updateTeamSettings(patch: {
     body: JSON.stringify(patch),
   });
   return jsonOrThrow<TeamSettings>(res, "Couldn't save team settings.");
+}
+
+export async function fetchTeamAccusations(): Promise<TeamAccusation[]> {
+  const res = await fetch(`${apiUrl}/team/accusations`);
+  const body = await jsonOrThrow<{ data: TeamAccusation[] }>(
+    res,
+    "Couldn't load accusations.",
+  );
+  return body.data;
+}
+
+export async function createTeamAccusation(input: {
+  accusedPlayerId: string;
+  penaltyId: string;
+  details?: string;
+}): Promise<TeamAccusation> {
+  const res = await fetch(`${apiUrl}/team/accusations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return jsonOrThrow<TeamAccusation>(res, "Couldn't file accusation.");
+}
+
+export async function updateTeamAccusationStatus(
+  id: string,
+  status: AccusationStatus,
+): Promise<TeamAccusation> {
+  const res = await fetch(`${apiUrl}/team/accusations/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  return jsonOrThrow<TeamAccusation>(res, "Couldn't update accusation.");
 }
 
 const currencyFormatter = new Intl.NumberFormat(undefined, {

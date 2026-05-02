@@ -6,14 +6,16 @@
   import TeamRankingTab from './TeamRankingTab.svelte';
   import TeamFinanceTab from './TeamFinanceTab.svelte';
   import TeamPenaltiesTab from './TeamPenaltiesTab.svelte';
+  import TeamCourtRoomTab from './TeamCourtRoomTab.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
 
-  type TabId = 'members' | 'ranking' | 'penalties' | 'finance';
+  type TabId = 'members' | 'ranking' | 'penalties' | 'court' | 'finance';
   const TABS: { id: TabId; label: string }[] = [
     { id: 'members', label: 'Members' },
     { id: 'ranking', label: 'Ranking' },
     { id: 'penalties', label: 'Strafen' },
+    { id: 'court', label: 'Gerichtssaal' },
     { id: 'finance', label: 'Finance' },
   ];
 
@@ -177,6 +179,18 @@
     >
       {#if activeTab === 'penalties'}
         <TeamPenaltiesTab isAdmin={isAdmin} />
+      {/if}
+    </div>
+
+    <div
+      id="team-panel-court"
+      class="team-panel"
+      role="tabpanel"
+      aria-labelledby="team-tab-court"
+      hidden={activeTab !== 'court'}
+    >
+      {#if activeTab === 'court'}
+        <TeamCourtRoomTab isAdmin={isAdmin} currentPlayerId={overview.playerId} />
       {/if}
     </div>
 

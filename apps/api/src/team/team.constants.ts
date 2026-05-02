@@ -23,12 +23,28 @@ export enum TransactionType {
   Contribution = 'contribution',
   Income = 'income',
   Expense = 'expense',
+  /** Member-paid penalty (treasury inflow, tagged separately from dues contributions). */
+  PenaltyFine = 'penalty_fine',
 }
 
 export const TRANSACTION_TYPE_VALUES = [
   TransactionType.Contribution,
   TransactionType.Income,
   TransactionType.Expense,
+  TransactionType.PenaltyFine,
+] as const;
+
+/** Lifecycle of a penalty accusation filed by one member against another. */
+export enum AccusationStatus {
+  Open = 'open',
+  Dismissed = 'dismissed',
+  Upheld = 'upheld',
+}
+
+export const ACCUSATION_STATUS_VALUES = [
+  AccusationStatus.Open,
+  AccusationStatus.Dismissed,
+  AccusationStatus.Upheld,
 ] as const;
 
 /** Maximum length used for free-text fields (notes, description). */

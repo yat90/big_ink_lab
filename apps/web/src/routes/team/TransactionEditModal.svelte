@@ -55,8 +55,11 @@
 
   async function submit(e: Event) {
     e.preventDefault();
-    if (type === 'contribution' && !playerId) {
-      error = 'Pick the contributing member.';
+    if ((type === 'contribution' || type === 'penalty_fine') && !playerId) {
+      error =
+        type === 'penalty_fine'
+          ? 'Pick the member paying the penalty fine.'
+          : 'Pick the contributing member.';
       return;
     }
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -87,7 +90,7 @@
   }
 
   $effect(() => {
-    if (type !== 'contribution') return;
+    if (type !== 'contribution' && type !== 'penalty_fine') return;
     if (!playerId && members.length > 0) {
       playerId = members[0].playerId;
     }
@@ -108,6 +111,7 @@
           Type
           <select class="input" bind:value={type}>
             <option value="contribution">Contribution (member dues)</option>
+            <option value="penalty_fine">Penalty fine (Strafgeld)</option>
             <option value="income">Other income (sponsor, prize…)</option>
             <option value="expense">Expense</option>
           </select>
@@ -125,10 +129,12 @@
           />
         </label>
 
-        {#if type === 'contribution' || type === 'expense'}
+        {#if type === 'contribution' || type === 'penalty_fine' || type === 'expense'}
           <label class="label">
             {#if type === 'contribution'}
               Member <span aria-hidden="true">*</span>
+            {:else if type === 'penalty_fine'}
+              Member paying fine <span aria-hidden="true">*</span>
             {:else}
               Linked member
               <span class="hint">Optional — leave empty for a team-wide expense.</span>
@@ -137,7 +143,7 @@
               <input class="input" value="Loading members…" disabled />
             {:else if members.length === 0}
               <p class="hint">Add at least one member first.</p>
-            {:else if type === 'contribution'}
+            {:else if type === 'contribution' || type === 'penalty_fine'}
               <select class="input" bind:value={playerId} required>
                 {#each members as m (m.playerId)}
                   <option value={m.playerId}>{m.name}</option>

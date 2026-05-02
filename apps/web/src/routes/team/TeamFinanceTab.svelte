@@ -18,6 +18,7 @@
   import IconTrash from '$lib/icons/IconTrash.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import TransactionEditModal from './TransactionEditModal.svelte';
+  import TransactionTypePieChart from './TransactionTypePieChart.svelte';
 
   interface Props {
     isAdmin: boolean;
@@ -142,6 +143,8 @@
         return 'Income';
       case 'expense':
         return 'Expense';
+      case 'penalty_fine':
+        return 'Penalty fine';
     }
   }
 
@@ -235,24 +238,31 @@
           {formatMoney(balance.balance)}
         </span>
       </div>
-      <dl class="balance-card__breakdown">
-        <div>
-          <dt class="muted">Contributions</dt>
-          <dd>{formatMoney(balance.totals.contributions)}</dd>
-        </div>
-        <div>
-          <dt class="muted">Other income</dt>
-          <dd>{formatMoney(balance.totals.income)}</dd>
-        </div>
-        <div>
-          <dt class="muted">Expenses</dt>
-          <dd>−{formatMoney(balance.totals.expenses)}</dd>
-        </div>
-        <div>
-          <dt class="muted">Outstanding dues</dt>
-          <dd>{formatMoney(balance.outstandingTotal)}</dd>
-        </div>
-      </dl>
+      <div class="balance-card__lower">
+        <dl class="balance-card__breakdown">
+          <div>
+            <dt class="muted">Contributions</dt>
+            <dd>{formatMoney(balance.totals.contributions)}</dd>
+          </div>
+          <div>
+            <dt class="muted">Penalty fines</dt>
+            <dd>{formatMoney(balance.totals.penaltyFines ?? 0)}</dd>
+          </div>
+          <div>
+            <dt class="muted">Other income</dt>
+            <dd>{formatMoney(balance.totals.income)}</dd>
+          </div>
+          <div>
+            <dt class="muted">Expenses</dt>
+            <dd>−{formatMoney(balance.totals.expenses)}</dd>
+          </div>
+          <div>
+            <dt class="muted">Outstanding dues</dt>
+            <dd>{formatMoney(balance.outstandingTotal)}</dd>
+          </div>
+        </dl>
+        <TransactionTypePieChart balance={balance} />
+      </div>
     </div>
   {/if}
 
@@ -274,7 +284,7 @@
             <li class="tx-row">
               <div class="tx-row__main">
                 <div class="tx-row__title">{t.description || 'Contribution'}</div>
-                <div class="tx-row__meta muted">{formatDate(t.occurredAt)}</div>
+                <div class="tx-row__meta muted">{typeLabel(t.type)} · {formatDate(t.occurredAt)}</div>
               </div>
               <div class="tx-row__amount tx-row__amount--positive">
                 +{formatMoney(t.amount)}
@@ -312,6 +322,7 @@
           >
             <option value="">All</option>
             <option value="contribution">Contributions</option>
+            <option value="penalty_fine">Penalty fines</option>
             <option value="income">Other income</option>
             <option value="expense">Expenses</option>
           </select>
@@ -486,6 +497,20 @@
     color: var(--danger);
   }
 
+  .balance-card__lower {
+    display: grid;
+    gap: var(--space-xl);
+    grid-template-columns: 1fr;
+    align-items: start;
+    margin-top: var(--space-lg);
+  }
+
+  @media (min-width: 720px) {
+    .balance-card__lower {
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 1fr);
+    }
+  }
+
   .balance-card__breakdown {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
@@ -601,6 +626,12 @@
     color: var(--danger);
     background: var(--danger-soft);
     border-color: var(--danger-border);
+  }
+
+  .tx-row__type--penalty_fine {
+    color: var(--gold);
+    background: var(--gold-dim);
+    border-color: color-mix(in srgb, var(--gold) 45%, transparent);
   }
 
   .tx-row__who {
