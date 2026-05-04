@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Patch, Post } from '@nestjs/common';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user.decorator';
 import { JwtPayload } from './jwt.strategy';
@@ -27,8 +28,11 @@ export class AuthController {
   }
 
   @Patch('me')
-  async updateMe(@CurrentUser() user: JwtPayload, @Body() body: { team?: string }) {
-    const player = await this.authService.updateMyTeam(user.sub, body.team ?? '');
+  async updateMe(@CurrentUser() user: JwtPayload, @Body() body: UpdateMeDto) {
+    const player = await this.authService.updateMyProfile(user.sub, {
+      team: body.team,
+      playerName: body.playerName,
+    });
     return { player };
   }
 }

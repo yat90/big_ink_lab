@@ -17,6 +17,8 @@
   class={className}
   aria-hidden="true"
 >
-  <!-- Shield / squad — distinct from IconUsers (people roster). -->
-  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  <!-- Lucide `users-round` — group / team; distinct from IconUsers (roster / two people). -->
+  <path d="M18 21a8 8 0 0 0-16 0" />
+  <circle cx="10" cy="8" r="5" />
+  <path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" />
 </svg>

@@ -9,8 +9,10 @@
   let user = $state<MeUser | null>(null);
   let player = $state<MePlayer | null>(null);
   let teamName = $state('');
+  let playerName = $state('');
   let loading = $state(true);
   let savingTeam = $state(false);
+  let savingPlayerName = $state(false);
   let error = $state('');
 
   const apiUrl = config.apiUrl ?? '/api';
@@ -35,6 +37,7 @@
       user = data?.user ?? null;
       player = data?.player ?? null;
       teamName = player?.team ?? '';
+      playerName = player?.name ?? '';
     } catch {
       error = 'Could not reach API.';
     } finally {
@@ -61,11 +64,45 @@
         return;
       }
       const data = await res.json();
-      if (data?.player) player = data.player;
+      if (data?.player) {
+        player = data.player;
+        playerName = data.player.name;
+      }
     } catch {
       error = 'Could not reach API.';
     } finally {
       savingTeam = false;
+    }
+  }
+
+  async function savePlayerName() {
+    if (!token) return;
+    savingPlayerName = true;
+    error = '';
+    try {
+      const res = await fetch(`${apiUrl}/auth/me`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ playerName: playerName.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        error = data.message ?? 'Could not update player name.';
+        return;
+      }
+      const data = await res.json();
+      if (data?.player) {
+        player = data.player;
+        teamName = data.player.team;
+        playerName = data.player.name;
+      }
+    } catch {
+      error = 'Could not reach API.';
+    } finally {
+      savingPlayerName = false;
     }
   }
 
@@ -96,8 +133,27 @@
         </div>
         {#if player}
           <div class="dl-row">
-            <dt class="muted">Player</dt>
-            <dd>{player.name}</dd>
+            <dt class="muted">Player name</dt>
+            <dd>
+              <div class="me-team-row">
+                <input
+                  type="text"
+                  class="input"
+                  bind:value={playerName}
+                  placeholder="Player name"
+                  aria-label="Player name"
+                  autocomplete="name"
+                />
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  disabled={savingPlayerName}
+                  onclick={savePlayerName}
+                >
+                  {savingPlayerName ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </dd>
           </div>
           <div class="dl-row">
             <dt class="muted">Team name</dt>

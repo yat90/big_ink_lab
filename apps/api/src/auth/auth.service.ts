@@ -13,6 +13,7 @@ import { Model, Types } from 'mongoose';
 import { AuthCredentialsDto } from './dto/auth-credentials.dto';
 import { User } from './schemas/user.schema';
 import { JwtPayload } from './jwt.strategy';
+import { Player } from '../matches/schemas/player.schema';
 import { PlayersService } from '../players/players.service';
 import { DEFAULT_ROLE, Role } from './roles.enum';
 
@@ -260,8 +261,20 @@ export class AuthService {
     };
   }
 
-  /** Update the current user's linked player's team name. */
-  async updateMyTeam(userId: string, team: string): Promise<MePlayer | null> {
+  /**
+   * Update the current user's linked player (display name and/or team).
+   * Rejects a display name that is already used by another player (case-insensitive).
+   */
+  async updateMyProfile(
+    userId: string,
+    dto: { team?: string; playerName?: string },
+  ): Promise<MePlayer | null> {
+    const hasTeam = dto.team !== undefined;
+    const hasPlayerName = dto.playerName !== undefined;
+    if (!hasTeam && !hasPlayerName) {
+      const { player } = await this.me(userId);
+      return player;
+    }
     const user = await this.userModel
       .findById(userId)
       .select('player')
@@ -272,7 +285,22 @@ export class AuthService {
     }
     const playerRef = (user as { player: Types.ObjectId }).player;
     const playerId = playerRef instanceof Types.ObjectId ? playerRef.toString() : String(playerRef);
-    const updated = await this.playersService.update(playerId, { team: (team ?? '').trim() });
+    const updateDto: Partial<Pick<Player, 'name' | 'team'>> = {};
+    if (hasPlayerName) {
+      const trimmed = (dto.playerName ?? '').trim();
+      if (!trimmed) {
+        throw new BadRequestException('Player name cannot be empty.');
+      }
+      const existing = await this.playersService.findByName(trimmed);
+      if (existing && existing._id.toString() !== playerId) {
+        throw new ConflictException('A player with this name already exists.');
+      }
+      updateDto.name = trimmed;
+    }
+    if (hasTeam) {
+      updateDto.team = (dto.team ?? '').trim();
+    }
+    const updated = await this.playersService.update(playerId, updateDto);
     if (!updated) return null;
     return {
       _id: updated._id.toString(),

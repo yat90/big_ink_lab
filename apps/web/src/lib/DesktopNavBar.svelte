@@ -10,6 +10,7 @@
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
+  import { authMe } from '$lib/me';
 
   interface Props {
     authDisplayName: string;
@@ -19,6 +20,10 @@
 
   let statsMenuOpen = $state(false);
   let statsDropdownEl: HTMLDivElement | null = $state(null);
+  let userMenuOpen = $state(false);
+  let userDropdownEl: HTMLDivElement | null = $state(null);
+
+  const playerName = $derived(($authMe?.player?.name ?? '').trim());
 
   const isHome = $derived($page.url.pathname === '/');
   const isMatches = $derived(
@@ -38,15 +43,21 @@
   $effect(() => {
     $page.url.pathname;
     statsMenuOpen = false;
+    userMenuOpen = false;
   });
 
   onMount(() => {
     const onDocClick = (e: MouseEvent) => {
-      if (!statsMenuOpen) return;
-      const el = statsDropdownEl;
       const t = e.target;
-      if (el && t instanceof Node && el.contains(t)) return;
-      statsMenuOpen = false;
+      if (!(t instanceof Node)) return;
+      if (statsMenuOpen) {
+        const el = statsDropdownEl;
+        if (!el || !el.contains(t)) statsMenuOpen = false;
+      }
+      if (userMenuOpen) {
+        const el = userDropdownEl;
+        if (!el || !el.contains(t)) userMenuOpen = false;
+      }
     };
     document.addEventListener('click', onDocClick);
     return () => document.removeEventListener('click', onDocClick);
@@ -139,7 +150,10 @@
         class:desktop-nav__dropdown-link--active={isMyStatistics}
         aria-current={isMyStatistics ? 'page' : undefined}
       >
-        My statistics
+        <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
+          <IconBarChart size={18} />
+        </span>
+        <span>My statistics</span>
       </a>
     </div>
   </div>
@@ -176,24 +190,100 @@
     </span>
     <span class="desktop-nav__link-label">Team</span>
   </a>
-  <a
-    href="/me"
-    class="desktop-nav__link"
-    class:desktop-nav__link--active={isMe}
-    aria-current={isMe ? 'page' : undefined}
-    title={authDisplayName}
+  <div
+    class="desktop-nav__dropdown desktop-nav__account"
+    class:desktop-nav__dropdown--open={userMenuOpen}
+    bind:this={userDropdownEl}
   >
-    <span class="desktop-nav__link-icon" aria-hidden="true">
-      <IconUser size={28} />
-    </span>
-    <span class="desktop-nav__link-label">Me</span>
-  </a>
-  <button type="button" class="desktop-nav__link" onclick={logout} title="Logout">
-    <span class="desktop-nav__link-icon" aria-hidden="true">
-      <IconLogOut size={28} />
-    </span>
-    <span class="desktop-nav__link-label">Logout</span>
-  </button>
+    <div class="desktop-nav__dropdown-inner desktop-nav__dropdown-inner--account">
+      <a
+        href="/me"
+        class="desktop-nav__link desktop-nav__link--dropdown-main"
+        class:desktop-nav__link--active={isMe}
+        aria-current={isMe ? 'page' : undefined}
+        title={[playerName, authDisplayName].filter(Boolean).join(' · ') || undefined}
+        aria-label={playerName
+          ? authDisplayName
+            ? `Profile: ${playerName} (${authDisplayName})`
+            : `Profile: ${playerName}`
+          : authDisplayName
+            ? `Profile: ${authDisplayName}`
+            : 'Profile'}
+      >
+        <span class="desktop-nav__link-icon" aria-hidden="true">
+          <IconUser size={28} />
+        </span>
+      </a>
+      <button
+        type="button"
+        class="desktop-nav__dropdown-toggle"
+        aria-expanded={userMenuOpen}
+        aria-controls="desktop-nav-user-submenu"
+        aria-haspopup="true"
+        id="desktop-nav-user-menubutton"
+        onclick={(e) => {
+          e.stopPropagation();
+          userMenuOpen = !userMenuOpen;
+        }}
+      >
+        <span class="visually-hidden">Open account menu</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="m6 9 6 6 6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+    <div
+      id="desktop-nav-user-submenu"
+      class="desktop-nav__dropdown-panel"
+      role="group"
+      aria-label="Account menu"
+    >
+      {#if playerName}
+        <div class="desktop-nav__account-player muted" role="presentation">{playerName}</div>
+      {/if}
+      <a
+        href="/me/statistics"
+        class="desktop-nav__dropdown-link"
+        class:desktop-nav__dropdown-link--active={isMyStatistics}
+        aria-current={isMyStatistics ? 'page' : undefined}
+      >
+        <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
+          <IconBarChart size={18} />
+        </span>
+        <span>My statistics</span>
+      </a>
+      <a
+        href="/decks"
+        class="desktop-nav__dropdown-link"
+        class:desktop-nav__dropdown-link--active={isDecks}
+        aria-current={isDecks ? 'page' : undefined}
+      >
+        <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
+          <IconDecks size={18} />
+        </span>
+        <span>My decks</span>
+      </a>
+      <button
+        type="button"
+        class="desktop-nav__dropdown-link"
+        onclick={() => {
+          userMenuOpen = false;
+          void logout();
+        }}
+      >
+        <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
+          <IconLogOut size={18} />
+        </span>
+        <span>Log out</span>
+      </button>
+    </div>
+  </div>
 </nav>
 
 <style>
@@ -209,10 +299,23 @@
     border: 0;
   }
 
+  .desktop-nav__account {
+    margin-left: auto;
+  }
+
+  .desktop-nav__account :global(.desktop-nav__dropdown-panel) {
+    left: auto;
+    right: 0;
+  }
+
   .desktop-nav__dropdown-inner {
     display: flex;
     align-items: stretch;
     min-width: 0;
+  }
+
+  :global(.desktop-nav__dropdown-inner--account .desktop-nav__link.desktop-nav__link--dropdown-main) {
+    flex: 0 0 auto;
   }
 
   :global(.desktop-nav__link.desktop-nav__link--dropdown-main) {
@@ -248,5 +351,17 @@
   :global(.desktop-nav__dropdown--open) .desktop-nav__dropdown-toggle {
     color: var(--fg);
     background: var(--glass-bg-strong);
+  }
+
+  .desktop-nav__account-player {
+    padding: 8px 12px 10px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25;
+    border-bottom: 1px solid var(--glass-border);
+    max-width: 14rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 </style>

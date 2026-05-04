@@ -11,6 +11,7 @@
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import IconClose from '$lib/icons/IconClose.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
+  import { authMe } from '$lib/me';
 
   interface Props {
     open: boolean;
@@ -18,6 +19,8 @@
     logout: () => Promise<void>;
   }
   let { open = false, closeMenu, logout }: Props = $props();
+
+  const playerName = $derived(($authMe?.player?.name ?? '').trim());
 
   let showLogoutPrompt = $state(false);
 
@@ -158,6 +161,9 @@
         aria-current={isMyStatistics ? 'page' : undefined}
         onclick={closeMenu}
       >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconBarChart size={20} />
+        </span>
         My statistics
       </a>
     </div>
@@ -185,29 +191,34 @@
       </span>
       Team
     </a>
-    <button
-      type="button"
-      class="mobile-nav__drawer-link mobile-nav__drawer-link--button"
-      onclick={openLogoutPrompt}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconLogOut size={24} />
-      </span>
-      Logout
-    </button>
+    <div class="mobile-nav__drawer-group" role="group" aria-label="Account">
+      {#if playerName}
+        <p class="mobile-nav__drawer-player-name muted" role="presentation">{playerName}</p>
+      {/if}
+      <a
+        href="/me"
+        class="mobile-nav__drawer-link"
+        class:mobile-nav__drawer-link--active={isMe}
+        aria-current={isMe ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconUser size={24} />
+        </span>
+        Me
+      </a>
+      <button
+        type="button"
+        class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--button"
+        onclick={openLogoutPrompt}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconLogOut size={20} />
+        </span>
+        Log out
+      </button>
+    </div>
     <div class="mobile-nav__drawer-divider" role="separator" aria-hidden="true"></div>
-    <a
-      href="/me"
-      class="mobile-nav__drawer-link mobile-nav__drawer-link--bottom"
-      class:mobile-nav__drawer-link--active={isMe}
-      aria-current={isMe ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconUser size={24} />
-      </span>
-      Me
-    </a>
     <button
       type="button"
       class="mobile-nav__drawer-footer-close btn"
@@ -247,6 +258,14 @@
 {/if}
 
 <style>
+  .mobile-nav__drawer-player-name {
+    margin: 0;
+    padding: 6px 16px 2px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
   .mobile-nav-logout-modal.delete-game-modal {
     z-index: 1300;
   }

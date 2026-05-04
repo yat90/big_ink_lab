@@ -28,6 +28,8 @@
   let allPlayers = $state<Player[]>([]);
   const players = $derived(allPlayers.filter((p) => (p.team ?? '').trim() === BIG_INK_THEORY_TEAM));
   let loading = $state(true);
+  /** When true, player list is ready for the filter; deck fetch waits for this to avoid an empty player dropdown. */
+  let playersReady = $state(false);
   let error = $state('');
   let filterColor = $state('');
   let filterPlayer = $state('');
@@ -107,6 +109,8 @@
       }
     } catch {
       // non-blocking
+    } finally {
+      playersReady = true;
     }
   }
 
@@ -131,14 +135,14 @@
   }
 
   $effect(() => {
-    fetchPlayers();
+    if (!playersReady) return;
+    void loadDecks();
   });
 
-  $effect(() => {
-    loadDecks();
+  onMount(() => {
+    void fetchPlayers();
+    registerPageRefresh(loadDecks);
   });
-
-  onMount(() => registerPageRefresh(loadDecks));
 </script>
 
 <svelte:head>
