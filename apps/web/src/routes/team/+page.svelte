@@ -4,7 +4,8 @@
   import { goto } from '$app/navigation';
   import { authMe } from '$lib/me';
   import { fetchTeamOverview, formatMoney, type TeamOverview } from '$lib/team';
-  import { TEAM_TABS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
+  import { getLocale, translate, t } from '$lib/i18n';
+  import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
   import TeamMembersTab from './TeamMembersTab.svelte';
   import TeamRankingTab from './TeamRankingTab.svelte';
   import TeamFinanceTab from './TeamFinanceTab.svelte';
@@ -43,7 +44,8 @@
     try {
       overview = await fetchTeamOverview();
     } catch (err) {
-      error = err instanceof Error ? err.message : 'Could not load team.';
+      error =
+        err instanceof Error ? err.message : translate(getLocale(), 'team.loadError');
     } finally {
       loading = false;
     }
@@ -60,7 +62,7 @@
 </script>
 
 <svelte:head>
-  <title>Team · Big Ink Lab</title>
+  <title>{$t('team.pageTitle')}</title>
 </svelte:head>
 
 <div class="page page--team">
@@ -73,15 +75,13 @@
   {:else if error}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
-      <button type="button" class="btn" onclick={() => void loadOverview()}>Retry</button>
+      <button type="button" class="btn" onclick={() => void loadOverview()}>{$t('common.retry')}</button>
     </div>
   {:else if overview && !overview.hasTeam}
     <div class="card stack">
-      <h1 class="card__title">No team yet</h1>
+      <h1 class="card__title">{$t('team.noTeamTitle')}</h1>
       <p class="card__sub">
-        You aren't part of a team. Set your team name on the
-        <a href="/me">Me</a> page to start managing members, finances and tasks.
-      </p>
+        {$t('team.noTeamBefore')}<a href="/me">{$t('team.noTeamLink')}</a>{$t('team.noTeamAfter')}</p>
     </div>
   {:else if overview}
     <div class="team-header card">
@@ -90,19 +90,22 @@
           <h1 class="team-header__title">{overview.team}</h1>
           <p class="team-header__sub muted">
             {#if isAdmin}
-              You manage this team
+              {$t('team.header.youManage')}
             {:else}
-              You're a member of this team
+              {$t('team.header.youAreMember')}
             {/if}
-            · {overview.balance?.memberCount ?? 0} member{(overview.balance?.memberCount ?? 0) === 1 ? '' : 's'}
+            · {overview.balance?.memberCount ?? 0}
+            {(overview.balance?.memberCount ?? 0) === 1
+              ? $t('team.header.memberSingular')
+              : $t('team.header.memberPlural')}
             {#if overview.balance && overview.balance.monthlyDues > 0}
-              · {formatMoney(overview.balance.monthlyDues)}/month dues
+              · {formatMoney(overview.balance.monthlyDues)}{$t('team.header.monthlyDues')}
             {/if}
           </p>
         </div>
         {#if overview.balance}
           <div class="team-header__balance" aria-live="polite">
-            <span class="team-header__balance-label muted">Treasury</span>
+            <span class="team-header__balance-label muted">{$t('team.header.treasury')}</span>
             <span
               class="team-header__balance-value"
               class:team-header__balance-value--neg={overview.balance.balance < 0}
@@ -117,37 +120,37 @@
           <IconUsers size={20} className="team-stat__icon" />
           <div>
             <div class="team-stat__value">{overview.balance?.memberCount ?? 0}</div>
-            <div class="team-stat__label muted">Members</div>
+            <div class="team-stat__label muted">{$t('team.header.statMembers')}</div>
           </div>
         </div>
         {#if overview.balance && overview.balance.outstandingTotal > 0}
           <div class="team-stat team-stat--warn">
             <div>
               <div class="team-stat__value">{formatMoney(overview.balance.outstandingTotal)}</div>
-              <div class="team-stat__label muted">Outstanding dues</div>
+              <div class="team-stat__label muted">{$t('team.header.outstandingDues')}</div>
             </div>
           </div>
         {/if}
       </div>
     </div>
 
-    <div class="team-tabs" role="tablist" aria-label="Team sections">
-      {#each TEAM_TABS as tab (tab.id)}
-        {@const TabIcon = TEAM_TAB_ICON_MAP[tab.id]}
+    <div class="team-tabs" role="tablist" aria-label={$t('team.tablistLabel')}>
+      {#each TEAM_TAB_IDS as tabId (tabId)}
+        {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === tab.id}
-          aria-controls="team-panel-{tab.id}"
-          id="team-tab-{tab.id}"
+          aria-selected={activeTab === tabId}
+          aria-controls="team-panel-{tabId}"
+          id="team-tab-{tabId}"
           class="team-tab"
-          class:team-tab--active={activeTab === tab.id}
-          onclick={() => selectTeamTab(tab.id)}
+          class:team-tab--active={activeTab === tabId}
+          onclick={() => selectTeamTab(tabId)}
         >
           <span class="team-tab__icon" aria-hidden="true">
             <TabIcon size={18} className="team-tab__icon-svg" />
           </span>
-          <span class="team-tab__label">{tab.label}</span>
+          <span class="team-tab__label">{$t(`team.tabs.${tabId}`)}</span>
         </button>
       {/each}
     </div>

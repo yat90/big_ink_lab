@@ -14,7 +14,9 @@
   import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import { authMe } from '$lib/me';
-  import { TEAM_TABS, teamTabFromSearchParams } from '$lib/teamTabs';
+  import { locale, setLocale, t } from '$lib/i18n';
+  import type { Locale } from '$lib/i18n';
+  import { TEAM_TAB_IDS, teamTabFromSearchParams } from '$lib/teamTabs';
 
   interface Props {
     authDisplayName: string;
@@ -32,6 +34,10 @@
   let teamDropdownEl: HTMLDivElement | null = $state(null);
 
   const playerName = $derived(($authMe?.player?.name ?? '').trim());
+
+  function pickLocale(next: Locale) {
+    setLocale(next);
+  }
 
   const TEAM_TAB_ICON_MAP = {
     members: IconUsers,
@@ -116,7 +122,7 @@
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconTrophy size={28} />
     </span>
-    <span class="desktop-nav__link-label">Matches</span>
+    <span class="desktop-nav__link-label">{$t('nav.matches')}</span>
   </a>
   <a
     href="/tournaments"
@@ -127,7 +133,7 @@
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconCrownOutline size={28} />
     </span>
-    <span class="desktop-nav__link-label">Tournaments</span>
+    <span class="desktop-nav__link-label">{$t('nav.tournaments')}</span>
   </a>
   <div
     class="desktop-nav__dropdown"
@@ -144,7 +150,7 @@
         <span class="desktop-nav__link-icon" aria-hidden="true">
           <IconBarChart size={28} />
         </span>
-        <span class="desktop-nav__link-label">Statistics</span>
+        <span class="desktop-nav__link-label">{$t('nav.statistics')}</span>
       </a>
       <button
         type="button"
@@ -158,7 +164,7 @@
           statsMenuOpen = !statsMenuOpen;
         }}
       >
-        <span class="visually-hidden">Open Statistics submenu</span>
+        <span class="visually-hidden">{$t('nav.openStatisticsSubmenu')}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="m6 9 6 6 6-6"
@@ -174,7 +180,7 @@
       id="desktop-nav-stats-submenu"
       class="desktop-nav__dropdown-panel"
       role="group"
-      aria-label="Statistics submenu"
+      aria-label={$t('nav.statisticsSection')}
     >
       <a
         href="/me/statistics"
@@ -185,7 +191,7 @@
         <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
           <IconBarChart size={18} />
         </span>
-        <span>My statistics</span>
+        <span>{$t('nav.myStatistics')}</span>
       </a>
     </div>
   </div>
@@ -198,7 +204,7 @@
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconDecks size={28} />
     </span>
-    <span class="desktop-nav__link-label">Decks</span>
+    <span class="desktop-nav__link-label">{$t('nav.decks')}</span>
   </a>
   <div
   class="desktop-nav__dropdown"
@@ -214,7 +220,7 @@
       <span class="desktop-nav__link-icon" aria-hidden="true">
         <IconTeam size={28} />
       </span>
-      <span class="desktop-nav__link-label">Team</span>
+      <span class="desktop-nav__link-label">{$t('nav.team')}</span>
     </a>
     <button
       type="button"
@@ -228,7 +234,7 @@
         teamMenuOpen = !teamMenuOpen;
       }}
     >
-      <span class="visually-hidden">Open Team submenu</span>
+      <span class="visually-hidden">{$t('nav.openTeamSubmenu')}</span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
           d="m6 9 6 6 6-6"
@@ -244,20 +250,20 @@
     id="desktop-nav-team-submenu"
     class="desktop-nav__dropdown-panel"
     role="group"
-    aria-label="Team sections"
+    aria-label={$t('team.tablistLabel')}
   >
-    {#each TEAM_TABS as tab (tab.id)}
-      {@const TabIcon = TEAM_TAB_ICON_MAP[tab.id]}
+    {#each TEAM_TAB_IDS as tabId (tabId)}
+      {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
       <a
-        href="/team?tab={tab.id}"
+        href="/team?tab={tabId}"
         class="desktop-nav__dropdown-link"
-        class:desktop-nav__dropdown-link--active={activeTeamTab === tab.id}
-        aria-current={activeTeamTab === tab.id ? 'page' : undefined}
+        class:desktop-nav__dropdown-link--active={activeTeamTab === tabId}
+        aria-current={activeTeamTab === tabId ? 'page' : undefined}
       >
         <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
           <TabIcon size={18} />
         </span>
-        <span>{tab.label}</span>
+        <span>{$t(`team.tabs.${tabId}`)}</span>
       </a>
     {/each}
   </div>
@@ -276,7 +282,7 @@
         aria-controls="desktop-nav-info-submenu"
         aria-haspopup="true"
         id="desktop-nav-info-mainbutton"
-        aria-label="More information"
+        aria-label={$t('nav.moreInformation')}
         onclick={(e) => {
           e.stopPropagation();
           infoMenuOpen = !infoMenuOpen;
@@ -298,7 +304,7 @@
           infoMenuOpen = !infoMenuOpen;
         }}
       >
-        <span class="visually-hidden">Open more information menu</span>
+        <span class="visually-hidden">{$t('nav.openMoreInformationMenu')}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="m6 9 6 6 6-6"
@@ -314,7 +320,7 @@
       id="desktop-nav-info-submenu"
       class="desktop-nav__dropdown-panel"
       role="group"
-      aria-label="More information"
+      aria-label={$t('nav.moreInformation')}
     >
       <a
         href="/players"
@@ -325,7 +331,7 @@
         <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
           <IconUsers size={18} />
         </span>
-        <span>Players</span>
+        <span>{$t('nav.players')}</span>
       </a>
     </div>
   </div>
@@ -348,7 +354,7 @@
             : `Profile: ${playerName}`
           : authDisplayName
             ? `Profile: ${authDisplayName}`
-            : 'Profile'}
+            : $t('common.profile')}
       >
         <span class="desktop-nav__link-icon" aria-hidden="true">
           <IconUser size={28} />
@@ -366,7 +372,7 @@
           userMenuOpen = !userMenuOpen;
         }}
       >
-        <span class="visually-hidden">Open account menu</span>
+        <span class="visually-hidden">{$t('nav.openAccountMenu')}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="m6 9 6 6 6-6"
@@ -382,11 +388,29 @@
       id="desktop-nav-user-submenu"
       class="desktop-nav__dropdown-panel"
       role="group"
-      aria-label="Account menu"
+      aria-label={$t('nav.accountMenu')}
     >
       {#if playerName}
         <div class="desktop-nav__account-player muted" role="presentation">{playerName}</div>
       {/if}
+      <div class="desktop-nav__lang" role="group" aria-label={$t('common.language')}>
+        <button
+          type="button"
+          class="desktop-nav__lang-btn"
+          class:desktop-nav__lang-btn--active={$locale === 'de'}
+          onclick={() => pickLocale('de')}
+        >
+          {$t('lang.deShort')}
+        </button>
+        <button
+          type="button"
+          class="desktop-nav__lang-btn"
+          class:desktop-nav__lang-btn--active={$locale === 'en'}
+          onclick={() => pickLocale('en')}
+        >
+          {$t('lang.enShort')}
+        </button>
+      </div>
       <a
         href="/me/statistics"
         class="desktop-nav__dropdown-link"
@@ -396,7 +420,7 @@
         <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
           <IconBarChart size={18} />
         </span>
-        <span>My statistics</span>
+        <span>{$t('nav.myStatistics')}</span>
       </a>
       <a
         href="/decks"
@@ -407,7 +431,7 @@
         <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
           <IconDecks size={18} />
         </span>
-        <span>My decks</span>
+        <span>{$t('nav.myDecks')}</span>
       </a>
       <button
         type="button"
@@ -420,7 +444,7 @@
         <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
           <IconLogOut size={18} />
         </span>
-        <span>Log out</span>
+        <span>{$t('nav.logOut')}</span>
       </button>
     </div>
   </div>
@@ -512,5 +536,40 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .desktop-nav__lang {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    padding: 8px 10px 10px;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .desktop-nav__lang-btn {
+    min-width: 2.5rem;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition:
+      color var(--transition),
+      background var(--transition),
+      border-color var(--transition);
+  }
+
+  .desktop-nav__lang-btn:hover {
+    color: var(--fg);
+    background: var(--glass-bg-strong);
+  }
+
+  .desktop-nav__lang-btn--active {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
   }
 </style>

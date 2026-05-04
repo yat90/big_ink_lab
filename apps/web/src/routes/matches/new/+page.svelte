@@ -10,6 +10,8 @@
   import { authMe } from '$lib/me';
   import { STAGE_OPTIONS } from '$lib/matches';
   import { onMount } from 'svelte';
+  import { getLocale, translate, t, locale } from '$lib/i18n';
+  import { get } from 'svelte/store';
 
   type Player = { _id: string; name: string; team: string };
 
@@ -69,10 +71,16 @@
   const showP1DeckSelect = $derived(!!p1 && p1Team === BIG_INK_TEAM);
   const showP2DeckSelect = $derived(!!p2 && getPlayerTeam(p2) === BIG_INK_TEAM);
 
-  const p1PlayerDisplayName = $derived(myPlayerName.trim() || 'You');
-  const p2PlayerDisplayName = $derived(
-    p2 ? (players.find((pl) => pl._id === p2)?.name ?? 'Player 2') : 'Player 2'
-  );
+  const p1PlayerDisplayName = $derived.by(() => {
+    void get(locale);
+    return myPlayerName.trim() || translate(get(locale), 'matches.new.you');
+  });
+  const p2PlayerDisplayName = $derived.by(() => {
+    void get(locale);
+    return p2
+      ? (players.find((pl) => pl._id === p2)?.name ?? translate(get(locale), 'matches.new.player2Default'))
+      : translate(get(locale), 'matches.new.player2Default');
+  });
 
   async function fetchDeck(deckId: string): Promise<{ name: string; deckColor: string } | null> {
     if (!deckId.trim()) return null;
@@ -169,14 +177,12 @@
         p2OfferGuestCreate = false;
       } else if (exact.length > 1) {
         if (!p2TextMatchesResolvedPlayer(q)) p2 = '';
-        p2SearchHint =
-          'Multiple players match this name — use the list button to choose one.';
+        p2SearchHint = translate(getLocale(), 'matches.new.searchHintMultiple');
         p2OfferGuestCreate = false;
       } else if (rowsNoSelf.length === 0) {
         if (!p2TextMatchesResolvedPlayer(q)) {
           p2 = '';
-          p2SearchHint =
-            'No player found — create a guest player with this name or pick from the list.';
+          p2SearchHint = translate(getLocale(), 'matches.new.searchHintNone');
           p2OfferGuestCreate = true;
         } else {
           p2SearchHint = '';
@@ -188,15 +194,15 @@
           p2 = '';
           p2SearchHint =
             rowsNoSelf.length > 1
-              ? 'Pick from the list or type the full name to match one player.'
-              : 'No exact name match — use the list button or correct the spelling.';
+              ? translate(getLocale(), 'matches.new.searchHintPickList')
+              : translate(getLocale(), 'matches.new.searchHintNoExact');
         } else {
           p2SearchHint = '';
         }
       }
     } catch {
       if (gen === p2SearchGen) {
-        p2SearchHint = 'Could not search players. Try again.';
+        p2SearchHint = translate(getLocale(), 'matches.new.searchHintFailed');
         p2OfferGuestCreate = false;
       }
     }
@@ -217,7 +223,7 @@
         const data = await res.json().catch(() => ({}));
         createGuestError =
           (typeof data.message === 'string' ? data.message : null) ??
-          `Could not create player (${res.status}).`;
+          translate(getLocale(), 'matches.new.createPlayerFailed', { status: String(res.status) });
         return;
       }
       const created = await res.json();
@@ -230,7 +236,7 @@
       p2SearchHint = '';
       p2OfferGuestCreate = false;
     } catch {
-      createGuestError = 'Could not reach API.';
+      createGuestError = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       createGuestLoading = false;
     }
@@ -299,7 +305,7 @@
       const params = new URLSearchParams({ page: '1', limit: '100' });
       const res = await fetch(`${apiUrl}/tournaments?${params}`);
       if (!res.ok) {
-        tournamentsError = 'Could not load tournaments.';
+        tournamentsError = translate(getLocale(), 'matches.new.tournamentsLoadError');
         return;
       }
       const json = await res.json();
@@ -316,7 +322,7 @@
         return { _id: id, name, date: dateStr || new Date(0).toISOString() };
       });
     } catch {
-      tournamentsError = 'Could not load tournaments.';
+      tournamentsError = translate(getLocale(), 'matches.new.tournamentsLoadError');
     } finally {
       tournamentsLoading = false;
     }
@@ -341,10 +347,13 @@
   }
 
   const tournamentButtonLabel = $derived.by(() => {
-    if (tournamentsLoading) return 'Loading…';
-    if (!tournamentId.trim()) return 'Select tournament (optional)';
+    const loc = get(locale);
+    if (tournamentsLoading) return translate(loc, 'matches.new.loadingShort');
+    if (!tournamentId.trim()) return translate(loc, 'matches.new.tournamentSelectOptional');
     const t = tournaments.find((x) => x._id === tournamentId);
-    return t ? formatTournamentOptionLabel(t) : 'Select tournament (optional)';
+    return t
+      ? formatTournamentOptionLabel(t)
+      : translate(loc, 'matches.new.tournamentSelectOptional');
   });
 
   $effect(() => {
@@ -370,15 +379,15 @@
     e.preventDefault();
     error = '';
     if (!p1?.trim()) {
-      error = 'Your account has no linked player. Link a player before creating a match.';
+      error = translate(getLocale(), 'matches.new.errNoLinkedPlayer');
       return;
     }
     if (!p2?.trim()) {
-      error = 'Enter or select an opponent.';
+      error = translate(getLocale(), 'matches.new.errNoOpponent');
       return;
     }
     if (p2 === p1) {
-      error = 'Opponent must be different from you.';
+      error = translate(getLocale(), 'matches.new.errOpponentSelf');
       return;
     }
     loading = true;
@@ -406,24 +415,32 @@
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        error = data.message ?? `Error ${res.status}`;
+        const data = (await res.json().catch(() => ({}))) as { message?: string };
+        const m = data.message;
+        error =
+          typeof m === 'string' && m.trim()
+            ? m.trim()
+            : translate(getLocale(), 'common.errorWithStatus', { status: String(res.status) });
         loading = false;
         return;
       }
       const match = await res.json();
       await goto(`/matches/${match._id}`);
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       loading = false;
     }
   }
 </script>
 
+<svelte:head>
+  <title>{$t('matches.new.pageTitle')}</title>
+</svelte:head>
+
 <div class="page new-match-page">
-  <h2 class="page-title">New match</h2>
-  <p class="page-sub">Create a new match between two players.</p>
+  <h2 class="page-title">{$t('matches.new.title')}</h2>
+  <p class="page-sub">{$t('matches.new.subtitle')}</p>
 
   <form onsubmit={onSubmit} class="new-match__form stack">
     <input type="hidden" name="p1" value={p1} required />
@@ -432,7 +449,7 @@
     <section class="card stack new-match__card" aria-labelledby="match-card-title">
       <div class="formgrid">
         <label class="label" for="stage">
-          Stage
+          {$t('matches.new.stageLabel')}
           <select id="stage" class="input" bind:value={stage}>
             {#each STAGE_OPTIONS as s (s)}
               <option value={s}>{s}</option>
@@ -440,41 +457,41 @@
           </select>
         </label>
         <label class="label" for="playedAt">
-          Played at
+          {$t('matches.new.playedAtLabel')}
           <input id="playedAt" type="datetime-local" class="input" bind:value={playedAt} />
         </label>
       </div>
       {#if stage === 'Tournament'}
-        <label class="label" for="match-tournament">Tournament</label>
+        <label class="label" for="match-tournament">{$t('matches.new.tournamentLabel')}</label>
         <button
           id="match-tournament"
           type="button"
           class="input new-match__select-btn"
           onclick={() => (tournamentPickerOpen = true)}
           disabled={tournamentsLoading}
-          title="Click to choose tournament"
+          title={$t('matches.new.tournamentPickTitle')}
         >
           {tournamentButtonLabel}
         </button>
         {#if tournamentsError}
           <p class="alert" role="alert">{tournamentsError}</p>
         {/if}
-        <label class="label" for="round">Round</label>
+        <label class="label" for="round">{$t('matches.new.roundLabel')}</label>
         <input
           id="round"
           type="text"
           class="input"
           autocomplete="off"
           bind:value={round}
-          placeholder="e.g. 1, 2, top 8, final"
+          placeholder={$t('matches.new.roundPlaceholder')}
         />
       {/if}
     </section>
 
     <!-- Player 1 -->
     <section class="card stack new-match__card new-match__card--player" aria-labelledby="p1-card-title">
-      <h3 id="p1-card-title" class="card__title new-match__card-title">Player 1 (you)</h3>
-      <p class="label" id="p1-label">Player</p>
+      <h3 id="p1-card-title" class="card__title new-match__card-title">{$t('matches.new.p1SectionTitle')}</h3>
+      <p class="label" id="p1-label">{$t('common.player')}</p>
       <div
         id="p1"
         class="input new-match__you-display"
@@ -485,29 +502,29 @@
       </div>
       {#if !p1}
         <p class="card__sub muted" role="status">
-          No player linked to your account. Link a player in your profile before creating a match.
+          {$t('matches.new.noPlayerLinked')}
         </p>
       {/if}
       {#if showP1DeckSelect}
-        <label class="label" for="p1Deck">Deck</label>
+        <label class="label" for="p1Deck">{$t('matches.new.deckLabel')}</label>
         <button
           id="p1Deck"
           type="button"
           class="input new-match__select-btn"
           onclick={() => openDeckPicker('p1')}
-          title="Optional deck – click to choose"
+          title={$t('matches.new.deckOptionalTitle')}
         >
           {p1DeckButtonLabel}
         </button>
       {/if}
-      <label class="label" for="p1DeckColor">Deck color</label>
-      <DeckColorSelect id="p1DeckColor" bind:value={p1DeckColor} ariaLabel="P1 deck color" />
+      <label class="label" for="p1DeckColor">{$t('matches.new.labelDeckColor')}</label>
+      <DeckColorSelect id="p1DeckColor" bind:value={p1DeckColor} ariaLabel={$t('matches.new.ariaP1DeckColor')} />
     </section>
 
     <!-- Player 2 -->
     <section class="card stack new-match__card new-match__card--player" aria-labelledby="p2-card-title">
-      <h3 id="p2-card-title" class="card__title new-match__card-title">Player 2</h3>
-      <label class="label" for="p2-opponent">Opponent</label>
+      <h3 id="p2-card-title" class="card__title new-match__card-title">{$t('matches.new.p2SectionTitle')}</h3>
+      <label class="label" for="p2-opponent">{$t('matches.new.opponentLabel')}</label>
       <div class="new-match__opponent-row">
         <input
           id="p2-opponent"
@@ -515,16 +532,16 @@
           class="input new-match__opponent-input"
           maxlength="120"
           bind:value={p2SearchText}
-          placeholder="Opponent name"
-          aria-label="Opponent name"
+          placeholder={$t('matches.new.opponentPlaceholder')}
+          aria-label={$t('matches.new.opponentNameAria')}
           autocomplete="off"
         />
         <button
           type="button"
           class="btn new-match__opponent-pick-btn"
           onclick={() => openPlayerPicker()}
-          title="Select player from list"
-          aria-label="Select opponent from list"
+          title={$t('matches.new.pickListTitle')}
+          aria-label={$t('matches.new.pickListAria')}
         >
           <IconUsers size={20} />
         </button>
@@ -540,11 +557,10 @@
             disabled={createGuestLoading || !p2SearchText.trim()}
             onclick={createGuestOpponent}
           >
-            {createGuestLoading ? 'Creating…' : 'Create guest player'}
+            {createGuestLoading ? $t('matches.new.createGuestCreating') : $t('matches.new.createGuest')}
           </button>
           <p class="card__sub muted new-match__guest-create-help">
-            Adds “{p2SearchText.trim()}” as a guest (no login). Guest players are hidden from the
-            default roster unless you filter for them.
+            {$t('matches.new.createGuestHelp', { name: p2SearchText.trim() })}
           </p>
           {#if createGuestError}
             <p class="alert" role="alert">{createGuestError}</p>
@@ -552,20 +568,20 @@
         </div>
       {/if}
       {#if showP2DeckSelect}
-        <label class="label" for="p2Deck">Deck</label>
+        <label class="label" for="p2Deck">{$t('matches.new.deckLabel')}</label>
         <button
           id="p2Deck"
           type="button"
           class="input new-match__select-btn"
           onclick={() => openDeckPicker('p2')}
-          title="Optional deck – click to choose"
+          title={$t('matches.new.deckOptionalTitle')}
         >
           {p2DeckButtonLabel}
         </button>
       {/if}
 
-      <label class="label" for="p2DeckColor">Deck color</label>
-      <DeckColorSelect id="p2DeckColor" bind:value={p2DeckColor} ariaLabel="P2 deck color" />
+      <label class="label" for="p2DeckColor">{$t('matches.new.labelDeckColor')}</label>
+      <DeckColorSelect id="p2DeckColor" bind:value={p2DeckColor} ariaLabel={$t('matches.new.ariaP2DeckColor')} />
     </section>
 
     {#if error}
@@ -574,16 +590,16 @@
 
     <div class="row new-match__actions">
       <button type="submit" class="btn btn--primary" disabled={loading}>
-        {loading ? 'Creating…' : 'Create match'}
+        {loading ? $t('common.creating') : $t('matches.new.submit')}
       </button>
-      <a href="/matches" class="btn">Cancel</a>
+      <a href="/matches" class="btn">{$t('common.cancel')}</a>
     </div>
   </form>
 
   <PlayerPickerModal
     bind:open={playerPickerOpen}
-    title="Select opponent"
-    forLabel="Opponent"
+    title={$t('matches.new.playerPickerTitle')}
+    forLabel={$t('matches.new.playerPickerFor')}
     excludePlayerId={p1}
     presetTeamFromMe={false}
     onSelect={handlePlayerSelect}
@@ -591,7 +607,7 @@
   />
   <DeckPickerModal
     bind:open={deckPickerOpen}
-    title="Select deck"
+    title={$t('matches.new.deckPickerTitle')}
     forLabel={deckPickerRole === 'p1' ? p1PlayerDisplayName : p2PlayerDisplayName}
     filterPlayerId={deckPickerRole === 'p1' ? p1 : p2}
     onSelect={handleDeckSelect}
@@ -599,7 +615,7 @@
   />
   <TournamentPickerModal
     bind:open={tournamentPickerOpen}
-    title="Select tournament"
+    title={$t('matches.new.tournamentPickerTitle')}
     tournaments={tournaments}
     loading={tournamentsLoading}
     error={tournamentsError}

@@ -20,7 +20,9 @@
   import Pagination from '$lib/Pagination.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
-  import { ERR, messageFromFailedResponse } from '$lib/errors';
+  import { getLocale, translate, t, locale } from '$lib/i18n';
+  import { get } from 'svelte/store';
+  import { messageFromFailedResponse } from '$lib/errors';
   import { authMe } from '$lib/me';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
 
@@ -56,38 +58,53 @@
 
   const apiUrl = config.apiUrl ?? '/api';
 
-  const STAGE_FILTER_OPTIONS = [
-    { value: '', label: 'All stages' },
-    ...STAGE_OPTIONS.map((s) => ({ value: s, label: s })),
-  ];
+  const STAGE_FILTER_OPTIONS = $derived.by(() => {
+    const loc = get(locale);
+    return [
+      { value: '', label: translate(loc, 'matches.list.stageAll') },
+      ...STAGE_OPTIONS.map((s) => ({ value: s, label: s })),
+    ];
+  });
 
-  const TIME_FILTER_OPTIONS = [
-    { value: '', label: 'All time' },
-    { value: '7', label: 'Last 7 days' },
-    { value: '30', label: 'Last 30 days' },
-    { value: '90', label: 'Last 90 days' },
-  ];
+  const TIME_FILTER_OPTIONS = $derived.by(() => {
+    const loc = get(locale);
+    return [
+      { value: '', label: translate(loc, 'matches.list.timeAll') },
+      { value: '7', label: translate(loc, 'matches.list.timeLast7') },
+      { value: '30', label: translate(loc, 'matches.list.timeLast30') },
+      { value: '90', label: translate(loc, 'matches.list.timeLast90') },
+    ];
+  });
 
-  const filterSummary = $derived(`${total} total match${total === 1 ? '' : 'es'}`);
-  const filterBadges = $derived<string[]>(
-    [
-      filterPlayerName ? `Player: ${filterPlayerName}` : '',
-      filterStage ? `Stage: ${filterStage}` : '',
-      filterTime ? `Last ${filterTime}d` : '',
-    ].filter((b) => b.length > 0)
-  );
+  const filterSummary = $derived.by(() => {
+    const loc = get(locale);
+    return translate(
+      loc,
+      total === 1 ? 'matches.list.filterTotalOne' : 'matches.list.filterTotalMany',
+      { count: String(total) },
+    );
+  });
+
+  const filterBadges = $derived.by(() => {
+    const loc = get(locale);
+    return [
+      filterPlayerName
+        ? translate(loc, 'matches.list.filterBadgePlayer', { name: filterPlayerName })
+        : '',
+      filterStage ? translate(loc, 'matches.list.filterBadgeStage', { stage: filterStage }) : '',
+      filterTime ? translate(loc, 'matches.list.filterBadgeLastDays', { days: filterTime }) : '',
+    ].filter((b) => b.length > 0);
+  });
 
   /**
    * A single `.zip` larger than this threshold is routed to the bulk archive
    * endpoint. Individual compressed replays from duels.ink are only a few KB,
-   * so 1 MB is a safe floor for "this is a multi-game archive".
    */
-  const BULK_ZIP_MIN_SIZE_BYTES = 1 * 1024 * 1024;
 
   function looksLikeBulkZip(files: FileList): boolean {
     if (files.length !== 1) return false;
     const file = files[0];
-    return file.name.toLowerCase().endsWith('.zip') && file.size > BULK_ZIP_MIN_SIZE_BYTES;
+    return file.name.toLowerCase().endsWith('.zip')   ;
   }
 
   function triggerDuelsImport() {
@@ -128,7 +145,7 @@
     if (st && (STAGE_OPTIONS as readonly string[]).includes(st)) return st;
     const t = m.tournament;
     if (t && (typeof t === 'object' ? t._id || t.name : typeof t === 'string' && t.trim()))
-      return 'Tournament';
+      return translate(getLocale(), 'matches.list.labelTournament');
     return null;
   }
 
@@ -138,10 +155,13 @@
   ): { id: string; name: string } | null {
     const t = m.tournament;
     if (t && typeof t === 'object' && t._id) {
-      return { id: t._id, name: t.name?.trim() || 'Tournament' };
+      return {
+        id: t._id,
+        name: t.name?.trim() || translate(getLocale(), 'matches.list.labelTournament'),
+      };
     }
     if (typeof t === 'string' && /^[a-f\d]{24}$/i.test(t.trim())) {
-      return { id: t.trim(), name: 'Tournament' };
+      return { id: t.trim(), name: translate(getLocale(), 'matches.list.labelTournament') };
     }
     return null;
   }
@@ -175,7 +195,7 @@
       const url = `${apiUrl}/matches${params.toString() ? `?${params}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
-        error = await messageFromFailedResponse(res, ERR.loadMatches);
+        error = await messageFromFailedResponse(res, translate(getLocale(), 'matches.list.loadError'));
         return;
       }
       const response = await res.json();
@@ -183,7 +203,7 @@
       totalPages = response.meta?.totalPages || 1;
       total = response.meta?.total || 0;
     } catch {
-      error = ERR.network;
+      error = translate(getLocale(), 'common.networkError');
     } finally {
       loading = false;
     }
@@ -239,12 +259,12 @@
     };
   });
 
-  async function extractErrorMessage(res: Response, fallback: string): Promise<string> {
+  async function extractErrorMessage(res: Response, fallbackKey: string): Promise<string> {
     const data = (await res.json().catch(() => ({}))) as { message?: string | string[] };
     const m = data.message;
     if (Array.isArray(m)) return m.join(', ');
     if (typeof m === 'string') return m;
-    return `${fallback} (${res.status})`;
+    return `${translate(getLocale(), fallbackKey)} (${res.status})`;
   }
 
   async function importAsBulk(file: File, token: string): Promise<void> {
@@ -256,7 +276,7 @@
       body: fd,
     });
     if (!res.ok) {
-      duelsImportError = await extractErrorMessage(res, 'Bulk import failed');
+      duelsImportError = await extractErrorMessage(res, 'matches.list.bulkImportFailed');
       return;
     }
     const json = (await res.json()) as { matches: Array<{ _id: string }> };
@@ -279,7 +299,7 @@
       body: fd,
     });
     if (!res.ok) {
-      duelsImportError = await extractErrorMessage(res, 'Import failed');
+      duelsImportError = await extractErrorMessage(res, 'matches.list.importFailed');
       return;
     }
     const match = (await res.json()) as { _id: string };
@@ -292,7 +312,7 @@
     if (!files?.length) return;
     const token = getAuthToken();
     if (!token) {
-      duelsImportError = 'Sign in to import.';
+      duelsImportError = translate(getLocale(), 'matches.list.signInToImport');
       input.value = '';
       return;
     }
@@ -305,7 +325,7 @@
         await importAsReplays(files, token);
       }
     } catch {
-      duelsImportError = 'Import failed.';
+      duelsImportError = translate(getLocale(), 'matches.list.importFailed');
     } finally {
       importingDuels = false;
       input.value = '';
@@ -326,6 +346,10 @@
   });
 </script>
 
+<svelte:head>
+  <title>{$t('matches.list.pageTitle')}</title>
+</svelte:head>
+
 <div class="page">
   {#if myPlayerId}
     <input
@@ -336,11 +360,11 @@
       multiple
       disabled={importingDuels}
       onchange={onDuelsImportFilesSelected}
-      aria-label="Import Duels replays or bulk archive"
+      aria-label={$t('matches.list.duelsFileAria')}
     />
   {/if}
   {#if loading}
-    <div class="matches-page matches-page--skeleton" aria-busy="true" aria-live="polite" aria-label="Loading matches">
+    <div class="matches-page matches-page--skeleton" aria-busy="true" aria-live="polite" aria-label={$t('matches.list.loadingAria')}>
       <div class="row matches-header row--between">
         <div class="page-header__title-row">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>
@@ -363,7 +387,7 @@
           <div class="loading-skeleton__match-block" aria-hidden="true"></div>
         {/each}
       </div>
-      <p class="muted margin-top-md">Loading matches…</p>
+      <p class="muted margin-top-md">{$t('matches.list.loadingText')}</p>
     </div>
   {:else if error}
     <div class="card" role="alert" aria-live="assertive">
@@ -371,10 +395,10 @@
     </div>
   {:else if matches.length === 0 && !filterStage && !filterTime && !filterPlayerId && !filterTournamentId}
     <div class="card stack">
-      <h2 class="card__title">No matches yet</h2>
-      <p class="card__sub">Create your first match or import replays from duels.ink.</p>
+      <h2 class="card__title">{$t('matches.list.emptyTitle')}</h2>
+      <p class="card__sub">{$t('matches.list.emptySub')}</p>
       <div class="row matches-page__empty-actions">
-        <a href="/matches/new" class="btn btn--primary">New match</a>
+        <a href="/matches/new" class="btn btn--primary">{$t('matches.list.newMatch')}</a>
         {#if myPlayerId}
           <button
             type="button"
@@ -382,11 +406,11 @@
             onclick={triggerDuelsImport}
             disabled={importingDuels}
             aria-busy={importingDuels}
-            aria-label={importingDuels ? 'Importing…' : 'Import from Duels'}
-            title="Import replays (.gz/.zip) or a bulk .zip archive from duels.ink"
+            aria-label={importingDuels ? $t('matches.list.importing') : $t('matches.list.importLabel')}
+            title={$t('matches.list.duelsImportTooltip')}
           >
             <IconUpload size={20} />
-            <span>{importingDuels ? 'Importing…' : 'Import'}</span>
+            <span>{importingDuels ? $t('matches.list.importing') : $t('matches.list.importLabel')}</span>
           </button>
           <button
             type="button"
@@ -394,8 +418,8 @@
             onclick={toggleDuelsHelp}
             aria-expanded={duelsHelpOpen}
             aria-controls="duels-import-help"
-            aria-label={duelsHelpOpen ? 'Hide import help' : 'What can I import?'}
-            title="What can I import?"
+            aria-label={duelsHelpOpen ? $t('matches.list.duelsHelpCollapseAria') : $t('matches.list.duelsHelpExpandAria')}
+            title={$t('matches.list.duelsHelpButtonTitle')}
           >
             ?
           </button>
@@ -406,18 +430,13 @@
           id="duels-import-help"
           class="matches-page__duels-help-panel"
           role="region"
-          aria-label="Duels import help"
+          aria-label={$t('matches.list.duelsHelpRegionAria')}
         >
           <p class="muted matches-page__duels-hint">
-            You are <strong>Player 1</strong>. Opponent is taken from the replay
-            (<code>playerNames</code> / <code>perspective</code>). One <code>.gz</code> per game, or
-            one <code>.zip</code> of <code>.gz</code> files. A new player is created if the name does
-            not exist.
+            {$t('matches.list.duelsHelp1')}
           </p>
           <p class="muted matches-page__duels-hint matches-page__duels-hint--bulk">
-            <strong>Bulk:</strong> one <code>.zip</code> (folders per day, <code>.gz</code> per game).
-            A <code>.tar.gz</code> still works. With <code>matchView</code>, games merge into one match
-            per id; without it, each replay becomes its own single-game match.
+            {$t('matches.list.duelsHelpBulk')}
           </p>
         </div>
       {/if}
@@ -428,11 +447,11 @@
   {:else}
     <div class="row matches-header row--between">
       <div class="page-header__title-row">
-        <h2 class="card__title card-title-reset">Matches</h2>
+        <h2 class="card__title card-title-reset">{$t('matches.list.heading')}</h2>
       </div>
       <div class="row row--sm">
-        <a href="/matches/quick" class="btn">Quick match</a>
-        <a href="/tournaments" class="btn">Tournaments</a>
+        <a href="/matches/quick" class="btn">{$t('matches.list.quickMatch')}</a>
+        <a href="/tournaments" class="btn">{$t('matches.list.navTournaments')}</a>
         {#if myPlayerId}
           <button
             type="button"
@@ -440,14 +459,14 @@
             onclick={triggerDuelsImport}
             disabled={importingDuels}
             aria-busy={importingDuels}
-            aria-label={importingDuels ? 'Importing…' : 'Import from Duels'}
-            title="Import replays (.gz/.zip) or a bulk .zip archive from duels.ink"
+            aria-label={importingDuels ? $t('matches.list.importing') : $t('matches.list.importLabel')}
+            title={$t('matches.list.duelsImportTooltip')}
           >
             <IconUpload size={20} />
-            <span>{importingDuels ? 'Importing…' : 'Import'}</span>
+            <span>{importingDuels ? $t('matches.list.importing') : $t('matches.list.importLabel')}</span>
           </button>
         {/if}
-        <a href="/matches/new" class="btn btn--primary">New match</a>
+        <a href="/matches/new" class="btn btn--primary">{$t('matches.list.newMatch')}</a>
       </div>
     </div>
     {#if myPlayerId && duelsImportError}
@@ -456,45 +475,47 @@
 
     <FilterCard
       bind:expanded={filtersExpanded}
+      title={$t('common.filters')}
       summary={filterSummary}
       badges={filterBadges}
       panelId="matches-filters-panel"
       onClear={clearFilters}
       canClear={canClearFilters}
+      clearLabel={$t('common.clearFilters')}
       showSummaryInExpandedPanel={false}
     >
       <div class="filters__row">
         <label class="filters__label" for="filter-player-btn">
-          <span class="muted text-sm">Player</span>
+          <span class="muted text-sm">{$t('matches.list.labelPlayer')}</span>
           <button
             id="filter-player-btn"
             type="button"
             class="btn filters__select filters__select-btn"
             onclick={() => (playerPickerOpen = true)}
-            aria-label="Filter by player"
+            aria-label={$t('matches.list.filterByPlayerButton')}
           >
-            {filterPlayerName || 'All players'}
+            {filterPlayerName || $t('matches.list.filterAllPlayers')}
           </button>
         </label>
         <label class="filters__label" for="filter-stage">
-          <span class="muted text-sm">Stage</span>
+          <span class="muted text-sm">{$t('matches.list.labelStage')}</span>
           <div class="filters__select">
             <Select
               id="filter-stage"
               bind:value={filterStage}
               options={STAGE_FILTER_OPTIONS}
-              ariaLabel="Filter by stage"
+              ariaLabel={$t('matches.list.filterByStage')}
             />
           </div>
         </label>
         <label class="filters__label" for="filter-time">
-          <span class="muted text-sm">Time</span>
+          <span class="muted text-sm">{$t('matches.list.labelTime')}</span>
           <div class="filters__select">
             <Select
               id="filter-time"
               bind:value={filterTime}
               options={TIME_FILTER_OPTIONS}
-              ariaLabel="Filter by time range"
+              ariaLabel={$t('matches.list.filterByTime')}
             />
           </div>
         </label>
@@ -502,14 +523,14 @@
       <div class="filters__footer">
         <p class="filters__count muted">{filterSummary}</p>
         <button type="button" class="btn" onclick={clearFilters} disabled={!canClearFilters}>
-          Clear filters
+          {$t('common.clearFilters')}
         </button>
       </div>
     </FilterCard>
 
     <PlayerPickerModal
       bind:open={playerPickerOpen}
-      title="Filter by player"
+      title={$t('matches.list.filterPlayerModalTitle')}
       forLabel=""
       onSelect={handlePlayerSelect}
       onClose={() => (playerPickerOpen = false)}
@@ -517,9 +538,9 @@
 
     {#if matches.length === 0}
       <div class="card stack matches-page__empty-filtered">
-        <p class="card__sub">No matches match your filters.</p>
+        <p class="card__sub">{$t('matches.list.emptyFiltered')}</p>
         {#if canClearFilters}
-          <button type="button" class="btn" onclick={clearFilters}>Clear filters</button>
+          <button type="button" class="btn" onclick={clearFilters}>{$t('common.clearFilters')}</button>
         {/if}
       </div>
     {:else}
@@ -538,13 +559,11 @@
                 <span class="matchcard__stage-pill">{stagePill}</span>
               {/if}
               {#if idMatch}
-                <span
-                  class="matchcard__pill--id"
-                  title="Intentional draw (not counted in win/loss statistics)"
-                  >ID</span
+                <span class="matchcard__pill--id" title={$t('matches.list.pillIdTitle')}
+                  >{$t('matches.list.pillId')}</span
                 >
               {:else if byeMatch}
-                <span class="matchcard__pill--bye" title="Bye (free win)">Bye</span>
+                <span class="matchcard__pill--bye" title={$t('matches.list.pillByeTitle')}>{$t('matches.list.pillBye')}</span>
               {/if}
               <span
                 class="matchcard__date-chip"
@@ -555,7 +574,7 @@
                 <a
                   href="/tournaments/{tournamentLink.id}"
                   class="matchcard__chip matchcard__chip--tournament"
-                  aria-label="Open tournament: {tournamentLink.name}"
+                  aria-label={$t('matches.list.openTournamentAria', { name: tournamentLink.name })}
                   onclick={(e) => e.stopPropagation()}>{tournamentLink.name}</a
                 >
               {/if}
@@ -568,7 +587,10 @@
             <a
               href="/matches/{match._id}"
               class="matchcard__row matchcard__main-link link-inherit"
-              aria-label="Open match: {playerName(match.p1)} vs {playerName(match.p2)}"
+              aria-label={$t('matches.list.openMatchAria', {
+                p1: playerName(match.p1),
+                p2: playerName(match.p2),
+              })}
             >
               <div
                 class="matchcard__player matchcard__player--left"
@@ -577,7 +599,7 @@
                 <span class="matchcard__name">
                   {playerName(match.p1)}
                   {#if !idMatch && winnerId === p1Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"
+                    <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}
                       ><IconCrown size={16} /></span
                     >
                   {/if}
@@ -587,16 +609,16 @@
                     ><InkIcons deckColor={match.p1DeckColor} /></span
                   >
                 {/if}
-                <span class="matchcard__wins muted" title="Games won"
+                <span class="matchcard__wins muted" title={$t('matches.list.gamesWonTitle')}
                   >{gamesWon(match, p1Id ?? '')}</span
                 >
               </div>
-              <div class="matchcard__vs" aria-hidden="true">VS.</div>
+              <div class="matchcard__vs" aria-hidden="true">{$t('matches.list.vs')}</div>
               <div
                 class="matchcard__player matchcard__player--right"
                 class:matchcard__player--winner={!idMatch && winnerId === p2Id}
               >
-                <span class="matchcard__wins muted" title="Games won"
+                <span class="matchcard__wins muted" title={$t('matches.list.gamesWonTitle')}
                   >{gamesWon(match, p2Id ?? '')}</span
                 >
                 {#if match.p2DeckColor}
@@ -607,7 +629,7 @@
                 <span class="matchcard__name">
                   {playerName(match.p2)}
                   {#if !idMatch && winnerId === p2Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"
+                    <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}
                       ><IconCrown size={16} /></span
                     >
                   {/if}

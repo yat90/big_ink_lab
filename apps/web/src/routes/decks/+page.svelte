@@ -4,7 +4,8 @@
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerName } from '$lib/decks';
-  import { ERR, messageFromFailedResponse } from '$lib/errors';
+  import { getLocale, translate, t } from '$lib/i18n';
+  import { messageFromFailedResponse } from '$lib/errors';
   import FilterCard from '$lib/FilterCard.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
   import InkIcons from '$lib/InkIcons.svelte';
@@ -16,13 +17,6 @@
 
   const BIG_INK_THEORY_TEAM = 'The Big Ink Theory';
   type Player = { _id: string; name: string; team?: string };
-
-  const DECK_SORT_OPTIONS = [
-    { value: 'newest', label: 'Newest updated' },
-    { value: 'name', label: 'Name (A–Z)' },
-    { value: 'winrate', label: 'Win rate' },
-    { value: 'matches', label: 'Most matches' },
-  ];
 
   let decks = $state<Deck[]>([]);
   let allPlayers = $state<Player[]>([]);
@@ -43,15 +37,8 @@
 
   const apiUrl = config.apiUrl ?? '/api';
 
-  const filterSummary = $derived(`${total} deck${total === 1 ? '' : 's'}`);
   const selectedPlayerName = $derived(
     filterPlayer ? (players.find((p) => p._id === filterPlayer)?.name ?? '') : '',
-  );
-  const filterBadges = $derived<string[]>(
-    [
-      filterColor ? `Color: ${filterColor}` : '',
-      selectedPlayerName ? `Player: ${selectedPlayerName}` : '',
-    ].filter((b) => b.length > 0),
   );
 
   function winRateBand(
@@ -76,7 +63,7 @@
       const url = `${apiUrl}/decks?${params}`;
       const res = await fetch(url);
       if (!res.ok) {
-        error = await messageFromFailedResponse(res, ERR.loadDecks);
+        error = await messageFromFailedResponse(res, translate(getLocale(), 'decks.loadError'));
         return;
       }
       const response = await res.json();
@@ -84,7 +71,7 @@
       totalPages = response.meta?.totalPages || 1;
       total = response.meta?.total || 0;
     } catch {
-      error = ERR.network;
+      error = translate(getLocale(), 'common.networkError');
     } finally {
       loading = false;
     }
@@ -146,12 +133,12 @@
 </script>
 
 <svelte:head>
-  <title>Decks · Big Ink Lab</title>
+  <title>{$t('decks.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
   {#if loading}
-    <div class="decks-page decks-page--skeleton" aria-busy="true" aria-live="polite" aria-label="Loading decks">
+    <div class="decks-page decks-page--skeleton" aria-busy="true" aria-live="polite" aria-label={$t('decks.loadingAria')}>
       <div class="page-header">
         <div class="page-header__title-row">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>
@@ -171,7 +158,7 @@
           <div class="loading-skeleton__match-block" aria-hidden="true"></div>
         {/each}
       </div>
-      <p class="muted margin-top-md">Loading decks…</p>
+      <p class="muted margin-top-md">{$t('decks.loadingText')}</p>
     </div>
   {:else if error}
     <div class="card" role="alert" aria-live="assertive">
@@ -179,63 +166,75 @@
     </div>
   {:else if decks.length === 0 && !filterColor && !filterPlayer}
     <div class="card stack">
-      <h2 class="card__title">No decks yet</h2>
-      <p class="card__sub">Create a deck with name and card list.</p>
+      <h2 class="card__title">{$t('decks.emptyTitle')}</h2>
+      <p class="card__sub">{$t('decks.emptySub')}</p>
       <a href="/decks/new" class="btn btn--primary margin-top-sm align-self-start">
-        New deck
+        {$t('decks.newDeck')}
       </a>
     </div>
   {:else}
     <div class="page-header">
       <div class="page-header__title-row">
-        <h2 class="card__title card-title-reset">Decks</h2>
+        <h2 class="card__title card-title-reset">{$t('decks.heading')}</h2>
       </div>
-      <a href="/decks/new" class="btn btn--primary">New deck</a>
+      <a href="/decks/new" class="btn btn--primary">{$t('decks.newDeck')}</a>
     </div>
 
     <FilterCard
       bind:expanded={filtersExpanded}
-      summary={filterSummary}
-      badges={filterBadges}
+      title={$t('common.filters')}
+      summary={total === 1
+        ? $t('decks.filterCountSingular', { count: String(total) })
+        : $t('decks.filterCountPlural', { count: String(total) })}
+      badges={[
+        ...(filterColor ? [$t('common.filterBadgeColor', { color: filterColor })] : []),
+        ...(selectedPlayerName ? [$t('common.filterBadgePlayer', { name: selectedPlayerName })] : []),
+      ]}
       panelId="decks-filters-panel"
       onClear={clearDeckFilters}
       canClear={canClearDeckFilters}
+      clearLabel={$t('common.clearFilters')}
     >
       <div class="filters__row">
         <label class="filters__label" for="filter-deck-color">
-          <span class="muted text-sm">Deck color</span>
+          <span class="muted text-sm">{$t('decks.labelDeckColor')}</span>
           <div class="filters__select">
             <DeckColorSelect
               id="filter-deck-color"
               bind:value={filterColor}
-              ariaLabel="Filter by deck color"
+              ariaLabel={$t('decks.ariaFilterDeckColor')}
               onchange={onFilterChange}
             />
           </div>
         </label>
         <label class="filters__label" for="filter-player">
-          <span class="muted text-sm">Player</span>
+          <span class="muted text-sm">{$t('common.player')}</span>
           <select
             id="filter-player"
             class="input filters__select"
             bind:value={filterPlayer}
             onchange={onFilterChange}
-            aria-label="Filter by player"
+            aria-label={$t('common.ariaFilterByPlayer')}
           >
-            <option value="">All</option>
+            <option value="">{$t('common.all')}</option>
             {#each players as p (p._id)}
               <option value={p._id}>{p.name}</option>
             {/each}
           </select>
         </label>
         <label class="filters__label" for="filter-deck-sort">
-          <span class="muted text-sm">Sort</span>
+          <span class="muted text-sm">{$t('common.sort')}</span>
           <div class="filters__select">
             <Select
               id="filter-deck-sort"
               bind:value={filterSort}
-              options={DECK_SORT_OPTIONS}
-              ariaLabel="Sort decks"
+              options={[
+                { value: 'newest', label: $t('common.sortNewest') },
+                { value: 'name', label: $t('common.sortName') },
+                { value: 'winrate', label: $t('common.sortWinrate') },
+                { value: 'matches', label: $t('common.sortMatches') },
+              ]}
+              ariaLabel={$t('decks.ariaSortDecks')}
               onchange={onSortChange}
             />
           </div>
@@ -246,9 +245,9 @@
     <div class="stack">
       {#if decks.length === 0 && (filterColor || filterPlayer)}
         <div class="card stack decks-page__empty-filtered">
-          <p class="card__sub margin-0">No decks match the selected filters.</p>
+          <p class="card__sub margin-0">{$t('decks.emptyFiltered')}</p>
           {#if canClearDeckFilters}
-            <button type="button" class="btn" onclick={clearDeckFilters}>Clear filters</button>
+            <button type="button" class="btn" onclick={clearDeckFilters}>{$t('common.clearFilters')}</button>
           {/if}
         </div>
       {:else}
@@ -266,8 +265,9 @@
               {/if}
               {#if deck.totalMatches !== undefined || deck.winRate != null}
                 <span class="deckcard__stats row row--sm">
-                  <span class="deckcard__matches muted" title="Matches recorded">
-                    {deck.totalMatches ?? 0} match{(deck.totalMatches ?? 0) === 1 ? '' : 'es'}
+                  <span class="deckcard__matches muted" title={$t('common.matchesRecordedTooltip')}>
+                    {deck.totalMatches ?? 0}
+                    {(deck.totalMatches ?? 0) === 1 ? $t('common.matchSingular') : $t('common.matchPlural')}
                   </span>
                   {#if deck.winRate != null}
                     {@const band = winRateBand(deck.winRate)}
@@ -276,9 +276,9 @@
                       class:deckcard__win-chip--high={band === 'high'}
                       class:deckcard__win-chip--low={band === 'low'}
                       class:deckcard__win-chip--mid={band === 'mid'}
-                      title="Win rate"
+                      title={$t('common.winRate')}
                     >
-                      {(deck.winRate * 100).toFixed(1)}% WR
+                      {(deck.winRate * 100).toFixed(1)}% {$t('common.winRateAbbrev')}
                     </span>
                   {/if}
                 </span>

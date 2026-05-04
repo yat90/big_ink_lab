@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
+  import { getLocale, translate, t } from '$lib/i18n';
 
   const apiUrl = config.apiUrl ?? '/api';
   const QUICK_MATCH_P1_ID = '69a8a02d97f97400baf9f7fc';
@@ -36,30 +37,30 @@
         }),
       });
       if (!res.ok) {
-        error = 'Could not create match';
+        error = translate(getLocale(), 'matches.quick.errCreate');
         loading = false;
         return;
       }
       const match = await res.json();
       goto(`/matches/${match._id}/lore`);
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
       loading = false;
     }
   });
 </script>
 
 <svelte:head>
-  <title>Quick Match · Big Ink Lab</title>
+  <title>{$t('matches.quick.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
   <div class="card stack">
     {#if loading && !error}
-      <p class="muted">Creating quick match…</p>
+      <p class="muted">{$t('matches.quick.creating')}</p>
     {:else if error}
       <p class="alert" role="alert">{error}</p>
-      <a href="/" class="btn btn--primary">Back to home</a>
+      <a href="/" class="btn btn--primary">{$t('matches.quick.backHome')}</a>
     {/if}
   </div>
 </div>

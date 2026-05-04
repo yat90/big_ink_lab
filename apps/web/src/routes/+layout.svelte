@@ -15,6 +15,7 @@
   import { setAuthMe } from '$lib/me';
   import PullToRefreshIndicator from '$lib/PullToRefreshIndicator.svelte';
   import { pullToRefresh } from '$lib/pullToRefresh';
+  import { initLocale } from '$lib/i18n';
 
   let { children = undefined }: { children?: Snippet } = $props();
 
@@ -77,6 +78,7 @@
 
   onMount(() => {
     if (!browser) return;
+    initLocale();
 
     const originalFetch = window.fetch.bind(window);
     const patchedFetch: typeof window.fetch = (input, init) => {

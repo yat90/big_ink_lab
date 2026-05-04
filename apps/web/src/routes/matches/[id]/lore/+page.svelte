@@ -7,6 +7,8 @@
   import IconClock from '$lib/icons/IconClock.svelte';
   import IconCloud from '$lib/icons/IconCloud.svelte';
   import IconMenu from '$lib/icons/IconMenu.svelte';
+  import { getLocale, translate, t, locale } from '$lib/i18n';
+  import { get } from 'svelte/store';
 
   type Player = { _id: string; name: string; team: string };
   type Game = {
@@ -140,12 +142,18 @@
   }
 
   const games = $derived(match?.games ?? []);
-  const p1Name = $derived(
-    match ? (playerName(match.p1) === '–' ? 'Player 1' : playerName(match.p1)) : 'P1'
-  );
-  const p2Name = $derived(
-    match ? (playerName(match.p2) === '–' ? 'Player 2' : playerName(match.p2)) : 'P2'
-  );
+  const p1Name = $derived.by(() => {
+    void get(locale);
+    if (!match) return translate(getLocale(), 'matches.detail.player1');
+    const n = playerName(match.p1);
+    return n === '–' ? translate(getLocale(), 'matches.detail.player1') : n;
+  });
+  const p2Name = $derived.by(() => {
+    void get(locale);
+    if (!match) return translate(getLocale(), 'matches.detail.player2');
+    const n = playerName(match.p2);
+    return n === '–' ? translate(getLocale(), 'matches.detail.player2') : n;
+  });
   const p1Id = $derived(
     match && (typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1)
   );
@@ -158,9 +166,31 @@
   const canEditMatch = $derived(
     !!myPlayerId && (myPlayerId === p1Id || myPlayerId === p2Id)
   );
-  const gameOverWinnerName = $derived(
-    gameOverWinnerId === p1Id ? p1Name : gameOverWinnerId === p2Id ? p2Name : 'Winner'
-  );
+  const gameOverWinnerName = $derived.by(() => {
+    void get(locale);
+    if (gameOverWinnerId === p1Id) return p1Name;
+    if (gameOverWinnerId === p2Id) return p2Name;
+    return translate(getLocale(), 'matches.detail.winnerWord');
+  });
+
+  function loreEventTypeLabel(type: string): string {
+    void get(locale);
+    const loc = getLocale();
+    switch (type) {
+      case 'lore_increased':
+        return translate(loc, 'matches.detail.eventTypes.lore_increased');
+      case 'lore_decreased':
+        return translate(loc, 'matches.detail.eventTypes.lore_decreased');
+      case 'start':
+        return translate(loc, 'matches.detail.eventTypes.start');
+      case 'end':
+        return translate(loc, 'matches.detail.eventTypes.end');
+      case 'lore_update':
+        return translate(loc, 'matches.detail.eventTypes.lore_update');
+      default:
+        return type;
+    }
+  }
   function gameWinnerId(g: Game): string | undefined {
     if (!g.winner) return undefined;
     return typeof g.winner === 'string' ? g.winner : (g.winner as { _id?: string })?._id;
@@ -208,6 +238,8 @@
     playerId?: string;
     playerLabel: string;
   }> {
+    void get(locale);
+    const loc = getLocale();
     const cur = match?.games?.[gameIndex];
     const serverEvents = (cur?.events ?? []).map((e) => ({
       type: e.type,
@@ -217,7 +249,13 @@
           : (e.timestamp as Date).getTime(),
       playerId: e.player,
       playerLabel:
-        e.player === p1Id ? p1Name : e.player === p2Id ? p2Name : e.player ? 'Player' : '–',
+        e.player === p1Id
+          ? p1Name
+          : e.player === p2Id
+            ? p2Name
+            : e.player
+              ? translate(loc, 'matches.detail.genericPlayer')
+              : '–',
     }));
     const draft = readLocalDrafts()[String(gameIndex)];
     const draftEvents = (draft?.events ?? []).map((e) => ({
@@ -354,7 +392,10 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Offline: score saved locally, retrying every minute.';
+        error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message
+            : translate(getLocale(), 'matches.lore.errOfflineRetry');
         return;
       }
       match = await res.json();
@@ -368,7 +409,7 @@
       writeLocalDrafts(latestDrafts);
       hasPendingLocalSync = Object.keys(latestDrafts).length > 0;
     } catch {
-      error = 'Offline: score saved locally, retrying every minute.';
+      error = translate(getLocale(), 'matches.lore.errOfflineRetry');
     } finally {
       saving = false;
       syncInFlight = false;
@@ -412,7 +453,7 @@
           myPlayerId = me?.player?._id ?? null;
         }
         if (!matchRes.ok) {
-          error = 'Match not found';
+          error = translate(getLocale(), 'matches.detail.notFound');
           loading = false;
           return;
         }
@@ -420,7 +461,7 @@
         const maxIndex = (match?.games?.length ?? 1) - 1;
         if (gameIndex > maxIndex) gameIndex = maxIndex;
       } catch {
-        error = 'Could not load match.';
+        error = translate(getLocale(), 'matches.detail.loadError');
       } finally {
         if (!disposed) loading = false;
       }
@@ -628,7 +669,10 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Save failed';
+        error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message
+            : translate(getLocale(), 'matches.lore.errSaveFailed');
       } else {
         match = await res.json();
         clearLocalDraftForGame(gameIndex);
@@ -636,7 +680,7 @@
         showGameOverPrompt = true;
       }
     } catch {
-      error = 'Could not save.';
+      error = translate(getLocale(), 'matches.lore.errCouldNotSave');
     } finally {
       saving = false;
     }
@@ -661,7 +705,7 @@
       body: JSON.stringify({ games: updatedGames }),
     });
     if (!res.ok) {
-      error = 'Could not save.';
+      error = translate(getLocale(), 'matches.lore.errCouldNotSave');
     }
     match = await res.json();
     gameIndex = updatedGames.length - 1;
@@ -716,42 +760,49 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Save failed';
+        error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message
+            : translate(getLocale(), 'matches.lore.errSaveFailed');
         saving = false;
         return;
       }
       match = await res.json();
       clearLocalDraftForGame(gameIndex);
     } catch {
-      error = 'Could not save.';
+      error = translate(getLocale(), 'matches.lore.errCouldNotSave');
     } finally {
       saving = false;
     }
   }
 </script>
 
+<svelte:head>
+  <title>{$t('matches.lore.pageTitle')}</title>
+</svelte:head>
+
 <div class="lore-page">
   {#if loading}
     <div class="lore-page__loading card">
-      <p class="muted">Loading…</p>
+      <p class="muted">{$t('matches.lore.loading')}</p>
     </div>
   {:else if error && !match}
     <div class="lore-page__loading card" role="alert">
       <p class="alert">{error}</p>
-      <a href="/matches/{id}" class="btn">Back to match</a>
+      <a href="/matches/{id}" class="btn">{$t('matches.lore.backToMatch')}</a>
     </div>
   {:else if match && games.length > 0}
     <div class="lore-split">
       <!-- Vertical game counter: half in top, half in bottom -->
-      <div class="lore-score-pill-wrap" aria-label="Games won">
+      <div class="lore-score-pill-wrap" aria-label={$t('matches.lore.gamesWonAria')}>
         <div class="lore-score-pill">
           <span class="lore-score-pill__score">{p2GamesWon} – {p1GamesWon}</span>
         </div>
         <button
           type="button"
           class="lore-score-pill__events-btn"
-          aria-label="Show game events"
-          title="Game events"
+          aria-label={$t('matches.lore.showEventsAria')}
+          title={$t('matches.lore.showEventsTitle')}
           onclick={() => (showEventsPopup = true)}
         >
           <IconClock size={20} />
@@ -759,8 +810,8 @@
         {#if canEditMatch && hasPendingLocalSync}
           <span
             class="lore-sync-badge"
-            title="Offline-safe: score saved locally, synced every minute."
-            aria-label="Offline-safe: score saved locally, synced every minute."
+            title={$t('matches.lore.offlineSyncTooltip')}
+            aria-label={$t('matches.lore.offlineSyncAria')}
           >
             <IconCloud size={12} />
           </span>
@@ -779,7 +830,7 @@
               type="button"
               class="lore-panel__btn lore-panel__btn--dec"
               onclick={decP2}
-              aria-label="Decrease Lore">−</button
+              aria-label={$t('matches.lore.decLoreAria')}>−</button
             >
           {/if}
           <span class="lore-panel__value">
@@ -787,7 +838,7 @@
               class="lore-panel__delta"
               class:lore-panel__delta--pos={p2DeltaLastSecond > 0}
               class:lore-panel__delta--neg={p2DeltaLastSecond < 0}
-              aria-label="Sum of recent changes (clears after a short pause)"
+              aria-label={$t('matches.lore.recentDeltaAria')}
             >
               {#if p2DeltaLastSecond !== 0}
                 {p2DeltaLastSecond > 0 ? '+' : ''}{p2DeltaLastSecond}
@@ -800,7 +851,7 @@
               type="button"
               class="lore-panel__btn lore-panel__btn--inc"
               onclick={incP2}
-              aria-label="Increase Lore">+</button
+              aria-label={$t('matches.lore.incLoreAria')}>+</button
             >
           {/if}
         </div>
@@ -812,7 +863,7 @@
           <button
             type="button"
             class="lore-divider__menu"
-            aria-label="Menu"
+            aria-label={$t('matches.lore.menuAria')}
             onclick={() => (showCloseGamePrompt = true)}
           >
             <IconMenu size={18} />
@@ -833,7 +884,7 @@
               type="button"
               class="lore-panel__btn lore-panel__btn--dec"
               onclick={decP1}
-              aria-label="Decrease Lore">−</button
+              aria-label={$t('matches.lore.decLoreAria')}>−</button
             >
           {/if}
           <span class="lore-panel__value">
@@ -841,7 +892,7 @@
               class="lore-panel__delta"
               class:lore-panel__delta--pos={p1DeltaLastSecond > 0}
               class:lore-panel__delta--neg={p1DeltaLastSecond < 0}
-              aria-label="Sum of recent changes (clears after a short pause)"
+              aria-label={$t('matches.lore.recentDeltaAria')}
             >
               {#if p1DeltaLastSecond !== 0}
                 {p1DeltaLastSecond > 0 ? '+' : ''}{p1DeltaLastSecond}
@@ -854,7 +905,7 @@
               type="button"
               class="lore-panel__btn lore-panel__btn--inc"
               onclick={incP1}
-              aria-label="Increase Lore">+</button
+              aria-label={$t('matches.lore.incLoreAria')}>+</button
             >
           {/if}
         </div>
@@ -866,8 +917,8 @@
     {/if}
   {:else}
     <div class="card">
-      <p class="muted">No games in this match yet.</p>
-      <a href="/matches/{id}" class="btn">Back to match</a>
+      <p class="muted">{$t('matches.lore.noGamesYet')}</p>
+      <a href="/matches/{id}" class="btn">{$t('matches.lore.backToMatch')}</a>
     </div>
   {/if}
 
@@ -877,11 +928,13 @@
       <button
         type="button"
         class="lore-modal__backdrop"
-        aria-label="Close"
+        aria-label={$t('matches.lore.close')}
         onclick={() => (showEventsPopup = false)}
       ></button>
       <div class="lore-modal__card card lore-events-popup">
-        <h2 id="events-popup-title" class="lore-modal__title">Game {gameIndex + 1} events</h2>
+        <h2 id="events-popup-title" class="lore-modal__title">
+          {$t('matches.lore.eventsTitle', { n: String(gameIndex + 1) })}
+        </h2>
         <div class="lore-events-popup__list">
           {#each getCurrentGameEvents() as evt, i (evt.timestamp + '-' + i)}
             <div class="lore-events-popup__row">
@@ -892,27 +945,17 @@
                   second: '2-digit',
                 })}
               </span>
-              <span class="lore-events-popup__type">
-                {evt.type === 'lore_increased'
-                  ? 'Lore +'
-                  : evt.type === 'lore_decreased'
-                    ? 'Lore −'
-                    : evt.type === 'start'
-                      ? 'Start'
-                      : evt.type === 'end'
-                        ? 'End'
-                        : evt.type === 'lore_update'
-                          ? 'Lore change'
-                          : evt.type}
-              </span>
+              <span class="lore-events-popup__type">{loreEventTypeLabel(evt.type)}</span>
               <span class="lore-events-popup__player muted">{evt.playerLabel}</span>
             </div>
           {:else}
-            <p class="muted lore-events-popup__empty">No events yet.</p>
+            <p class="muted lore-events-popup__empty">{$t('matches.detail.eventsEmpty')}</p>
           {/each}
         </div>
         <div class="lore-modal__actions">
-          <button type="button" class="btn" onclick={() => (showEventsPopup = false)}>Close</button>
+          <button type="button" class="btn" onclick={() => (showEventsPopup = false)}
+            >{$t('matches.lore.close')}</button
+          >
         </div>
       </div>
     </div>
@@ -924,16 +967,18 @@
       <button
         type="button"
         class="lore-modal__backdrop"
-        aria-label="Close"
+        aria-label={$t('matches.lore.close')}
         onclick={() => (showCloseGamePrompt = false)}
       ></button>
       <div class="lore-modal__card card">
-        <h2 id="close-game-title" class="lore-modal__title">Close the game?</h2>
-        <p class="lore-modal__text muted">Do you want to leave the lore tracker?</p>
+        <h2 id="close-game-title" class="lore-modal__title">{$t('matches.lore.leaveGameTitle')}</h2>
+        <p class="lore-modal__text muted">{$t('matches.lore.leaveGameBody')}</p>
         <div class="lore-modal__actions">
-          <button type="button" class="btn btn--primary" onclick={closeGameAndLeave}>Leave</button>
+          <button type="button" class="btn btn--primary" onclick={closeGameAndLeave}
+            >{$t('matches.lore.leave')}</button
+          >
           <button type="button" class="btn" onclick={() => (showCloseGamePrompt = false)}
-            >Cancel</button
+            >{$t('common.cancel')}</button
           >
         </div>
       </div>
@@ -946,29 +991,29 @@
       <button
         type="button"
         class="lore-modal__backdrop"
-        aria-label="Close"
+        aria-label={$t('matches.lore.close')}
         onclick={dismissStarterPrompt}
       ></button>
       <div class="lore-modal__card card lore-starter-choice">
-        <h2 id="starter-choice-title" class="lore-starter-choice__title">Choose starting player</h2>
+        <h2 id="starter-choice-title" class="lore-starter-choice__title">{$t('matches.lore.starterTitle')}</h2>
         <div class="lore-starter-choice__buttons">
           <button
             type="button"
             class="lore-starter-choice__btn lore-starter-choice__btn--p2"
             disabled={starterSaving}
             onclick={() => p2Id && chooseStarter(p2Id)}
-            aria-label={`${p2Name} starts`}
+            aria-label={$t('matches.lore.playerStartsAria', { name: p2Name })}
           >
-            {starterSaving ? 'Saving…' : p2Name}
+            {starterSaving ? $t('matches.lore.saving') : p2Name}
           </button>
           <button
             type="button"
             class="lore-starter-choice__btn lore-starter-choice__btn--p1"
             disabled={starterSaving}
             onclick={() => p1Id && chooseStarter(p1Id)}
-            aria-label={`${p1Name} starts`}
+            aria-label={$t('matches.lore.playerStartsAria', { name: p1Name })}
           >
-            {starterSaving ? 'Saving…' : p1Name}
+            {starterSaving ? $t('matches.lore.saving') : p1Name}
           </button>
         </div>
       </div>
@@ -981,13 +1026,15 @@
       <div class="lore-modal__backdrop"></div>
       <div class="lore-modal__card card">
         <h2 id="game-over-title" class="lore-modal__title lore-game-over__title">
-          {gameOverWinnerName} wins!
+          {$t('matches.lore.winsExclaim', { name: gameOverWinnerName })}
         </h2>
-        <p class="lore-modal__text muted">Go to the next game?</p>
+        <p class="lore-modal__text muted">{$t('matches.lore.nextGamePrompt')}</p>
         <div class="lore-modal__actions">
-          <a href="/matches/{id}" class="btn btn--primary">Back to match</a>
+          <a href="/matches/{id}" class="btn btn--primary">{$t('matches.lore.backToMatch')}</a>
           {#if canEditMatch}
-            <button type="button" class="btn" onclick={() => goToNextGame()}>Next Game</button>
+            <button type="button" class="btn" onclick={() => goToNextGame()}
+              >{$t('matches.lore.nextGame')}</button
+            >
           {/if}
         </div>
       </div>

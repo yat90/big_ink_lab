@@ -4,12 +4,13 @@
   import { onMount } from 'svelte';
   import { getAuthToken } from '$lib/auth';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
+  import { getLocale, translate, t } from '$lib/i18n';
 
   let deckName = $state('');
   let deckList = $state('');
   let notes = $state('');
   let playerId = $state('');
-  let selectedPlayerLabel = $state('—');
+  let selectedPlayerLabel = $state('');
   let playerPickerOpen = $state(false);
   let loading = $state(false);
   let error = $state('');
@@ -45,7 +46,7 @@
           const p = me.player as { name?: string; team?: string };
           selectedPlayerLabel = p.name
             ? `${p.name}${p.team ? ` · ${p.team}` : ''}`
-            : '—';
+            : '';
         }
       }
     } catch {
@@ -55,7 +56,9 @@
 
   function onPlayerSelect(id: string, player?: { name: string; team?: string }) {
     playerId = id;
-    selectedPlayerLabel = player ? `${player.name}${player.team ? ` · ${player.team}` : ''}` : '—';
+    selectedPlayerLabel = player
+      ? `${player.name}${player.team ? ` · ${player.team}` : ''}`
+      : '';
   }
 
   async function onSubmit(e: Event) {
@@ -74,15 +77,21 @@
         }),
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        error = data.message ?? `Error ${res.status}`;
-        loading = false;
+        const data = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+        const m = data.message;
+        if (Array.isArray(m)) {
+          error = m.join(', ');
+        } else if (typeof m === 'string' && m.trim()) {
+          error = m.trim();
+        } else {
+          error = translate(getLocale(), 'common.errorWithStatus', { status: String(res.status) });
+        }
         return;
       }
       const deck = await res.json();
       await goto(`/decks/${deck._id}`);
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       loading = false;
     }
@@ -90,19 +99,19 @@
 </script>
 
 <svelte:head>
-  <title>New deck · Big Ink Lab</title>
+  <title>{$t('decks.pageTitleNew')}</title>
 </svelte:head>
 
 <div class="page">
   <div class="card stack">
-    <h2 class="card__title">Create deck</h2>
+    <h2 class="card__title">{$t('decks.createTitle')}</h2>
     <p class="card__sub">
-      Add a new deck with a card list (one card per line, e.g. 2 Ariel). Name is prefilled—edit it or roll another suggestion.
+      {$t('decks.createIntro')}
     </p>
 
     <form onsubmit={onSubmit} class="stack margin-top-sm">
       <div class="label">
-        <label for="deckName">Deck name</label>
+        <label for="deckName">{$t('decks.labelDeckName')}</label>
         <div class="row row--sm deck-new__name-row">
           <input
             id="deckName"
@@ -111,7 +120,7 @@
             class="input deck-new__name-input"
             bind:value={deckName}
             maxlength="200"
-            placeholder="Deck name"
+            placeholder={$t('decks.placeholderDeckName')}
             autocomplete="off"
           />
           <button
@@ -120,47 +129,52 @@
             onclick={() => loadSuggestedName()}
             disabled={loading}
           >
-            Another name
+            {$t('decks.anotherName')}
           </button>
         </div>
       </div>
       <label class="label" for="deckList">
-        Deck list <span class="hint">(optional)</span>
+        {$t('decks.labelDeckList')}
+        <span class="hint">{$t('common.optionalInParens')}</span>
         <textarea
           id="deckList"
           class="input"
           bind:value={deckList}
           rows="8"
-          placeholder="2 Ariel&#10;1 Elsa - Snow Queen"
+          placeholder={$t('decks.placeholderDeckList')}
           style="resize: vertical; font-family: ui-monospace, monospace;"
         ></textarea>
       </label>
       <div class="label">
-        Player <span class="hint">(optional)</span>
+        {$t('common.player')}
+        <span class="hint">{$t('common.optionalInParens')}</span>
         <button
           type="button"
           class="input deck-new__player-btn"
           onclick={() => (playerPickerOpen = true)}
-          aria-label="Choose player"
+          aria-label={$t('common.choosePlayerAria')}
         >
-          <span class="deck-new__player-label">{selectedPlayerLabel}</span>
+          <span class="deck-new__player-label"
+            >{selectedPlayerLabel.trim() ? selectedPlayerLabel : $t('common.noneDash')}</span
+          >
         </button>
       </div>
       <PlayerPickerModal
         bind:open={playerPickerOpen}
-        title="Select player"
-        forLabel="this deck"
+        title={$t('common.selectPlayer')}
+        forLabel={$t('decks.playerPickerFor')}
         onSelect={onPlayerSelect}
         onClose={() => (playerPickerOpen = false)}
       />
       <label class="label" for="notes">
-        Notes <span class="hint">(optional)</span>
+        {$t('common.notes')}
+        <span class="hint">{$t('common.optionalInParens')}</span>
         <textarea
           id="notes"
           class="input"
           bind:value={notes}
           rows="3"
-          placeholder="Notes"
+          placeholder={$t('common.notesPlaceholder')}
           style="resize: vertical;"
         ></textarea>
       </label>
@@ -171,9 +185,9 @@
 
       <div class="row margin-top-sm gap-12">
         <button type="submit" class="btn btn--primary" disabled={loading}>
-          {loading ? 'Creating…' : 'Create deck'}
+          {loading ? $t('common.creating') : $t('decks.createSubmit')}
         </button>
-        <a href="/decks" class="btn">Cancel</a>
+        <a href="/decks" class="btn">{$t('common.cancel')}</a>
       </div>
     </form>
   </div>

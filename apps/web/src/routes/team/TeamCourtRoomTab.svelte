@@ -21,6 +21,7 @@
   import IconRefresh from '$lib/icons/IconRefresh.svelte';
   import IconMore from '$lib/icons/IconMore.svelte';
   import { portal } from '$lib/portal';
+  import { getLocale, translate, t } from '$lib/i18n';
   import { focusTrap, scrollLock } from '$lib/a11y';
 
   interface Props {
@@ -179,7 +180,7 @@
       }
     } catch (err) {
       loadError =
-        err instanceof Error ? err.message : 'Gerichtssaal konnte nicht geladen werden.';
+        err instanceof Error ? err.message : translate(getLocale(), 'court.loadError');
       members = [];
       penalties = [];
       accusations = [];
@@ -191,12 +192,6 @@
   onMount(() => {
     void loadAll();
   });
-
-  function statusLabel(s: AccusationStatus): string {
-    if (s === 'open') return 'Offen';
-    if (s === 'dismissed') return 'Abgewiesen';
-    return 'Bestätigt';
-  }
 
   async function submitAccusation() {
     if (!accusedPlayerId || !penaltyId) return;
@@ -214,7 +209,7 @@
       await loadAll();
     } catch (err) {
       fileError =
-        err instanceof Error ? err.message : 'Anklage konnte nicht eingereicht werden.';
+        err instanceof Error ? err.message : translate(getLocale(), 'court.fileError');
     } finally {
       filing = false;
     }
@@ -229,7 +224,7 @@
       await loadAll();
     } catch (err) {
       courtActionError =
-        err instanceof Error ? err.message : 'Status der Anklage konnte nicht geändert werden.';
+        err instanceof Error ? err.message : translate(getLocale(), 'court.statusError');
     } finally {
       updatingId = null;
     }
@@ -255,7 +250,7 @@
       await loadAll();
     } catch (err) {
       courtActionError =
-        err instanceof Error ? err.message : 'Anklage konnte nicht gelöscht werden.';
+        err instanceof Error ? err.message : translate(getLocale(), 'court.deleteError');
     } finally {
       deletingId = null;
     }
@@ -319,11 +314,11 @@
 
 <div class="court-room stack">
   {#if loading}
-    <div class="card court-room__loading muted" aria-busy="true">Gerichtssaal wird geladen…</div>
+    <div class="card court-room__loading muted" aria-busy="true">{$t('court.loading')}</div>
   {:else if loadError}
     <div class="card" role="alert">
       <p class="alert">{loadError}</p>
-      <button type="button" class="btn" onclick={() => void loadAll()}>Erneut versuchen</button>
+      <button type="button" class="btn" onclick={() => void loadAll()}>{$t('court.retry')}</button>
     </div>
   {:else}
     <div class="card court-room__hero">
@@ -331,63 +326,61 @@
         <span class="court-room__title-icon" aria-hidden="true">
           <IconGavel size={26} />
         </span>
-        Gerichtssaal
+        {$t('court.title')}
       </h2>
       <p class="court-room__lead muted">
-        Hier reicht ihr Anklagen nach dem Strafenkatalog ein. Im Team Meeting werden sie besprochen;
-        Admins markieren den Ausgang (abgewiesen oder bestätigt).
+        {$t('court.lead')}
       </p>
     </div>
 
     {#if !currentPlayerId}
       <div class="card court-room__notice" role="status">
         <p class="court-room__notice-text">
-          Um eine Anklage einzureichen, muss dein Account mit einem Spielerprofil verknüpft sein
-          (siehe <a href="/me">Me</a>).
+          {$t('court.noticeNoPlayerBefore')}<a href="/me">{$t('court.noticeNoPlayerLink')}</a>{$t('court.noticeNoPlayerAfter')}
         </p>
       </div>
     {:else if accusableMembers.length === 0}
       <div class="card court-room__notice muted" role="status">
-        <p class="court-room__notice-text">Keine anderen Teammitglieder zum Anklagen.</p>
+        <p class="court-room__notice-text">{$t('court.noticeNoMembers')}</p>
       </div>
     {:else if penalties.length === 0}
       <div class="card court-room__notice muted" role="status">
         <p class="court-room__notice-text">
-          Der Strafenkatalog ist leer. Ein Admin kann ihn unter „Strafen“ pflegen.
+          {$t('court.noticeNoPenalties')}
         </p>
       </div>
     {:else}
       <div class="card court-room__form">
-        <h3 class="court-room__form-title">Neue Anklage</h3>
+        <h3 class="court-room__form-title">{$t('court.formTitle')}</h3>
         {#if fileError}
           <p class="alert" role="alert">{fileError}</p>
         {/if}
         <div class="court-room__fields">
           <label class="court-room__label">
-            <span class="court-room__label-text">Beschuldigte Person</span>
+            <span class="court-room__label-text">{$t('court.accusedLabel')}</span>
             <select class="input court-room__select" bind:value={accusedPlayerId}>
-              <option value="">Auswählen…</option>
+              <option value="">{$t('court.selectPlaceholder')}</option>
               {#each accusableMembers as m (m.playerId)}
                 <option value={m.playerId}>{m.name}</option>
               {/each}
             </select>
           </label>
           <label class="court-room__label">
-            <span class="court-room__label-text">Verstoß (Strafenkatalog)</span>
+            <span class="court-room__label-text">{$t('court.violationLabel')}</span>
             <select class="input court-room__select" bind:value={penaltyId}>
-              <option value="">Auswählen…</option>
+              <option value="">{$t('court.selectPlaceholder')}</option>
               {#each penalties as p (p.id)}
                 <option value={p.id}>{p.description} — {formatMoney(p.amount)}</option>
               {/each}
             </select>
           </label>
           <label class="court-room__label court-room__label--grow">
-            <span class="court-room__label-text">Details (optional)</span>
+            <span class="court-room__label-text">{$t('court.detailsLabel')}</span>
             <textarea
               class="input court-room__textarea"
               rows="3"
               maxlength={500}
-              placeholder="Kontext fürs Meeting…"
+              placeholder={$t('court.detailsPlaceholder')}
               bind:value={details}
             ></textarea>
           </label>
@@ -398,31 +391,31 @@
           disabled={filing || !accusedPlayerId || !penaltyId}
           onclick={() => void submitAccusation()}
         >
-          {filing ? 'Wird eingereicht…' : 'Anklage einreichen'}
+          {filing ? $t('court.submitting') : $t('court.submit')}
         </button>
       </div>
     {/if}
 
     <div class="card court-room__table-wrap">
-      <h3 class="court-room__list-title">Akten</h3>
+      <h3 class="court-room__list-title">{$t('court.recordsTitle')}</h3>
       {#if courtActionError}
         <p class="alert" role="alert">{courtActionError}</p>
       {/if}
       {#if accusations.length === 0}
-        <p class="court-room__empty muted">Noch keine Anklagen.</p>
+        <p class="court-room__empty muted">{$t('court.empty')}</p>
       {:else}
         <div class="court-room__scroll">
           <table class="court-table">
             <thead>
               <tr>
-                <th scope="col">Datum</th>
-                <th scope="col">Anklage</th>
-                <th scope="col">Beschuldigt</th>
-                <th scope="col">Verstoß</th>
-                <th scope="col" class="court-table__col-num">Strafe</th>
-                <th scope="col">Status</th>
+                <th scope="col">{$t('court.colDate')}</th>
+                <th scope="col">{$t('court.colAccuser')}</th>
+                <th scope="col">{$t('court.colAccused')}</th>
+                <th scope="col">{$t('court.colOffense')}</th>
+                <th scope="col" class="court-table__col-num">{$t('court.colFine')}</th>
+                <th scope="col">{$t('court.colStatus')}</th>
                 {#if showCourtActionsCol}
-                  <th scope="col" class="court-table__col-actions">Aktionen</th>
+                  <th scope="col" class="court-table__col-actions">{$t('court.colActions')}</th>
                 {/if}
               </tr>
             </thead>
@@ -446,7 +439,9 @@
                       class:court-badge--dismissed={row.status === 'dismissed'}
                       class:court-badge--upheld={row.status === 'upheld'}
                     >
-                      {statusLabel(row.status)}
+                      {#if row.status === 'open'}{$t('court.status.open')}
+                      {:else if row.status === 'dismissed'}{$t('court.status.dismissed')}
+                      {:else}{$t('court.status.upheld')}{/if}
                     </span>
                   </td>
                   {#if showCourtActionsCol}
@@ -462,6 +457,7 @@
                             class="btn btn--sm court-actions-menu__trigger"
                             aria-expanded={openActionsRowId === row.id}
                             aria-haspopup="true"
+                            aria-label={$t('court.actionsAria')}
                             aria-controls="court-actions-panel-{row.id}"
                             id="court-actions-btn-{row.id}"
                             disabled={updatingId === row.id || deletingId === row.id}
@@ -509,7 +505,7 @@
           onclick={() => void setStatus(openActionsRow.id, 'dismissed')}
         >
           <IconClose size={16} className="court-actions-menu__item-icon" />
-          Abweisen
+          {$t('court.menuDismiss')}
         </button>
         <button
           type="button"
@@ -519,7 +515,7 @@
           onclick={() => void setStatus(openActionsRow.id, 'upheld')}
         >
           <IconCheck size={16} className="court-actions-menu__item-icon" />
-          Bestätigen
+          {$t('court.menuConfirm')}
         </button>
       {:else if isAdmin}
         <button
@@ -527,11 +523,11 @@
           class="court-actions-menu__item"
           role="menuitem"
           disabled={updatingId === openActionsRow.id || deletingId === openActionsRow.id}
-          title="Entscheidung zurücknehmen — Anklage ist wieder offen"
+          title={$t('court.menuReopenTitle')}
           onclick={() => void setStatus(openActionsRow.id, 'open')}
         >
           <IconRefresh size={16} className="court-actions-menu__item-icon" />
-          Wieder öffnen
+          {$t('court.menuReopen')}
         </button>
       {/if}
       {#if canDeleteOwnAccusation(openActionsRow)}
@@ -543,7 +539,7 @@
           onclick={() => openWithdrawPrompt(openActionsRow)}
         >
           <IconTrash size={16} className="court-actions-menu__item-icon" />
-          {deletingId === openActionsRow.id ? 'Wird gelöscht…' : 'Zurückziehen'}
+          {deletingId === openActionsRow.id ? $t('court.menuWithdrawing') : $t('court.menuWithdraw')}
         </button>
       {/if}
     </div>
@@ -559,7 +555,7 @@
       <button
         type="button"
         class="delete-game-modal__backdrop"
-        aria-label="Abbrechen"
+        aria-label={$t('court.backdropCancel')}
         onclick={closeWithdrawPrompt}
       ></button>
       <div
@@ -567,10 +563,11 @@
         use:focusTrap={{ focusRoot: true }}
         use:scrollLock
       >
-        <h2 id="court-withdraw-title" class="delete-game-modal__title">Anklage zurückziehen?</h2>
+        <h2 id="court-withdraw-title" class="delete-game-modal__title">
+          {$t('court.withdrawModalTitle')}
+        </h2>
         <p class="delete-game-modal__text muted">
-          Die offene Anklage gegen <strong>{withdrawPromptRow.accused.name}</strong> wird unwiderruflich
-          gelöscht.
+          {$t('court.withdrawModalBodyBefore')}<strong>{withdrawPromptRow.accused.name}</strong>{$t('court.withdrawModalBodyAfter')}
         </p>
         <div class="delete-game-modal__actions row">
           <button
@@ -579,9 +576,11 @@
             onclick={() => void confirmWithdrawOwnAccusation()}
           >
             <IconTrash size={18} />
-            Zurückziehen
+            {$t('court.withdrawConfirm')}
           </button>
-          <button type="button" class="btn" onclick={closeWithdrawPrompt}>Abbrechen</button>
+          <button type="button" class="btn" onclick={closeWithdrawPrompt}>
+            {$t('court.withdrawCancel')}
+          </button>
         </div>
       </div>
     </div>

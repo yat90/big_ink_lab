@@ -14,8 +14,14 @@
   import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
-  import { TEAM_TABS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
+  import { locale, setLocale, t } from '$lib/i18n';
+  import type { Locale } from '$lib/i18n';
+  import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
   import { authMe } from '$lib/me';
+
+  function pickLocale(next: Locale) {
+    setLocale(next);
+  }
 
   interface Props {
     open: boolean;
@@ -102,14 +108,14 @@
   <nav
     id="mobile-nav-drawer"
     class="mobile-nav__drawer"
-    aria-label="More menu"
+    aria-label={$t('nav.mobileMenu')}
     use:focusTrap
     use:scrollLock
   >
     <button
       type="button"
       class="mobile-nav__drawer-close"
-      aria-label="Close menu"
+      aria-label={$t('common.closeMenu')}
       onclick={closeMenu}
     >
       <IconClose size={24} />
@@ -124,7 +130,7 @@
       aria-current={isHome ? 'page' : undefined}
       onclick={closeMenu}
     >
-      Dashboard
+      {$t('nav.dashboard')}
     </a>
     <a
       href="/matches"
@@ -136,7 +142,7 @@
       <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
         <IconTrophy size={24} />
       </span>
-      Matches
+      {$t('nav.matches')}
     </a>
     <a
       href="/tournaments"
@@ -148,7 +154,7 @@
       <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
         <IconCrownOutline size={24} />
       </span>
-      Tournaments
+      {$t('nav.tournaments')}
     </a>
     <a
       href="/decks"
@@ -160,9 +166,9 @@
       <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
         <IconDecks size={24} />
       </span>
-      Decks
+      {$t('nav.decks')}
     </a>
-    <div class="mobile-nav__drawer-group" role="group" aria-label="Statistics">
+    <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.statisticsSection')}>
       <a
         href="/stats"
         class="mobile-nav__drawer-link"
@@ -173,7 +179,7 @@
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
           <IconBarChart size={24} />
         </span>
-        Statistics
+        {$t('nav.statistics')}
       </a>
       <a
         href="/me/statistics"
@@ -185,10 +191,10 @@
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
           <IconBarChart size={20} />
         </span>
-        My statistics
+        {$t('nav.myStatistics')}
       </a>
     </div>
-    <div class="mobile-nav__drawer-group" role="group" aria-label="More information">
+    <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.moreInformation')}>
       <div class="mobile-nav__drawer-extra-head" aria-hidden="true">
         <IconInfo size={24} />
       </div>
@@ -202,10 +208,10 @@
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
           <IconUsers size={20} />
         </span>
-        Players
+        {$t('nav.players')}
       </a>
     </div>
-    <div class="mobile-nav__drawer-group" role="group" aria-label="Team">
+    <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.teamSection')}>
       <a
         href="/team"
         class="mobile-nav__drawer-link"
@@ -215,28 +221,46 @@
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
           <IconTeam size={24} />
         </span>
-        Team
+        {$t('nav.team')}
       </a>
-      {#each TEAM_TABS as tab (tab.id)}
-        {@const TabIcon = TEAM_TAB_ICON_MAP[tab.id]}
+      {#each TEAM_TAB_IDS as tabId (tabId)}
+        {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
         <a
-          href="/team?tab={tab.id}"
+          href="/team?tab={tabId}"
           class="mobile-nav__drawer-link mobile-nav__drawer-link--sub"
-          class:mobile-nav__drawer-link--active={isTeam && activeTeamTab === tab.id}
-          aria-current={isTeam && activeTeamTab === tab.id ? 'page' : undefined}
+          class:mobile-nav__drawer-link--active={isTeam && activeTeamTab === tabId}
+          aria-current={isTeam && activeTeamTab === tabId ? 'page' : undefined}
           onclick={closeMenu}
         >
           <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
             <TabIcon size={20} />
           </span>
-          {tab.label}
+          {$t(`team.tabs.${tabId}`)}
         </a>
       {/each}
     </div>
-    <div class="mobile-nav__drawer-group" role="group" aria-label="Account">
+    <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.accountSection')}>
       {#if playerName}
         <p class="mobile-nav__drawer-player-name muted" role="presentation">{playerName}</p>
       {/if}
+      <div class="mobile-nav__drawer-lang" role="group" aria-label={$t('common.language')}>
+        <button
+          type="button"
+          class="mobile-nav__drawer-lang-btn"
+          class:mobile-nav__drawer-lang-btn--active={$locale === 'de'}
+          onclick={() => pickLocale('de')}
+        >
+          {$t('lang.deShort')}
+        </button>
+        <button
+          type="button"
+          class="mobile-nav__drawer-lang-btn"
+          class:mobile-nav__drawer-lang-btn--active={$locale === 'en'}
+          onclick={() => pickLocale('en')}
+        >
+          {$t('lang.enShort')}
+        </button>
+      </div>
       <a
         href="/me"
         class="mobile-nav__drawer-link"
@@ -247,7 +271,7 @@
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
           <IconUser size={24} />
         </span>
-        Me
+        {$t('nav.mobileMe')}
       </a>
       <button
         type="button"
@@ -257,7 +281,7 @@
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
           <IconLogOut size={20} />
         </span>
-        Log out
+        {$t('nav.logOut')}
       </button>
     </div>
     <div class="mobile-nav__drawer-divider" role="separator" aria-hidden="true"></div>
@@ -267,7 +291,7 @@
       onclick={closeMenu}
     >
       <IconClose size={22} />
-      Close menu
+      {$t('common.closeMenu')}
     </button>
 
     {#if showLogoutPrompt}
@@ -280,18 +304,18 @@
         <button
           type="button"
           class="delete-game-modal__backdrop"
-          aria-label="Cancel"
+          aria-label={$t('nav.logOutCancel')}
           onclick={closeLogoutPrompt}
         ></button>
         <div class="delete-game-modal__card card" use:focusTrap={{ focusRoot: true }} use:scrollLock>
-          <h2 id="logout-confirm-title" class="delete-game-modal__title">Log out?</h2>
-          <p class="delete-game-modal__text muted">Do you really want to log out of Big Ink Lab?</p>
+          <h2 id="logout-confirm-title" class="delete-game-modal__title">{$t('nav.logOutConfirmTitle')}</h2>
+          <p class="delete-game-modal__text muted">{$t('nav.logOutConfirmBody')}</p>
           <div class="delete-game-modal__actions row">
             <button type="button" class="btn btn--primary btn--icon" onclick={() => void confirmLogout()}>
               <IconLogOut size={18} />
-              Log out
+              {$t('nav.logOut')}
             </button>
-            <button type="button" class="btn" onclick={closeLogoutPrompt}>Cancel</button>
+            <button type="button" class="btn" onclick={closeLogoutPrompt}>{$t('nav.logOutCancel')}</button>
           </div>
         </div>
       </div>

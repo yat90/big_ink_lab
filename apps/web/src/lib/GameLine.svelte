@@ -5,6 +5,7 @@
   import IconSparkle from '$lib/icons/IconSparkle.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
   import { type Game, type GameStatus } from '$lib/matches';
+  import { t } from '$lib/i18n';
 
   type Props = {
     game: Game;
@@ -63,7 +64,10 @@
 </script>
 
 <div class="game-line">
-  <div class="game-line__counter" aria-label="Game {index + 1}">
+  <div
+    class="game-line__counter"
+    aria-label={$t('matches.gameLine.counterAria', { n: String(index + 1) })}
+  >
     <div class="game-line__counter-number">
       {index + 1}
     </div>
@@ -75,26 +79,26 @@
         <span class="game-line__score-icons" aria-hidden="true">
           {#if gameStarterId(game) === p1Id}
             <IconPlay size={14} />
-            <span class="game-line__score-icon-label"> Starter </span>
+            <span class="game-line__score-icon-label">{$t('matches.gameLine.starter')}</span>
           {/if}
           {#if gameWinnerId(game) === p1Id}
             <IconCrown size={18} />
-            <span class="game-line__score-icon-label">Winner</span>
+            <span class="game-line__score-icon-label">{$t('matches.gameLine.winner')}</span>
           {/if}
         </span>
       </span>
     </span>
-    <div class="game-line__score-vs-row">VS.</div>
+    <div class="game-line__score-vs-row">{$t('matches.list.vs')}</div>
     <span class="game-line__score-side game-line__score-side--p2">
       <span class="game-line__score-value game-line__score-value_p2">
         <span class="game-line__score-icons" aria-hidden="true">
           {#if gameStarterId(game) === p2Id}
             <IconPlay size={14} />
-            <span class="game-line__score-icon-label">Starter</span>
+            <span class="game-line__score-icon-label">{$t('matches.gameLine.starter')}</span>
           {/if}
           {#if gameWinnerId(game) === p2Id}
             <IconCrown size={18} />
-            <span class="game-line__score-icon-label">Winner</span>
+            <span class="game-line__score-icon-label">{$t('matches.gameLine.winner')}</span>
           {/if}
         </span>
         {game.p2Lore ?? '–'}
@@ -108,11 +112,11 @@
         type="button"
         class="btn btn--primary btn--sm game-line__events-btn"
         onclick={() => onShowEvents(index)}
-        aria-label="View game {index + 1} events"
-        title="View events"
+        aria-label={$t('matches.gameLine.viewEventsAria', { n: String(index + 1) })}
+        title={$t('matches.gameLine.viewEventsTitle')}
       >
         <IconClock size={18} className="game-line__icon icon-clock" />
-        <span class="game-line__icon-label">Events</span>
+        <span class="game-line__icon-label">{$t('matches.gameLine.eventsLabel')}</span>
       </button>
     {/if}
     {#if !gameWinnerId(game)}
@@ -121,7 +125,7 @@
         class="btn btn--primary btn--sm game-line__continue-btn"
       >
         <IconPlay size={24} className="game-line__icon icon-play" />
-        <span class="game-line__icon-label">Continue</span>
+        <span class="game-line__icon-label">{$t('matches.gameLine.continueLabel')}</span>
       </a>
     {/if}
     {#if onAnalyse}
@@ -129,11 +133,11 @@
         type="button"
         class="btn btn--primary btn--sm game-line__analyse-btn"
         onclick={() => onAnalyse(index)}
-        aria-label="Analyse game {index + 1} with AI"
-        title="Analyse with AI"
+        aria-label={$t('matches.gameLine.analyseAiAria', { n: String(index + 1) })}
+        title={$t('matches.gameLine.analyseAiTitle')}
       >
         <IconSparkle size={18} className="game-line__icon icon-sparkle" />
-        <span class="game-line__icon-label">Analyse</span>
+        <span class="game-line__icon-label">{$t('matches.detail.analyseLabel')}</span>
       </button>
     {/if}
   </div>
@@ -148,12 +152,12 @@
         ? (game.winner as { _id?: string })._id
         : (game.winner ?? '')}
     <div class="game-line__meta-row">
-      <div class="game-line__meta-block" role="group" aria-label="Starter">
+      <div class="game-line__meta-block" role="group" aria-label={$t('matches.gameLine.starterGroupAria')}>
         <div class="game-line__meta-title">
           <IconPlay size={14} className="game-line__meta-icon" />
-          <span class="muted">Starter</span>
+          <span class="muted">{$t('matches.gameLine.starter')}</span>
         </div>
-        <div class="game-line__toggle" role="group" aria-label="Choose starter">
+        <div class="game-line__toggle" role="group" aria-label={$t('matches.gameLine.chooseStarterAria')}>
           {#if p1Id}
             <button
               type="button"
@@ -162,7 +166,7 @@
               disabled={isUpdating}
               onclick={() => onGameChange(index, { starter: p1Id })}
               aria-pressed={currentStarterId === p1Id}
-              aria-label={p1DisplayName + ' started'}
+              aria-label={$t('matches.gameLine.playerStartedAria', { name: p1DisplayName })}
             >
               {p1DisplayName}
             </button>
@@ -174,7 +178,7 @@
             disabled={isUpdating}
             onclick={() => onGameChange(index, { starter: undefined })}
             aria-pressed={currentStarterId === ''}
-            aria-label="No starter"
+            aria-label={$t('matches.gameLine.noStarterAria')}
           >
             –
           </button>
@@ -186,19 +190,19 @@
               disabled={isUpdating}
               onclick={() => onGameChange(index, { starter: p2Id })}
               aria-pressed={currentStarterId === p2Id}
-              aria-label={p2DisplayName + ' started'}
+              aria-label={$t('matches.gameLine.playerStartedAria', { name: p2DisplayName })}
             >
               {p2DisplayName}
             </button>
           {/if}
         </div>
       </div>
-      <div class="game-line__meta-block" role="group" aria-label="Winner">
+      <div class="game-line__meta-block" role="group" aria-label={$t('matches.gameLine.winnerGroupAria')}>
         <div class="game-line__meta-title">
           <IconCrown size={14} className="game-line__meta-icon" />
-          <span class="muted">Winner</span>
+          <span class="muted">{$t('matches.gameLine.winner')}</span>
         </div>
-        <div class="game-line__toggle" role="group" aria-label="Choose winner">
+        <div class="game-line__toggle" role="group" aria-label={$t('matches.gameLine.chooseWinnerAria')}>
           {#if p1Id}
             <button
               type="button"
@@ -207,7 +211,7 @@
               disabled={isUpdating}
               onclick={() => onGameChange(index, { winner: p1Id, status: 'done' as GameStatus })}
               aria-pressed={currentWinnerId === p1Id}
-              aria-label={p1DisplayName + ' wins'}
+              aria-label={$t('matches.detail.winsAria', { name: p1DisplayName })}
             >
               {p1DisplayName}
             </button>
@@ -220,7 +224,7 @@
             onclick={() =>
               onGameChange(index, { winner: undefined, status: 'in_progress' as GameStatus })}
             aria-pressed={currentWinnerId === ''}
-            aria-label="No winner yet"
+            aria-label={$t('matches.detail.noWinnerYetAria')}
           >
             –
           </button>
@@ -232,7 +236,7 @@
               disabled={isUpdating}
               onclick={() => onGameChange(index, { winner: p2Id, status: 'done' as GameStatus })}
               aria-pressed={currentWinnerId === p2Id}
-              aria-label={p2DisplayName + ' wins'}
+              aria-label={$t('matches.detail.winsAria', { name: p2DisplayName })}
             >
               {p2DisplayName}
             </button>
@@ -248,14 +252,14 @@
       class="btn btn--danger btn--icon game-line__delete-btn"
       disabled={isDeleting}
       onclick={() => onDeleteGame(index)}
-      aria-label="Delete game {index + 1}"
-      title="Delete game"
+      aria-label={$t('matches.gameLine.deleteGameAria', { n: String(index + 1) })}
+      title={$t('matches.gameLine.deleteGameTitle')}
     >
       {#if isDeleting}
-        Removing…
+        {$t('matches.gameLine.removing')}
       {:else}
         <IconTrash size={18} className="game-line__icon icon-trash" />
-        <span class="game-line__icon-label">Delete</span>
+        <span class="game-line__icon-label">{$t('matches.detail.deleteLabel')}</span>
       {/if}
     </button>
   {/if}

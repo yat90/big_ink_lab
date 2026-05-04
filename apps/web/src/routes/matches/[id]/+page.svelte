@@ -3,6 +3,8 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { getLocale, translate, t, locale } from '$lib/i18n';
+  import { get } from 'svelte/store';
   import { type Game, type GameStatus, STAGE_OPTIONS } from '$lib/matches';
   import type {
     LorcanaMatch,
@@ -123,13 +125,15 @@
     return typeof p === 'string' ? p : (p.name ?? '–');
   }
 
-  /** Display name for UI: "Player 1" / "Player 2" when no player selected. */
+  /** Display name for UI: localized Player 1 / Player 2 when no player selected. */
   function displayPlayerName(
     p: Player | LorcanaMatchPlayer | string | undefined,
-    fallback: 'Player 1' | 'Player 2'
+    which: 1 | 2,
   ): string {
+    void get(locale);
     const name = playerName(p);
-    return name === '–' ? fallback : name;
+    if (name !== '–') return name;
+    return translate(get(locale), which === 1 ? 'matches.detail.player1' : 'matches.detail.player2');
   }
 
   function formatDate(s: string | undefined): string {
@@ -143,13 +147,11 @@
 
   /** Event type label for display. */
   function eventTypeLabel(type: string): string {
-    if (type === 'lore_increased') return 'Lore +';
-    if (type === 'lore_decreased') return 'Lore −';
-    if (type === 'start') return 'Start';
-    if (type === 'end') return 'End';
-    if (type === 'game_conceded') return 'Conceded';
-    if (type === 'lore_update') return 'Lore change';
-    return type;
+    void get(locale);
+    const loc = get(locale);
+    const key = `matches.detail.eventTypes.${type}`;
+    const label = translate(loc, key);
+    return label !== key ? label : type;
   }
 
   /** Events for a game at index, formatted for the popup (sorted by time). */
@@ -158,8 +160,12 @@
   ): Array<{ type: string; time: string; playerLabel: string }> {
     const g = match?.games?.[gameIndex];
     const events = g?.events ?? [];
-    const p1Name = match ? displayPlayerName(match.p1, 'Player 1') : 'Player 1';
-    const p2Name = match ? displayPlayerName(match.p2, 'Player 2') : 'Player 2';
+    const p1Name = match
+      ? displayPlayerName(match.p1, 1)
+      : translate(getLocale(), 'matches.detail.player1');
+    const p2Name = match
+      ? displayPlayerName(match.p2, 2)
+      : translate(getLocale(), 'matches.detail.player2');
     const withTs = events.map((e) => {
       const ts =
         typeof e.timestamp === 'string'
@@ -173,7 +179,13 @@
           })
         : '–';
       const playerLabel =
-        e.player === p1Id ? p1Name : e.player === p2Id ? p2Name : e.player ? 'Player' : '–';
+        e.player === p1Id
+          ? p1Name
+          : e.player === p2Id
+            ? p2Name
+            : e.player
+              ? translate(getLocale(), 'matches.detail.genericPlayer')
+              : '–';
       const t =
         typeof e.timestamp === 'string'
           ? new Date(e.timestamp).getTime()
@@ -188,15 +200,16 @@
   function getAnalysePromptForGame(gameIndex: number): string {
     if (!match) return '';
     const g = match.games?.[gameIndex];
-    const p1Name = displayPlayerName(match.p1, 'Player 1');
-    const p2Name = displayPlayerName(match.p2, 'Player 2');
+    const p1Name = displayPlayerName(match.p1, 1);
+    const p2Name = displayPlayerName(match.p2, 2);
     let winner = '–';
     if (g?.winner != null) {
       const wid =
         typeof g.winner === 'object' && g.winner !== null
           ? (g.winner as { _id?: string })._id
           : g.winner;
-      winner = wid === p1Id ? p1Name : wid === p2Id ? p2Name : 'Winner';
+      winner =
+        wid === p1Id ? p1Name : wid === p2Id ? p2Name : translate(getLocale(), 'matches.detail.winnerWord');
     }
     const events = getGameEventsForPopup(gameIndex).map((e) => ({
       time: e.time,
@@ -221,8 +234,8 @@
   /** Build a text prompt for the full match (all games) for pasting into an AI agent. */
   function getAnalyseMatchPrompt(): string {
     if (!match?.games?.length) return '';
-    const p1Name = displayPlayerName(match.p1, 'Player 1');
-    const p2Name = displayPlayerName(match.p2, 'Player 2');
+    const p1Name = displayPlayerName(match.p1, 1);
+    const p2Name = displayPlayerName(match.p2, 2);
     const p1Wins = gamesWon(match, p1Id ?? '');
     const p2Wins = gamesWon(match, p2Id ?? '');
     const matchWinnerText =
@@ -239,7 +252,8 @@
           typeof g.winner === 'object' && g.winner !== null
             ? (g.winner as { _id?: string })._id
             : g.winner;
-        winner = wid === p1Id ? p1Name : wid === p2Id ? p2Name : 'Winner';
+        winner =
+          wid === p1Id ? p1Name : wid === p2Id ? p2Name : translate(getLocale(), 'matches.detail.winnerWord');
       }
       return {
         gameIndex: i,
@@ -322,7 +336,7 @@
         myPlayerId = me?.player?._id ?? null;
       }
       if (!matchRes.ok) {
-        error = 'Match not found';
+        error = translate(getLocale(), 'matches.detail.notFound');
         loading = false;
         return;
       }
@@ -350,7 +364,7 @@
         }
       }
     } catch {
-      error = 'Could not load match.';
+      error = translate(getLocale(), 'matches.detail.loadError');
     } finally {
       loading = false;
     }
@@ -417,12 +431,15 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Update failed';
+        error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : translate(getLocale(), 'matches.detail.updateFailed');
         return;
       }
       match = await res.json();
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       updatingStage = false;
     }
@@ -442,12 +459,15 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Update failed';
+        error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : translate(getLocale(), 'matches.detail.updateFailed');
         return;
       }
       match = await res.json();
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       updatingRound = false;
     }
@@ -469,7 +489,10 @@
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      error = data.message ?? 'Update failed';
+      error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : translate(getLocale(), 'matches.detail.updateFailed');
       return false;
     }
     match = await res.json();
@@ -493,10 +516,10 @@
       if (ok) {
         await goto(`/matches/${id}/lore?game=${existing.length}`);
       } else {
-        error = 'Could not add game';
+        error = translate(getLocale(), 'matches.detail.addGameFailed');
       }
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
       console.error(error);
     } finally {
       addingGame = false;
@@ -516,12 +539,15 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Update failed';
+        error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : translate(getLocale(), 'matches.detail.updateFailed');
         return;
       }
       match = await res.json();
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       updatingPlayer = null;
     }
@@ -545,12 +571,15 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Update failed';
+        error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : translate(getLocale(), 'matches.detail.updateFailed');
         return;
       }
       match = await res.json();
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       updatingDeckColor = false;
     }
@@ -569,12 +598,15 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Update failed';
+        error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : translate(getLocale(), 'matches.detail.updateFailed');
         return;
       }
       match = await res.json();
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       updatingDeck = null;
     }
@@ -592,12 +624,15 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Update failed';
+        error =
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : translate(getLocale(), 'matches.detail.updateFailed');
         return;
       }
       match = await res.json();
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       updatingMatchWinner = false;
     }
@@ -611,7 +646,7 @@
       const games = match.games.map((g, i) => (i === gameIndex ? { ...g, ...updates } : g));
       await patchGames(games);
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       updatingGameIndex = null;
     }
@@ -635,7 +670,7 @@
       const games = match.games.filter((_, i) => i !== gameIndex);
       await patchGames(games);
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       deletingGameIndex = null;
     }
@@ -661,14 +696,18 @@
     try {
       const res = await fetch(`${apiUrl}/matches/${id}`, { method: 'DELETE' });
       if (res.ok) await goto('/matches');
-      else error = 'Delete failed';
+      else error = translate(getLocale(), 'matches.detail.deleteFailed');
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       deleting = false;
     }
   }
 </script>
+
+<svelte:head>
+  <title>{$t('matches.detail.pageTitle')}</title>
+</svelte:head>
 
 <div class="page">
   {#if loading}
@@ -678,12 +717,12 @@
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         <div class="loading-skeleton__line"></div>
       </div>
-      <p class="muted match-page__loading-text">Loading match…</p>
+      <p class="muted match-page__loading-text">{$t('matches.detail.loading')}</p>
     </div>
   {:else if error && !match}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
-      <a href="/matches" class="btn">Back to matches</a>
+      <a href="/matches" class="btn">{$t('matches.detail.backToList')}</a>
     </div>
   {:else if match}
     <div class="card stack">
@@ -695,13 +734,11 @@
             <span class="matchcard__top-inner">· {formatMatchRoundLabel(match.round)}</span>
           {/if}
           {#if isIntentionalDraw}
-            <span
-              class="matchcard__pill--id"
-              title="Intentional draw (not counted in win/loss statistics)"
-              >ID</span
+            <span class="matchcard__pill--id" title={$t('matches.list.pillIdTitle')}
+              >{$t('matches.list.pillId')}</span
             >
           {:else if isBye}
-            <span class="matchcard__pill--bye" title="Bye (free win)">Bye</span>
+            <span class="matchcard__pill--bye" title={$t('matches.list.pillByeTitle')}>{$t('matches.list.pillBye')}</span>
           {/if}
 
           {#if canEditMatch}
@@ -711,19 +748,19 @@
                   type="button"
                   class="matchcard__edit-done btn btn--sm"
                   onclick={() => (editingMatchCard = false)}
-                  aria-label="Done editing"
+                  aria-label={$t('matches.detail.doneEditingAria')}
                 >
-                  Done
+                  {$t('matches.detail.done')}
                 </button>
               {:else}
                 <button
                   type="button"
                   class="matchcard__edit-done btn btn--sm"
                   onclick={() => (editingMatchCard = true)}
-                  aria-label="Edit match"
+                  aria-label={$t('matches.detail.editMatchAria')}
                 >
                   <IconEdit size={18} className="matchcard__edit-icon" />
-                  Edit
+                  {$t('matches.detail.editLabel')}
                 </button>
               {/if}
 
@@ -732,14 +769,14 @@
                 class="btn btn--danger btn--icon"
                 onclick={openDeleteMatchModal}
                 disabled={deleting}
-                aria-label="Delete match"
-                title="Delete match"
+                aria-label={$t('matches.detail.deleteMatchAria')}
+                title={$t('matches.detail.deleteMatchTitleAttr')}
               >
                 {#if deleting}
-                  Deleting…
+                  {$t('matches.detail.deleting')}
                 {:else}
                   <IconTrash size={18} className="icon-trash" />
-                  Delete
+                  {$t('matches.detail.deleteLabel')}
                 {/if}
               </button>
             </div>
@@ -747,7 +784,7 @@
         </div>
         {#if canEditMatch && editingMatchCard}
           {#if loadingEditData}
-            <p class="muted match-page__edit-loading">Loading players and decks…</p>
+            <p class="muted match-page__edit-loading">{$t('matches.detail.loadingEdit')}</p>
           {:else}
             <MatchCardEdit
               linkedPlayerId={myPlayerId ?? undefined}
@@ -759,8 +796,8 @@
               {p2DeckId}
               p1DeckDisplayName={getDeckDisplayName(match.p1Deck)}
               p2DeckDisplayName={getDeckDisplayName(match.p2Deck)}
-              p1PlayerName={displayPlayerName(match.p1, 'Player 1')}
-              p2PlayerName={displayPlayerName(match.p2, 'Player 2')}
+              p1PlayerName={displayPlayerName(match.p1, 1)}
+              p2PlayerName={displayPlayerName(match.p2, 2)}
               players={playersForSelect}
               {decks}
               {showP1DeckSelect}
@@ -782,14 +819,14 @@
             >
               <span class="matchcard__name">
                 <span class="matchcard__name_text">
-                  {displayPlayerName(match.p1, 'Player 1')}
+                  {displayPlayerName(match.p1, 1)}
                   {#if !isIntentionalDraw && matchWinnerId === p1Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">
+                    <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}>
                       <IconCrown size={16} />
                     </span>
                   {/if}
                 </span>
-                <span class="matchcard__deck-readonly" aria-label="P1 deck color">
+                <span class="matchcard__deck-readonly" aria-label={$t('matches.detail.p1DeckColorAria')}>
                   <InkIcons deckColor={match.p1DeckColor} size="sm" />
                   {#if getDeckDisplayName(match.p1Deck) !== '—'}
                     {#if p1DeckId}
@@ -806,28 +843,28 @@
                   {/if}
                 </span>
               </span>
-              <span class="matchcard__wins muted" title="Games won">
+              <span class="matchcard__wins muted" title={$t('matches.list.gamesWonTitle')}>
                 {gamesWon(match, p1Id ?? '')}</span
               >
             </div>
-            <div class="matchcard__vs" aria-hidden="true">VS.</div>
+            <div class="matchcard__vs" aria-hidden="true">{$t('matches.list.vs')}</div>
             <div
               class="matchcard__player matchcard__player--right"
               class:matchcard__player--winner={!isIntentionalDraw && matchWinnerId === p2Id}
             >
-              <span class="matchcard__wins muted" title="Games won"
+              <span class="matchcard__wins muted" title={$t('matches.list.gamesWonTitle')}
                 >{gamesWon(match, p2Id ?? '')}</span
               >
               <span class="matchcard__name">
                 <span class="matchcard__name_text">
-                  {displayPlayerName(match.p2, 'Player 2')}
+                  {displayPlayerName(match.p2, 2)}
                   {#if !isIntentionalDraw && matchWinnerId === p2Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">
+                    <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}>
                       <IconCrown size={16} />
                     </span>
                   {/if}
                 </span>
-                <span class="matchcard__deck-readonly" aria-label="P2 deck color">
+                <span class="matchcard__deck-readonly" aria-label={$t('matches.detail.p2DeckColorAria')}>
                   <InkIcons deckColor={match.p2DeckColor} size="sm" />
                   {#if getDeckDisplayName(match.p2Deck) !== '—'}
                     {#if p2DeckId}
@@ -848,7 +885,7 @@
           </div>
           {#if match.notes}
             <div class="match-page__matchcard-notes-row">
-              <span class="muted match-page__dl-label">Notes</span>
+              <span class="muted match-page__dl-label">{$t('matches.detail.notesLabel')}</span>
               <p class="match-page__matchcard-notes-text">{match.notes}</p>
             </div>
           {/if}
@@ -858,14 +895,14 @@
       {#if canEditMatch && editingMatchCard}
         <dl class="stack">
           <div class="dl-row">
-            <dt class="muted">Stage</dt>
+            <dt class="muted">{$t('matches.detail.stageLabel')}</dt>
             <dd>
               <select
                 class="input match-page__input-stage"
                 value={match.stage ?? 'Casual'}
                 disabled={updatingStage}
                 onchange={(e) => onStageChange(e.currentTarget.value)}
-                aria-label="Stage"
+                aria-label={$t('matches.detail.stageAria')}
               >
                 {#each STAGE_OPTIONS as s}
                   <option value={s}>{s}</option>
@@ -875,7 +912,7 @@
           </div>
           {#if match.stage === 'Tournament'}
             <div class="dl-row">
-              <dt class="muted match-page__dl-label">Round</dt>
+              <dt class="muted match-page__dl-label">{$t('matches.detail.roundLabel')}</dt>
               <dd>
                 <input
                   type="text"
@@ -883,8 +920,8 @@
                   value={match.round ?? ''}
                   disabled={updatingRound}
                   onchange={(e) => onRoundChange(e.currentTarget.value)}
-                  placeholder="e.g. 1, top 8, final"
-                  aria-label="Round"
+                  placeholder={$t('matches.detail.roundPlaceholder')}
+                  aria-label={$t('matches.detail.roundAria')}
                 />
               </dd>
             </div>
@@ -892,11 +929,11 @@
           <div class="dl-row">
             <dt class="muted match-page__winner-dt">
               <IconCrown size={14} className="match-page__meta-icon" />
-              <span>Winner</span>
+              <span>{$t('matches.detail.winnerLabel')}</span>
             </dt>
             <dd>
-              <div class="match-page__winner-block" role="group" aria-label="Match winner">
-                <div class="match-page__toggle" role="group" aria-label="Choose winner">
+              <div class="match-page__winner-block" role="group" aria-label={$t('matches.detail.matchWinnerGroupAria')}>
+                <div class="match-page__toggle" role="group" aria-label={$t('matches.detail.chooseWinnerGroupAria')}>
                   {#if p1Id}
                     <button
                       type="button"
@@ -905,9 +942,11 @@
                       disabled={updatingMatchWinner}
                       onclick={() => onMatchWinnerChange(p1Id)}
                       aria-pressed={matchWinnerId === p1Id}
-                      aria-label={displayPlayerName(match.p1, 'Player 1') + ' wins'}
+                      aria-label={translate(getLocale(), 'matches.detail.winsAria', {
+                      name: displayPlayerName(match.p1, 1),
+                    })}
                     >
-                      {displayPlayerName(match.p1, 'Player 1')}
+                      {displayPlayerName(match.p1, 1)}
                     </button>
                   {/if}
                   <button
@@ -917,7 +956,7 @@
                     disabled={updatingMatchWinner}
                     onclick={() => onMatchWinnerChange(undefined)}
                     aria-pressed={!matchWinnerId || matchWinnerId === ''}
-                    aria-label="No winner yet"
+                    aria-label={$t('matches.detail.noWinnerYetAria')}
                   >
                     –
                   </button>
@@ -929,9 +968,11 @@
                       disabled={updatingMatchWinner}
                       onclick={() => onMatchWinnerChange(p2Id)}
                       aria-pressed={matchWinnerId === p2Id}
-                      aria-label={displayPlayerName(match.p2, 'Player 2') + ' wins'}
+                      aria-label={translate(getLocale(), 'matches.detail.winsAria', {
+                      name: displayPlayerName(match.p2, 2),
+                    })}
                     >
-                      {displayPlayerName(match.p2, 'Player 2')}
+                      {displayPlayerName(match.p2, 2)}
                     </button>
                   {/if}
                 </div>
@@ -944,27 +985,27 @@
 
     <div class="stack match-page__games-stack">
       <div class="row match-page__games-header">
-        <h3 class="match-page__games-title">Games</h3>
+        <h3 class="match-page__games-title">{$t('matches.detail.gamesTitle')}</h3>
         {#if canEditMatch}
           {#if editingGames}
             <button
               type="button"
               class="btn btn--sm"
               onclick={() => (editingGames = false)}
-              aria-label="Done editing"
+              aria-label={$t('matches.detail.doneEditingAria')}
             >
-              Done
+              {$t('matches.detail.done')}
             </button>
           {:else}
             <button
               type="button"
               class="btn btn--sm"
               onclick={() => (editingGames = true)}
-              aria-label="Edit starter and winner for all games"
-              title="Edit starter and winner"
+              aria-label={$t('matches.detail.editStarterWinnerAria')}
+              title={$t('matches.detail.editStarterWinnerTitle')}
             >
               <IconEdit size={16} className="icon-inline" />
-              <span class="match-page__btn-icon-label">Edit</span>
+              <span class="match-page__btn-icon-label">{$t('matches.detail.editLabel')}</span>
             </button>
           {/if}
         {/if}
@@ -976,11 +1017,11 @@
               analysePopupGameIndex = null;
               analyseMatchPopupOpen = true;
             }}
-            aria-label="Analyse match with AI"
-            title="Analyse match"
+            aria-label={$t('matches.detail.analyseMatchAria')}
+            title={$t('matches.detail.analyseMatchTitle')}
           >
             <IconSparkle size={16} className="icon-inline" />
-            <span class="match-page__btn-icon-label">Analyse</span>
+            <span class="match-page__btn-icon-label">{$t('matches.detail.analyseLabel')}</span>
           </button>
         {/if}
       </div>
@@ -988,8 +1029,8 @@
     </div>
 
     <div class="player_header" class:player_header--stuck={playerHeaderStuck}>
-      <h4>{displayPlayerName(match.p1, 'Player 1')}</h4>
-      <h4>{displayPlayerName(match.p2, 'Player 2')}</h4>
+      <h4>{displayPlayerName(match.p1, 1)}</h4>
+      <h4>{displayPlayerName(match.p2, 2)}</h4>
     </div>
     {#if match.games?.length}
       {#each match.games as g, i (i)}
@@ -997,8 +1038,8 @@
           game={g}
           index={i}
           matchId={id ?? ''}
-          p1DisplayName={displayPlayerName(match.p1, 'Player 1')}
-          p2DisplayName={displayPlayerName(match.p2, 'Player 2')}
+          p1DisplayName={displayPlayerName(match.p1, 1)}
+          p2DisplayName={displayPlayerName(match.p2, 2)}
           p1Id={p1Id ?? undefined}
           p2Id={p2Id ?? undefined}
           isEditing={canEditMatch && editingGames}
@@ -1007,8 +1048,8 @@
           {onGameChange}
           {onDeleteGame}
           onEditDone={() => (editingGames = false)}
-          onShowEvents={(idx) => (eventsPopupGameIndex = idx)}
-          onAnalyse={(idx) => {
+          onShowEvents={(idx: number) => (eventsPopupGameIndex = idx)}
+          onAnalyse={(idx: number) => {
             analyseMatchPopupOpen = false;
             analysePopupGameIndex = idx;
           }}
@@ -1019,7 +1060,7 @@
     {#if canEditMatch && match.games != null}
       <div class="row match-page__add-game-row">
         <button type="button" class="btn" disabled={addingGame} onclick={onAddGame}>
-          {addingGame ? 'Adding…' : '+ Add game'}
+          {addingGame ? $t('matches.detail.addingGame') : $t('matches.detail.addGame')}
         </button>
       </div>
     {/if}
@@ -1038,18 +1079,18 @@
         <button
           type="button"
           class="delete-game-modal__backdrop"
-          aria-label="Cancel"
+          aria-label={$t('common.cancel')}
           onclick={closeDeleteMatchModal}
         ></button>
         <div class="delete-game-modal__card card">
-          <h2 id="delete-match-title" class="delete-game-modal__title">Delete match?</h2>
-          <p class="delete-game-modal__text muted">Do you really want to delete this match?</p>
+          <h2 id="delete-match-title" class="delete-game-modal__title">{$t('matches.detail.deleteMatchHeading')}</h2>
+          <p class="delete-game-modal__text muted">{$t('matches.detail.deleteMatchBody')}</p>
           <div class="delete-game-modal__actions row">
             <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteMatch}>
               <IconTrash size={18} className="icon-trash" />
-              Delete
+              {$t('matches.detail.deleteLabel')}
             </button>
-            <button type="button" class="btn" onclick={closeDeleteMatchModal}>Cancel</button>
+            <button type="button" class="btn" onclick={closeDeleteMatchModal}>{$t('common.cancel')}</button>
           </div>
         </div>
       </div>
@@ -1066,18 +1107,18 @@
         <button
           type="button"
           class="delete-game-modal__backdrop"
-          aria-label="Cancel"
+          aria-label={$t('common.cancel')}
           onclick={closeDeleteGameModal}
         ></button>
         <div class="delete-game-modal__card card">
-          <h2 id="delete-game-title" class="delete-game-modal__title">Delete game?</h2>
-          <p class="delete-game-modal__text muted">Do you really want to delete this game?</p>
+          <h2 id="delete-game-title" class="delete-game-modal__title">{$t('matches.detail.deleteGameHeading')}</h2>
+          <p class="delete-game-modal__text muted">{$t('matches.detail.deleteGameBody')}</p>
           <div class="delete-game-modal__actions row">
             <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteGame}>
               <IconTrash size={18} className="icon-trash" />
-              Delete
+              {$t('matches.detail.deleteLabel')}
             </button>
-            <button type="button" class="btn" onclick={closeDeleteGameModal}>Cancel</button>
+            <button type="button" class="btn" onclick={closeDeleteGameModal}>{$t('common.cancel')}</button>
           </div>
         </div>
       </div>
@@ -1094,12 +1135,12 @@
         <button
           type="button"
           class="delete-game-modal__backdrop"
-          aria-label="Close"
+          aria-label={$t('matches.detail.close')}
           onclick={() => (eventsPopupGameIndex = null)}
         ></button>
         <div class="delete-game-modal__card card game-events-modal__card">
           <h2 id="game-events-title" class="delete-game-modal__title">
-            Game {eventsPopupGameIndex + 1} events
+            {$t('matches.detail.gameEventsTitle', { n: String(eventsPopupGameIndex + 1) })}
           </h2>
           <div class="game-events-modal__list">
             {#each getGameEventsForPopup(eventsPopupGameIndex) as evt, i (evt.time + '-' + i)}
@@ -1109,12 +1150,12 @@
                 <span class="game-events-modal__player muted">{evt.playerLabel}</span>
               </div>
             {:else}
-              <p class="muted game-events-modal__empty">No events yet.</p>
+              <p class="muted game-events-modal__empty">{$t('matches.detail.eventsEmpty')}</p>
             {/each}
           </div>
           <div class="delete-game-modal__actions row">
             <button type="button" class="btn" onclick={() => (eventsPopupGameIndex = null)}
-              >Close</button
+              >{$t('matches.detail.close')}</button
             >
           </div>
         </div>
@@ -1125,9 +1166,9 @@
     <GameAnalysePopup
       open={analyseMatchPopupOpen || analysePopupGameIndex != null}
       title={analyseMatchPopupOpen
-        ? 'Analyse match'
+        ? $t('matches.detail.analyseMatchTitle')
         : analysePopupGameIndex != null
-          ? `Analyse game ${analysePopupGameIndex + 1}`
+          ? $t('matches.detail.analyseGame', { n: String(analysePopupGameIndex + 1) })
           : ''}
       getPromptText={() =>
         analyseMatchPopupOpen
