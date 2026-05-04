@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import {
     fetchTeamAccusations,
     fetchTeamMembers,
@@ -7,12 +7,21 @@
     formatDate,
     formatMoney,
     createTeamAccusation,
+    deleteTeamAccusation,
     updateTeamAccusationStatus,
     type TeamAccusation,
     type TeamMember,
     type TeamPenalty,
     type AccusationStatus,
   } from '$lib/team';
+  import IconGavel from '$lib/icons/IconGavel.svelte';
+  import IconTrash from '$lib/icons/IconTrash.svelte';
+  import IconCheck from '$lib/icons/IconCheck.svelte';
+  import IconClose from '$lib/icons/IconClose.svelte';
+  import IconRefresh from '$lib/icons/IconRefresh.svelte';
+  import IconMore from '$lib/icons/IconMore.svelte';
+  import { portal } from '$lib/portal';
+  import { focusTrap, scrollLock } from '$lib/a11y';
 
   interface Props {
     isAdmin: boolean;
@@ -33,12 +42,123 @@
   let fileError = $state('');
 
   let updatingId = $state<string | null>(null);
+  let deletingId = $state<string | null>(null);
+  let courtActionError = $state('');
+  let withdrawPromptRow = $state<TeamAccusation | null>(null);
+  let openActionsRowId = $state<string | null>(null);
+  type ActionsMenuLayout = { top: number; right: number; maxHeight?: number };
+
+  let actionsMenuLayout = $state<ActionsMenuLayout | null>(null);
+
+  const openActionsRow = $derived(
+    openActionsRowId ? (accusations.find((a) => a.id === openActionsRowId) ?? null) : null,
+  );
 
   const accusableMembers = $derived(
     members.filter((m) => m.playerId !== currentPlayerId),
   );
 
+  const showCourtActionsCol = $derived(
+    isAdmin ||
+      accusations.some(
+        (a) =>
+          a.status === 'open' &&
+          currentPlayerId !== null &&
+          a.accuser.playerId === currentPlayerId,
+      ),
+  );
+
+  function canDeleteOwnAccusation(row: TeamAccusation): boolean {
+    return (
+      row.status === 'open' &&
+      currentPlayerId !== null &&
+      row.accuser.playerId === currentPlayerId
+    );
+  }
+
+  function rowHasActions(row: TeamAccusation): boolean {
+    if (isAdmin) return true;
+    return canDeleteOwnAccusation(row);
+  }
+
+  function closeActionsMenu() {
+    openActionsRowId = null;
+    actionsMenuLayout = null;
+  }
+
+  function toggleActionsMenu(rowId: string) {
+    openActionsRowId = openActionsRowId === rowId ? null : rowId;
+  }
+
+  function estimateMenuHeight(row: TeamAccusation): number {
+    let items = 0;
+    if (isAdmin && row.status === 'open') items += 2;
+    else if (isAdmin) items += 1;
+    if (canDeleteOwnAccusation(row)) items += 1;
+    return items * 42 + 16;
+  }
+
+  function positionActionsMenu() {
+    const id = openActionsRowId;
+    if (!id) {
+      actionsMenuLayout = null;
+      return;
+    }
+    const btn = document.getElementById(`court-actions-btn-${id}`);
+    const row = accusations.find((a) => a.id === id);
+    if (!btn || !row) {
+      actionsMenuLayout = null;
+      return;
+    }
+
+    const r = btn.getBoundingClientRect();
+    const panelEl = document.getElementById(`court-actions-panel-${id}`);
+    const estimatedH = estimateMenuHeight(row);
+    const panelH = panelEl?.offsetHeight ?? estimatedH;
+    const panelW = panelEl?.offsetWidth ?? 200;
+
+    const gap = 6;
+    const margin = 8;
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+
+    const belowTop = r.bottom + gap;
+    const spaceBelow = vh - margin - belowTop;
+    const spaceAboveMax = r.top - gap - margin;
+
+    let top: number;
+    let maxHeight: number | undefined;
+
+    if (panelH <= spaceBelow) {
+      top = belowTop;
+    } else if (panelH <= spaceAboveMax) {
+      top = r.top - gap - panelH;
+    } else if (spaceBelow >= spaceAboveMax) {
+      top = belowTop;
+      maxHeight = Math.max(96, spaceBelow);
+    } else {
+      top = margin;
+      maxHeight = Math.max(96, spaceAboveMax);
+    }
+
+    if (maxHeight != null) {
+      const effectiveH = Math.min(panelH, maxHeight);
+      if (top + effectiveH > vh - margin) {
+        top = Math.max(margin, vh - margin - effectiveH);
+      }
+    }
+
+    let right = vw - r.right;
+    const leftEdge = vw - right - panelW;
+    if (leftEdge < margin) {
+      right = Math.max(margin, vw - margin - panelW);
+    }
+
+    actionsMenuLayout = { top, right, maxHeight };
+  }
+
   async function loadAll() {
+    closeActionsMenu();
     loading = true;
     loadError = '';
     try {
@@ -101,16 +221,100 @@
   }
 
   async function setStatus(id: string, status: AccusationStatus) {
+    closeActionsMenu();
     updatingId = id;
+    courtActionError = '';
     try {
       await updateTeamAccusationStatus(id, status);
       await loadAll();
-    } catch {
-      /* handled by reload failure — optional toast */
+    } catch (err) {
+      courtActionError =
+        err instanceof Error ? err.message : 'Status der Anklage konnte nicht geändert werden.';
     } finally {
       updatingId = null;
     }
   }
+
+  function openWithdrawPrompt(row: TeamAccusation) {
+    closeActionsMenu();
+    withdrawPromptRow = row;
+  }
+
+  function closeWithdrawPrompt() {
+    withdrawPromptRow = null;
+  }
+
+  async function confirmWithdrawOwnAccusation() {
+    const id = withdrawPromptRow?.id;
+    if (!id) return;
+    closeWithdrawPrompt();
+    deletingId = id;
+    courtActionError = '';
+    try {
+      await deleteTeamAccusation(id);
+      await loadAll();
+    } catch (err) {
+      courtActionError =
+        err instanceof Error ? err.message : 'Anklage konnte nicht gelöscht werden.';
+    } finally {
+      deletingId = null;
+    }
+  }
+
+  $effect(() => {
+    if (!withdrawPromptRow && !openActionsRowId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      if (withdrawPromptRow) closeWithdrawPrompt();
+      else closeActionsMenu();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  $effect(() => {
+    if (openActionsRowId && !openActionsRow) closeActionsMenu();
+  });
+
+  $effect(() => {
+    if (!openActionsRowId) {
+      actionsMenuLayout = null;
+      return;
+    }
+    const id = openActionsRowId;
+    const update = () => {
+      if (openActionsRowId !== id) return;
+      positionActionsMenu();
+    };
+    update();
+    void tick().then(() => {
+      update();
+      requestAnimationFrame(update);
+    });
+    const onScrollResize = () => update();
+    window.addEventListener('scroll', onScrollResize, true);
+    window.addEventListener('resize', onScrollResize);
+    return () => {
+      window.removeEventListener('scroll', onScrollResize, true);
+      window.removeEventListener('resize', onScrollResize);
+    };
+  });
+
+  $effect(() => {
+    if (!openActionsRowId) return;
+    const id = openActionsRowId;
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target;
+      if (!(t instanceof Node)) return;
+      const wrap = document.querySelector(`[data-court-actions="${id}"]`);
+      const panel = document.querySelector(`[data-court-panel-for="${id}"]`);
+      if (wrap?.contains(t) || panel?.contains(t)) return;
+      closeActionsMenu();
+    };
+    document.addEventListener('mousedown', onDoc, true);
+    return () => document.removeEventListener('mousedown', onDoc, true);
+  });
 </script>
 
 <div class="court-room stack">
@@ -123,7 +327,12 @@
     </div>
   {:else}
     <div class="card court-room__hero">
-      <h2 class="court-room__title">Gerichtssaal</h2>
+      <h2 class="court-room__title">
+        <span class="court-room__title-icon" aria-hidden="true">
+          <IconGavel size={26} />
+        </span>
+        Gerichtssaal
+      </h2>
       <p class="court-room__lead muted">
         Hier reicht ihr Anklagen nach dem Strafenkatalog ein. Im Team Meeting werden sie besprochen;
         Admins markieren den Ausgang (abgewiesen oder bestätigt).
@@ -196,6 +405,9 @@
 
     <div class="card court-room__table-wrap">
       <h3 class="court-room__list-title">Akten</h3>
+      {#if courtActionError}
+        <p class="alert" role="alert">{courtActionError}</p>
+      {/if}
       {#if accusations.length === 0}
         <p class="court-room__empty muted">Noch keine Anklagen.</p>
       {:else}
@@ -209,8 +421,8 @@
                 <th scope="col">Verstoß</th>
                 <th scope="col" class="court-table__col-num">Strafe</th>
                 <th scope="col">Status</th>
-                {#if isAdmin}
-                  <th scope="col" class="court-table__col-actions"></th>
+                {#if showCourtActionsCol}
+                  <th scope="col" class="court-table__col-actions">Aktionen</th>
                 {/if}
               </tr>
             </thead>
@@ -237,29 +449,32 @@
                       {statusLabel(row.status)}
                     </span>
                   </td>
-                  {#if isAdmin}
+                  {#if showCourtActionsCol}
                     <td class="court-table__actions">
-                      {#if row.status === 'open'}
-                        <div class="court-table__action-btns">
+                      {#if rowHasActions(row)}
+                        <div
+                          class="court-actions-menu"
+                          class:court-actions-menu--open={openActionsRowId === row.id}
+                          data-court-actions={row.id}
+                        >
                           <button
                             type="button"
-                            class="btn btn--sm"
-                            disabled={updatingId === row.id}
-                            onclick={() => void setStatus(row.id, 'dismissed')}
+                            class="btn btn--sm court-actions-menu__trigger"
+                            aria-expanded={openActionsRowId === row.id}
+                            aria-haspopup="true"
+                            aria-controls="court-actions-panel-{row.id}"
+                            id="court-actions-btn-{row.id}"
+                            disabled={updatingId === row.id || deletingId === row.id}
+                            onclick={(e) => {
+                              e.stopPropagation();
+                              toggleActionsMenu(row.id);
+                            }}
                           >
-                            Abweisen
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn--sm btn--primary"
-                            disabled={updatingId === row.id}
-                            onclick={() => void setStatus(row.id, 'upheld')}
-                          >
-                            Bestätigen
+                            <IconMore size={16} className="court-actions-menu__trigger-icon" />
                           </button>
                         </div>
                       {:else}
-                        <span class="muted">—</span>
+                        <span class="court-table__actions-empty muted">—</span>
                       {/if}
                     </td>
                   {/if}
@@ -271,13 +486,115 @@
       {/if}
     </div>
   {/if}
+
+  {#if openActionsRowId && openActionsRow && actionsMenuLayout}
+    <div
+      use:portal={document.body}
+      class="court-actions-menu__panel court-actions-menu__panel--portal"
+      data-court-actions-panel
+      data-court-panel-for={openActionsRowId}
+      style:top="{actionsMenuLayout.top}px"
+      style:right="{actionsMenuLayout.right}px"
+      style:max-height={actionsMenuLayout.maxHeight !== undefined ? `${actionsMenuLayout.maxHeight}px` : undefined}
+      role="menu"
+      id="court-actions-panel-{openActionsRow.id}"
+      aria-labelledby="court-actions-btn-{openActionsRow.id}"
+    >
+      {#if isAdmin && openActionsRow.status === 'open'}
+        <button
+          type="button"
+          class="court-actions-menu__item"
+          role="menuitem"
+          disabled={updatingId === openActionsRow.id || deletingId === openActionsRow.id}
+          onclick={() => void setStatus(openActionsRow.id, 'dismissed')}
+        >
+          <IconClose size={16} className="court-actions-menu__item-icon" />
+          Abweisen
+        </button>
+        <button
+          type="button"
+          class="court-actions-menu__item court-actions-menu__item--primary"
+          role="menuitem"
+          disabled={updatingId === openActionsRow.id || deletingId === openActionsRow.id}
+          onclick={() => void setStatus(openActionsRow.id, 'upheld')}
+        >
+          <IconCheck size={16} className="court-actions-menu__item-icon" />
+          Bestätigen
+        </button>
+      {:else if isAdmin}
+        <button
+          type="button"
+          class="court-actions-menu__item"
+          role="menuitem"
+          disabled={updatingId === openActionsRow.id || deletingId === openActionsRow.id}
+          title="Entscheidung zurücknehmen — Anklage ist wieder offen"
+          onclick={() => void setStatus(openActionsRow.id, 'open')}
+        >
+          <IconRefresh size={16} className="court-actions-menu__item-icon" />
+          Wieder öffnen
+        </button>
+      {/if}
+      {#if canDeleteOwnAccusation(openActionsRow)}
+        <button
+          type="button"
+          class="court-actions-menu__item court-actions-menu__item--danger"
+          role="menuitem"
+          disabled={deletingId === openActionsRow.id || updatingId === openActionsRow.id}
+          onclick={() => openWithdrawPrompt(openActionsRow)}
+        >
+          <IconTrash size={16} className="court-actions-menu__item-icon" />
+          {deletingId === openActionsRow.id ? 'Wird gelöscht…' : 'Zurückziehen'}
+        </button>
+      {/if}
+    </div>
+  {/if}
+
+  {#if withdrawPromptRow}
+    <div
+      class="court-room-withdraw-modal delete-game-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="court-withdraw-title"
+    >
+      <button
+        type="button"
+        class="delete-game-modal__backdrop"
+        aria-label="Abbrechen"
+        onclick={closeWithdrawPrompt}
+      ></button>
+      <div
+        class="delete-game-modal__card card"
+        use:focusTrap={{ focusRoot: true }}
+        use:scrollLock
+      >
+        <h2 id="court-withdraw-title" class="delete-game-modal__title">Anklage zurückziehen?</h2>
+        <p class="delete-game-modal__text muted">
+          Die offene Anklage gegen <strong>{withdrawPromptRow.accused.name}</strong> wird unwiderruflich
+          gelöscht.
+        </p>
+        <div class="delete-game-modal__actions row">
+          <button
+            type="button"
+            class="btn btn--danger btn--icon"
+            onclick={() => void confirmWithdrawOwnAccusation()}
+          >
+            <IconTrash size={18} />
+            Zurückziehen
+          </button>
+          <button type="button" class="btn" onclick={closeWithdrawPrompt}>Abbrechen</button>
+        </div>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
   .court-room.stack {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: var(--space-md);
+    min-height: min-content;
   }
 
   .court-room__loading {
@@ -296,10 +613,19 @@
   }
 
   .court-room__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
     margin: 0 0 var(--space-xs) 0;
     font-size: 1.25rem;
     font-weight: 800;
     letter-spacing: -0.02em;
+  }
+
+  .court-room__title-icon {
+    display: flex;
+    color: var(--gold);
+    flex-shrink: 0;
   }
 
   .court-room__lead {
@@ -382,6 +708,10 @@
   }
 
   .court-room__table-wrap {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 auto;
+    min-height: min-content;
     padding: var(--space-lg);
   }
 
@@ -397,7 +727,12 @@
   }
 
   .court-room__scroll {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: min-content;
+    max-height: none;
     overflow-x: auto;
+    overflow-y: visible;
     margin: 0 calc(-1 * var(--space-lg));
     padding: 0 var(--space-lg);
   }
@@ -479,13 +814,98 @@
 
   .court-table__actions {
     text-align: right;
+    vertical-align: middle;
   }
 
-  .court-table__action-btns {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-xs);
+  .court-table__actions-empty {
+    font-size: 1rem;
+    user-select: none;
+  }
+
+  .court-actions-menu {
+    position: relative;
+    display: inline-flex;
     justify-content: flex-end;
+    isolation: isolate;
+  }
+
+  .court-actions-menu__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  :global(.court-actions-menu__trigger-icon) {
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+
+  .court-actions-menu--open .court-actions-menu__trigger {
+    color: var(--fg);
+    background: var(--glass-bg-strong);
+  }
+
+  .court-actions-menu__panel {
+    min-width: 12.5rem;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    background: var(--card);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    text-align: left;
+  }
+
+  .court-actions-menu__panel--portal {
+    position: fixed;
+    z-index: 300;
+    margin: 0;
+    max-width: min(12.5rem, calc(100vw - 16px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .court-actions-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--fg);
+    cursor: pointer;
+    transition: background var(--transition);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .court-actions-menu__item:hover:not(:disabled) {
+    background: var(--glass-bg-strong);
+  }
+
+  .court-actions-menu__item:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .court-actions-menu__item--primary:not(:disabled) {
+    color: var(--primary);
+  }
+
+  .court-actions-menu__item--danger:not(:disabled) {
+    color: var(--danger);
+  }
+
+  :global(.court-actions-menu__item-icon) {
+    flex-shrink: 0;
+    opacity: 0.9;
   }
 
   .court-badge {
@@ -513,5 +933,53 @@
     background: var(--gold-dim);
     color: var(--gold);
     border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  }
+
+  .court-room-withdraw-modal.delete-game-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .court-room-withdraw-modal .delete-game-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .court-room-withdraw-modal .delete-game-modal__card {
+    position: relative;
+    z-index: 1;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .court-room-withdraw-modal .delete-game-modal__title {
+    font-size: 1.25rem;
+    margin: 0 0 8px;
+  }
+
+  .court-room-withdraw-modal .delete-game-modal__text {
+    margin: 0 0 20px;
+    line-height: 1.45;
+  }
+
+  .court-room-withdraw-modal .delete-game-modal__text strong {
+    font-weight: 700;
+    color: var(--fg);
+  }
+
+  .court-room-withdraw-modal .delete-game-modal__actions {
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 </style>

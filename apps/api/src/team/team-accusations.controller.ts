@@ -1,4 +1,14 @@
-import { BadRequestException, Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtPayload } from '../auth/jwt.strategy';
 import { Role } from '../auth/roles.enum';
@@ -45,5 +55,15 @@ export class TeamAccusationsController {
   ): Promise<TeamAccusationView> {
     const ctx = await this.contextService.getRequiredContext(user.sub);
     return this.accusationsService.updateStatus(ctx.team, id, dto);
+  }
+
+  @Delete(':id')
+  @HttpCode(204)
+  async remove(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<void> {
+    const ctx = await this.contextService.getRequiredContext(user.sub);
+    if (!ctx.playerId) {
+      throw new BadRequestException('Your account is not linked to a player profile.');
+    }
+    await this.accusationsService.deleteByAccuser(ctx.team, id, ctx.playerId);
   }
 }

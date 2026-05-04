@@ -10,7 +10,11 @@
   import IconUser from '$lib/icons/IconUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import IconClose from '$lib/icons/IconClose.svelte';
+  import IconInfo from '$lib/icons/IconInfo.svelte';
+  import IconGavel from '$lib/icons/IconGavel.svelte';
+  import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
+  import { TEAM_TABS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
   import { authMe } from '$lib/me';
 
   interface Props {
@@ -58,6 +62,23 @@
     $page.url.pathname === '/players' || $page.url.pathname.startsWith('/players/')
   );
   const isTeam = $derived($page.url.pathname.startsWith('/team'));
+  const activeTeamTab = $derived(
+    $page.url.pathname.startsWith('/team')
+      ? teamTabFromSearchParams($page.url.searchParams)
+      : null,
+  );
+
+  const TEAM_TAB_ICON_MAP: Record<
+    TeamTabId,
+    typeof IconUsers | typeof IconTrophy | typeof IconPenalties | typeof IconGavel | typeof IconBarChart
+  > = {
+    members: IconUsers,
+    ranking: IconTrophy,
+    penalties: IconPenalties,
+    court: IconGavel,
+    finance: IconBarChart,
+  };
+
   const isMe = $derived($page.url.pathname === '/me');
 
   $effect(() => {
@@ -167,30 +188,51 @@
         My statistics
       </a>
     </div>
-    <a
-      href="/players"
-      class="mobile-nav__drawer-link"
-      class:mobile-nav__drawer-link--active={isPlayers}
-      aria-current={isPlayers ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconUsers size={24} />
-      </span>
-      Players
-    </a>
-    <a
-      href="/team"
-      class="mobile-nav__drawer-link"
-      class:mobile-nav__drawer-link--active={isTeam}
-      aria-current={isTeam ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconTeam size={24} />
-      </span>
-      Team
-    </a>
+    <div class="mobile-nav__drawer-group" role="group" aria-label="More information">
+      <div class="mobile-nav__drawer-extra-head" aria-hidden="true">
+        <IconInfo size={24} />
+      </div>
+      <a
+        href="/players"
+        class="mobile-nav__drawer-link mobile-nav__drawer-link--sub"
+        class:mobile-nav__drawer-link--active={isPlayers}
+        aria-current={isPlayers ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconUsers size={20} />
+        </span>
+        Players
+      </a>
+    </div>
+    <div class="mobile-nav__drawer-group" role="group" aria-label="Team">
+      <a
+        href="/team"
+        class="mobile-nav__drawer-link"
+        class:mobile-nav__drawer-link--active={isTeam}
+        onclick={closeMenu}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconTeam size={24} />
+        </span>
+        Team
+      </a>
+      {#each TEAM_TABS as tab (tab.id)}
+        {@const TabIcon = TEAM_TAB_ICON_MAP[tab.id]}
+        <a
+          href="/team?tab={tab.id}"
+          class="mobile-nav__drawer-link mobile-nav__drawer-link--sub"
+          class:mobile-nav__drawer-link--active={isTeam && activeTeamTab === tab.id}
+          aria-current={isTeam && activeTeamTab === tab.id ? 'page' : undefined}
+          onclick={closeMenu}
+        >
+          <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+            <TabIcon size={20} />
+          </span>
+          {tab.label}
+        </a>
+      {/each}
+    </div>
     <div class="mobile-nav__drawer-group" role="group" aria-label="Account">
       {#if playerName}
         <p class="mobile-nav__drawer-player-name muted" role="presentation">{playerName}</p>
@@ -258,6 +300,15 @@
 {/if}
 
 <style>
+  .mobile-nav__drawer-extra-head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10px 16px 6px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
   .mobile-nav__drawer-player-name {
     margin: 0;
     padding: 6px 16px 2px;

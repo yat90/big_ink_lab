@@ -306,6 +306,11 @@ export async function updateTeamAccusationStatus(
   return jsonOrThrow<TeamAccusation>(res, "Couldn't update accusation.");
 }
 
+export async function deleteTeamAccusation(id: string): Promise<void> {
+  const res = await fetch(`${apiUrl}/team/accusations/${id}`, { method: 'DELETE' });
+  await noContentOrThrow(res, "Couldn't withdraw accusation.");
+}
+
 const currencyFormatter = new Intl.NumberFormat(undefined, {
   style: 'currency',
   currency: 'EUR',

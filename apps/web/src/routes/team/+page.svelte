@@ -1,30 +1,41 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import { authMe } from '$lib/me';
   import { fetchTeamOverview, formatMoney, type TeamOverview } from '$lib/team';
+  import { TEAM_TABS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
   import TeamMembersTab from './TeamMembersTab.svelte';
   import TeamRankingTab from './TeamRankingTab.svelte';
   import TeamFinanceTab from './TeamFinanceTab.svelte';
   import TeamPenaltiesTab from './TeamPenaltiesTab.svelte';
   import TeamCourtRoomTab from './TeamCourtRoomTab.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
+  import IconTrophy from '$lib/icons/IconTrophy.svelte';
+  import IconPenalties from '$lib/icons/IconPenalties.svelte';
+  import IconGavel from '$lib/icons/IconGavel.svelte';
+  import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
 
-  type TabId = 'members' | 'ranking' | 'penalties' | 'court' | 'finance';
-  const TABS: { id: TabId; label: string }[] = [
-    { id: 'members', label: 'Members' },
-    { id: 'ranking', label: 'Ranking' },
-    { id: 'penalties', label: 'Strafen' },
-    { id: 'court', label: 'Gerichtssaal' },
-    { id: 'finance', label: 'Finance' },
-  ];
+  const TEAM_TAB_ICON_MAP = {
+    members: IconUsers,
+    ranking: IconTrophy,
+    penalties: IconPenalties,
+    court: IconGavel,
+    finance: IconBarChart,
+  } as const;
 
   let overview = $state<TeamOverview | null>(null);
   let loading = $state(true);
   let error = $state('');
-  let activeTab = $state<TabId>('members');
+
+  const activeTab = $derived(teamTabFromSearchParams($page.url.searchParams));
 
   const isAdmin = $derived(overview?.role === 'admin');
+
+  function selectTeamTab(id: TeamTabId) {
+    void goto(`/team?tab=${id}`, { replaceState: true, noScroll: true, keepFocus: true });
+  }
 
   async function loadOverview() {
     loading = true;
@@ -121,7 +132,8 @@
     </div>
 
     <div class="team-tabs" role="tablist" aria-label="Team sections">
-      {#each TABS as tab (tab.id)}
+      {#each TEAM_TABS as tab (tab.id)}
+        {@const TabIcon = TEAM_TAB_ICON_MAP[tab.id]}
         <button
           type="button"
           role="tab"
@@ -130,9 +142,12 @@
           id="team-tab-{tab.id}"
           class="team-tab"
           class:team-tab--active={activeTab === tab.id}
-          onclick={() => (activeTab = tab.id)}
+          onclick={() => selectTeamTab(tab.id)}
         >
-          {tab.label}
+          <span class="team-tab__icon" aria-hidden="true">
+            <TabIcon size={18} className="team-tab__icon-svg" />
+          </span>
+          <span class="team-tab__label">{tab.label}</span>
         </button>
       {/each}
     </div>
@@ -315,6 +330,9 @@
   }
 
   .team-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
     padding: 0.65rem 1.1rem;
     font-size: 0.95rem;
     font-weight: 600;
@@ -329,13 +347,32 @@
     white-space: nowrap;
   }
 
+  .team-tab__icon {
+    display: flex;
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: color var(--transition);
+  }
+
+  :global(.team-tab__icon-svg) {
+    display: block;
+  }
+
   .team-tab:hover {
+    color: var(--fg);
+  }
+
+  .team-tab:hover .team-tab__icon {
     color: var(--fg);
   }
 
   .team-tab--active {
     color: var(--primary);
     border-bottom-color: var(--primary);
+  }
+
+  .team-tab--active .team-tab__icon {
+    color: var(--primary);
   }
 
   .team-panel[hidden] {

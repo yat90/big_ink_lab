@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -105,12 +106,19 @@ export class TeamAccusationsService {
     if (!Types.ObjectId.isValid(accusationId)) {
       throw new BadRequestException('Invalid accusation id.');
     }
+    const oid = new Types.ObjectId(accusationId);
+    const existing = await this.accusationModel
+      .findOne({ team, _id: oid })
+      .lean<AccusationLean | null>()
+      .exec();
+    if (!existing) {
+      throw new NotFoundException('Accusation not found.');
+    }
+    if (dto.status === AccusationStatus.Open && existing.status === AccusationStatus.Open) {
+      throw new BadRequestException('Accusation is already open.');
+    }
     const updated = await this.accusationModel
-      .findOneAndUpdate(
-        { team, _id: new Types.ObjectId(accusationId) },
-        { $set: { status: dto.status } },
-        { new: true },
-      )
+      .findOneAndUpdate({ team, _id: oid }, { $set: { status: dto.status } }, { new: true })
       .lean<AccusationLean | null>()
       .exec();
     if (!updated) {
@@ -118,6 +126,35 @@ export class TeamAccusationsService {
     }
     const nameById = await this.loadNamesForDocs([updated]);
     return this.toView(updated, nameById);
+  }
+
+  /** Accuser may delete their own filing only while it is still open (withdraw before a decision). */
+  async deleteByAccuser(
+    team: string,
+    accusationId: string,
+    requesterPlayerId: string,
+  ): Promise<void> {
+    if (!Types.ObjectId.isValid(accusationId)) {
+      throw new BadRequestException('Invalid accusation id.');
+    }
+    const oid = new Types.ObjectId(accusationId);
+    const existing = await this.accusationModel
+      .findOne({ team, _id: oid })
+      .lean<AccusationLean | null>()
+      .exec();
+    if (!existing) {
+      throw new NotFoundException('Accusation not found.');
+    }
+    if (String(existing.accuserPlayer) !== requesterPlayerId) {
+      throw new ForbiddenException('Only the person who filed this accusation can delete it.');
+    }
+    if (existing.status !== AccusationStatus.Open) {
+      throw new BadRequestException('Only open accusations can be withdrawn.');
+    }
+    const result = await this.accusationModel.deleteOne({ team, _id: oid }).exec();
+    if (result.deletedCount === 0) {
+      throw new NotFoundException('Accusation not found.');
+    }
   }
 
   private async loadNamesForPlayerIds(playerIds: string[]): Promise<Map<string, string>> {

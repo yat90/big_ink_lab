@@ -10,7 +10,11 @@
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
+  import IconInfo from '$lib/icons/IconInfo.svelte';
+  import IconGavel from '$lib/icons/IconGavel.svelte';
+  import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import { authMe } from '$lib/me';
+  import { TEAM_TABS, teamTabFromSearchParams } from '$lib/teamTabs';
 
   interface Props {
     authDisplayName: string;
@@ -22,8 +26,26 @@
   let statsDropdownEl: HTMLDivElement | null = $state(null);
   let userMenuOpen = $state(false);
   let userDropdownEl: HTMLDivElement | null = $state(null);
+  let infoMenuOpen = $state(false);
+  let infoDropdownEl: HTMLDivElement | null = $state(null);
+  let teamMenuOpen = $state(false);
+  let teamDropdownEl: HTMLDivElement | null = $state(null);
 
   const playerName = $derived(($authMe?.player?.name ?? '').trim());
+
+  const TEAM_TAB_ICON_MAP = {
+    members: IconUsers,
+    ranking: IconTrophy,
+    penalties: IconPenalties,
+    court: IconGavel,
+    finance: IconBarChart,
+  };
+
+  const activeTeamTab = $derived(
+    $page.url.pathname.startsWith('/team')
+      ? teamTabFromSearchParams($page.url.searchParams)
+      : null,
+  );
 
   const isHome = $derived($page.url.pathname === '/');
   const isMatches = $derived(
@@ -44,6 +66,8 @@
     $page.url.pathname;
     statsMenuOpen = false;
     userMenuOpen = false;
+    infoMenuOpen = false;
+    teamMenuOpen = false;
   });
 
   onMount(() => {
@@ -57,6 +81,14 @@
       if (userMenuOpen) {
         const el = userDropdownEl;
         if (!el || !el.contains(t)) userMenuOpen = false;
+      }
+      if (infoMenuOpen) {
+        const el = infoDropdownEl;
+        if (!el || !el.contains(t)) infoMenuOpen = false;
+      }
+      if (teamMenuOpen) {
+        const el = teamDropdownEl;
+        if (!el || !el.contains(t)) teamMenuOpen = false;
       }
     };
     document.addEventListener('click', onDocClick);
@@ -168,28 +200,136 @@
     </span>
     <span class="desktop-nav__link-label">Decks</span>
   </a>
-  <a
-    href="/players"
-    class="desktop-nav__link"
-    class:desktop-nav__link--active={isPlayers}
-    aria-current={isPlayers ? 'page' : undefined}
+  <div
+  class="desktop-nav__dropdown"
+  class:desktop-nav__dropdown--open={teamMenuOpen}
+  bind:this={teamDropdownEl}
+>
+  <div class="desktop-nav__dropdown-inner">
+    <a
+      href="/team"
+      class="desktop-nav__link desktop-nav__link--dropdown-main"
+      class:desktop-nav__link--active={isTeam}
+    >
+      <span class="desktop-nav__link-icon" aria-hidden="true">
+        <IconTeam size={28} />
+      </span>
+      <span class="desktop-nav__link-label">Team</span>
+    </a>
+    <button
+      type="button"
+      class="desktop-nav__dropdown-toggle"
+      aria-expanded={teamMenuOpen}
+      aria-controls="desktop-nav-team-submenu"
+      aria-haspopup="true"
+      id="desktop-nav-team-menubutton"
+      onclick={(e) => {
+        e.stopPropagation();
+        teamMenuOpen = !teamMenuOpen;
+      }}
+    >
+      <span class="visually-hidden">Open Team submenu</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="m6 9 6 6 6-6"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  </div>
+  <div
+    id="desktop-nav-team-submenu"
+    class="desktop-nav__dropdown-panel"
+    role="group"
+    aria-label="Team sections"
   >
-    <span class="desktop-nav__link-icon" aria-hidden="true">
-      <IconUsers size={28} />
-    </span>
-    <span class="desktop-nav__link-label">Players</span>
-  </a>
-  <a
-    href="/team"
-    class="desktop-nav__link"
-    class:desktop-nav__link--active={isTeam}
-    aria-current={isTeam ? 'page' : undefined}
+    {#each TEAM_TABS as tab (tab.id)}
+      {@const TabIcon = TEAM_TAB_ICON_MAP[tab.id]}
+      <a
+        href="/team?tab={tab.id}"
+        class="desktop-nav__dropdown-link"
+        class:desktop-nav__dropdown-link--active={activeTeamTab === tab.id}
+        aria-current={activeTeamTab === tab.id ? 'page' : undefined}
+      >
+        <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
+          <TabIcon size={18} />
+        </span>
+        <span>{tab.label}</span>
+      </a>
+    {/each}
+  </div>
+</div>
+
+<div
+    class="desktop-nav__dropdown desktop-nav__info"
+    class:desktop-nav__dropdown--open={infoMenuOpen}
+    bind:this={infoDropdownEl}
   >
-    <span class="desktop-nav__link-icon" aria-hidden="true">
-      <IconTeam size={28} />
-    </span>
-    <span class="desktop-nav__link-label">Team</span>
-  </a>
+    <div class="desktop-nav__dropdown-inner desktop-nav__dropdown-inner--info">
+      <button
+        type="button"
+        class="desktop-nav__link desktop-nav__link--dropdown-main"
+        class:desktop-nav__link--active={isPlayers}
+        aria-controls="desktop-nav-info-submenu"
+        aria-haspopup="true"
+        id="desktop-nav-info-mainbutton"
+        aria-label="More information"
+        onclick={(e) => {
+          e.stopPropagation();
+          infoMenuOpen = !infoMenuOpen;
+        }}
+      >
+        <span class="desktop-nav__link-icon" aria-hidden="true">
+          <IconInfo size={28} />
+        </span>
+      </button>
+      <button
+        type="button"
+        class="desktop-nav__dropdown-toggle"
+        aria-expanded={infoMenuOpen}
+        aria-controls="desktop-nav-info-submenu"
+        aria-haspopup="true"
+        id="desktop-nav-info-menubutton"
+        onclick={(e) => {
+          e.stopPropagation();
+          infoMenuOpen = !infoMenuOpen;
+        }}
+      >
+        <span class="visually-hidden">Open more information menu</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="m6 9 6 6 6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+    <div
+      id="desktop-nav-info-submenu"
+      class="desktop-nav__dropdown-panel"
+      role="group"
+      aria-label="More information"
+    >
+      <a
+        href="/players"
+        class="desktop-nav__dropdown-link"
+        class:desktop-nav__dropdown-link--active={isPlayers}
+        aria-current={isPlayers ? 'page' : undefined}
+      >
+        <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
+          <IconUsers size={18} />
+        </span>
+        <span>Players</span>
+      </a>
+    </div>
+  </div>
+
   <div
     class="desktop-nav__dropdown desktop-nav__account"
     class:desktop-nav__dropdown--open={userMenuOpen}
@@ -299,8 +439,13 @@
     border: 0;
   }
 
-  .desktop-nav__account {
+  .desktop-nav__info {
     margin-left: auto;
+  }
+
+  .desktop-nav__info :global(.desktop-nav__dropdown-panel) {
+    left: auto;
+    right: 0;
   }
 
   .desktop-nav__account :global(.desktop-nav__dropdown-panel) {
@@ -318,6 +463,10 @@
     flex: 0 0 auto;
   }
 
+  :global(.desktop-nav__dropdown-inner--info .desktop-nav__link.desktop-nav__link--dropdown-main) {
+    flex: 0 0 auto;
+  }
+
   :global(.desktop-nav__link.desktop-nav__link--dropdown-main) {
     flex: 1;
     min-width: 0;
@@ -328,7 +477,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
+    width: 22px;
     flex-shrink: 0;
     margin: 0;
     padding: 0;
