@@ -59,7 +59,6 @@
   let isAuthenticated = $state(false);
   let authDisplayName = $state('');
 
-
   function isApiRequest(url: string): boolean {
     if (apiUrl.startsWith('/')) {
       if (url.startsWith(apiUrl)) return true;
@@ -148,7 +147,6 @@
       window.fetch = originalFetch;
     };
   });
-
 </script>
 
 <svelte:head>
@@ -159,7 +157,7 @@
   <a class="skip-link" href="#main">Skip to main content</a>
   <header class="topbar">
     <div class="topbar__desktop-only">
-      <DesktopNavBar authDisplayName={authDisplayName} logout={logout} />
+      <DesktopNavBar {authDisplayName} {logout} />
     </div>
     <div class="topbar__mobile-only">
       <MobileNavBar
@@ -169,11 +167,7 @@
     </div>
   </header>
   <!-- Drawer outside topbar so it covers full viewport (fixed positioning not constrained by topbar) -->
-  <MobileNavDrawer
-    open={mobileMenuOpen}
-    closeMenu={closeMobileMenu}
-    logout={logout}
-  />
+  <MobileNavDrawer open={mobileMenuOpen} closeMenu={closeMobileMenu} {logout} />
 {/if}
 
 <div class="app">
@@ -191,12 +185,11 @@
   >
     {#if authReady || isAuthPage}
       {#if children}
-        <div
-          class="main__breadcrumb"
-          class:main__breadcrumb--lore={isLorePage}
-        >
-          <AppBreadcrumb />
-        </div>
+        {#if !isLorePage}
+          <div class="main__breadcrumb" class:main__breadcrumb--lore={isLorePage}>
+            <AppBreadcrumb />
+          </div>
+        {/if}
         {@render children()}
       {/if}
     {:else}
