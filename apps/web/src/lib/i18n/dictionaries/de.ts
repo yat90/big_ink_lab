@@ -44,6 +44,8 @@ export default {
   team: {
     pageTitle: 'Team · Big Ink Lab',
     tablistLabel: 'Team-Bereiche',
+    tabsScrollPrevious: 'Weitere Bereiche links',
+    tabsScrollNext: 'Weitere Bereiche rechts',
     tabs: {
       members: 'Mitglieder',
       ranking: 'Ranking',
@@ -65,6 +67,9 @@ export default {
       treasury: 'Kasse',
       statMembers: 'Mitglieder',
       outstandingDues: 'Offene Beiträge',
+      statOpenAccusations: 'Offene Anklagen',
+      openCourtRoomAria: 'Gerichtssaal-Tab öffnen',
+      metricsGroupLabel: 'Team-Überblick',
     },
   },
   court: {
@@ -129,6 +134,7 @@ export default {
     decks: 'Decks',
     team: 'Team',
     openTeamSubmenu: 'Team-Untermenü öffnen',
+    openLanguageSubmenu: 'Sprach-Untermenü öffnen',
     moreInformation: 'Weitere Infos',
     openMoreInformationMenu: 'Infomenü öffnen',
     accountMenu: 'Konto-Menü',

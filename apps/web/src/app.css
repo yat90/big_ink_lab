@@ -299,11 +299,12 @@ a {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateY(-4px);
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top center;
   transition:
-    opacity 0.15s var(--ease),
-    transform 0.15s var(--ease),
-    visibility 0.15s;
+    opacity 0.2s var(--ease),
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0.2s;
 }
 /* Open on hover (pointer) or explicit .desktop-nav__dropdown--open (click / keyboard) */
 @media (hover: hover) {
@@ -312,14 +313,71 @@ a {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 .desktop-nav__dropdown--open .desktop-nav__dropdown-panel {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
+}
+
+/* Chevron feedback when submenu is visible */
+.desktop-nav__dropdown-toggle svg {
+  transition: transform 0.22s var(--ease);
+}
+@media (hover: hover) {
+  .desktop-nav__dropdown:hover .desktop-nav__dropdown-toggle svg {
+    transform: rotate(180deg);
+  }
+}
+.desktop-nav__dropdown--open .desktop-nav__dropdown-toggle svg {
+  transform: rotate(180deg);
+}
+
+/* Team submenu: room for long labels, stacked row hover, clearer item hovers */
+.desktop-nav__dropdown--team {
+  padding-bottom: 12px;
+  margin-bottom: -12px;
+}
+@media (hover: hover) {
+  .desktop-nav__dropdown--team:hover .desktop-nav__dropdown-inner,
+  .desktop-nav__dropdown--team:focus-within .desktop-nav__dropdown-inner {
+    background: color-mix(in srgb, var(--primary) 6%, var(--glass-bg));
+    border-radius: var(--radius-sm);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+}
+.desktop-nav__dropdown--team.desktop-nav__dropdown--open .desktop-nav__dropdown-inner {
+  background: color-mix(in srgb, var(--primary) 8%, var(--glass-bg-strong));
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+.desktop-nav__dropdown--team .desktop-nav__dropdown-panel {
+  min-width: 14rem;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--primary) 15%, var(--glass-border));
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 1px color-mix(in srgb, var(--primary) 8%, transparent);
+}
+.desktop-nav__dropdown--team .desktop-nav__dropdown-link {
+  padding: 9px 11px;
+  gap: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  border-radius: calc(var(--radius-sm) - 2px);
+}
+.desktop-nav__dropdown--team .desktop-nav__dropdown-link:hover {
+  background: color-mix(in srgb, var(--primary) 14%, var(--glass-bg-strong));
+  color: var(--fg);
+}
+.desktop-nav__dropdown--team .desktop-nav__dropdown-link--active:hover {
+  background: var(--ink-hover);
+  color: white;
 }
 .desktop-nav__dropdown-link {
   display: flex;
@@ -376,6 +434,87 @@ button.desktop-nav__dropdown-link {
   gap: 2px;
 }
 
+.mobile-nav__drawer-group--language {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.mobile-nav__drawer-lang-wrap {
+  padding: 6px 16px 14px;
+}
+
+.mobile-nav__drawer-lang-label {
+  margin: 0 0 8px 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+}
+
+.mobile-nav__drawer-lang {
+  display: flex;
+  gap: 0;
+  max-width: 100%;
+  padding: 3px;
+  border-radius: var(--radius-full);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 4px rgba(0, 0, 0, 0.35),
+    0 1px 0 color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.mobile-nav__drawer-lang-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    color 0.18s var(--ease),
+    background 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav__drawer-lang-btn--active {
+  color: white;
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--primary) 92%, #fff) 0%,
+    var(--primary) 55%,
+    var(--ink-hover) 100%
+  );
+  box-shadow:
+    0 2px 10px var(--primary-glow),
+    inset 0 1px 0 color-mix(in srgb, white 22%, transparent);
+}
+
+.mobile-nav__drawer-lang-btn:not(.mobile-nav__drawer-lang-btn--active):hover {
+  color: var(--fg);
+  background: var(--glass-bg-strong);
+}
+
+.mobile-nav__drawer-lang-btn:not(.mobile-nav__drawer-lang-btn--active):active {
+  background: color-mix(in srgb, var(--primary) 15%, var(--glass-bg-strong));
+}
+
+.mobile-nav__drawer-lang-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
 .mobile-nav__drawer-subhead {
   display: flex;
   align-items: stretch;
@@ -418,14 +557,15 @@ button.desktop-nav__dropdown-link {
   background: var(--glass-bg-strong);
 }
 
+/* Team chevron stays neutral; only the main "Team" link uses active (ink) styles. */
 .mobile-nav__drawer-subhead:has(a.mobile-nav__drawer-link--active.mobile-nav__drawer-link--main)
-  .mobile-nav__drawer-chevron-btn {
+  .mobile-nav__drawer-chevron-btn:not(.mobile-nav__drawer-chevron-btn--team) {
   color: white;
   background: var(--ink);
 }
 
 .mobile-nav__drawer-subhead:has(a.mobile-nav__drawer-link--active.mobile-nav__drawer-link--main)
-  .mobile-nav__drawer-chevron-btn:hover {
+  .mobile-nav__drawer-chevron-btn:not(.mobile-nav__drawer-chevron-btn--team):hover {
   color: white;
   background: var(--ink-hover);
 }
@@ -439,17 +579,6 @@ button.desktop-nav__dropdown-link {
   transform: rotate(180deg);
 }
 
-.mobile-nav__drawer-link--info-toggle {
-  width: 100%;
-  justify-content: flex-start;
-  border-radius: var(--radius-sm);
-}
-
-.mobile-nav__drawer-subhead-label {
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align: left;
-}
 .mobile-nav__drawer-link--sub {
   padding-left: 16px;
   font-size: 0.9375rem;
@@ -462,6 +591,65 @@ button.desktop-nav__dropdown-link {
 .mobile-nav__drawer-link--sub .mobile-nav__drawer-link-icon svg {
   width: 20px;
   height: 20px;
+}
+
+/* Team drawer section: nested panel + clearer hierarchy */
+.mobile-nav__drawer-group--team {
+  gap: 0;
+}
+.mobile-nav__drawer-subhead--team {
+  transition:
+    background 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.mobile-nav__drawer-subhead--team.mobile-nav__drawer-subhead--team-expanded {
+  background: color-mix(in srgb, var(--primary) 9%, var(--glass-bg));
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+.mobile-nav__drawer-team-sub {
+  margin-top: 8px;
+  padding-bottom: 4px;
+}
+.mobile-nav__drawer-team-heading {
+  margin: 0 0 6px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  line-height: 1.2;
+}
+.mobile-nav__drawer-team-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, var(--glass-border));
+  background: color-mix(in srgb, var(--primary) 6%, var(--glass-bg));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+    0 4px 20px rgba(0, 0, 0, 0.22);
+}
+.mobile-nav__drawer-link--team-tab {
+  min-height: 48px;
+  padding: 12px 12px;
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  border-radius: calc(var(--radius-sm) - 4px);
+}
+.mobile-nav__drawer-link--team-tab.mobile-nav__drawer-link--sub {
+  padding-left: 12px;
+}
+.mobile-nav__drawer-link--team-tab:not(.mobile-nav__drawer-link--active):hover {
+  background: color-mix(in srgb, var(--primary) 14%, var(--glass-bg-strong));
+  color: var(--fg);
+}
+.mobile-nav__drawer-link--team-tab.mobile-nav__drawer-link--active:hover {
+  background: var(--ink-hover);
+  color: white;
 }
 
 /* Mobile: iOS-style glass navigation */

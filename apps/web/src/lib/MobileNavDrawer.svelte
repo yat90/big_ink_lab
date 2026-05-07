@@ -6,11 +6,11 @@
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
-  import IconTeam from '$lib/icons/IconTeam.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
+  import IconTeam from '$lib/icons/IconTeam.svelte';
+  import IconCircleUser from '$lib/icons/IconCircleUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import IconClose from '$lib/icons/IconClose.svelte';
-  import IconInfo from '$lib/icons/IconInfo.svelte';
   import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
@@ -88,14 +88,12 @@
   const isMe = $derived($page.url.pathname === '/me');
 
   let statsOpen = $state(false);
-  let infoOpen = $state(false);
   let teamOpen = $state(false);
   let accountOpen = $state(false);
 
   $effect(() => {
     if (!open) return;
     statsOpen = isMyStatistics;
-    infoOpen = isPlayers;
     teamOpen = isTeam;
     accountOpen = isMe;
   });
@@ -182,6 +180,18 @@
       </span>
       {$t('nav.decks')}
     </a>
+    <a
+      href="/players"
+      class="mobile-nav__drawer-link"
+      class:mobile-nav__drawer-link--active={isPlayers}
+      aria-current={isPlayers ? 'page' : undefined}
+      onclick={closeMenu}
+    >
+      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+        <IconCircleUser size={24} />
+      </span>
+      {$t('nav.players')}
+    </a>
     <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.statisticsSection')}>
       <div class="mobile-nav__drawer-subhead">
         <a
@@ -241,57 +251,15 @@
         </div>
       {/if}
     </div>
-    <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.moreInformation')}>
-      <button
-        type="button"
-        class="mobile-nav__drawer-link mobile-nav__drawer-link--button mobile-nav__drawer-link--info-toggle"
-        class:mobile-nav__drawer-link--active={isPlayers}
-        id="mobile-nav-drawer-info-toggle"
-        aria-expanded={infoOpen}
-        aria-controls="mobile-nav-drawer-info-sub"
-        onclick={() => (infoOpen = !infoOpen)}
+    <div
+      class="mobile-nav__drawer-group mobile-nav__drawer-group--team"
+      role="group"
+      aria-label={$t('nav.teamSection')}
+    >
+      <div
+        class="mobile-nav__drawer-subhead mobile-nav__drawer-subhead--team"
+        class:mobile-nav__drawer-subhead--team-expanded={teamOpen}
       >
-        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-          <IconInfo size={24} />
-        </span>
-        <span class="mobile-nav__drawer-subhead-label">{$t('nav.moreInformation')}</span>
-        <svg
-          class="mobile-nav__drawer-chevron-svg"
-          class:mobile-nav__drawer-chevron-svg--open={infoOpen}
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="m6 9 6 6 6-6"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
-      {#if infoOpen}
-        <div id="mobile-nav-drawer-info-sub" role="group" aria-labelledby="mobile-nav-drawer-info-toggle">
-          <a
-            href="/players"
-            class="mobile-nav__drawer-link mobile-nav__drawer-link--sub"
-            class:mobile-nav__drawer-link--active={isPlayers}
-            aria-current={isPlayers ? 'page' : undefined}
-            onclick={closeMenu}
-          >
-            <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-              <IconUsers size={20} />
-            </span>
-            {$t('nav.players')}
-          </a>
-        </div>
-      {/if}
-    </div>
-    <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.teamSection')}>
-      <div class="mobile-nav__drawer-subhead">
         <a
           href="/team"
           class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
@@ -305,7 +273,7 @@
         </a>
         <button
           type="button"
-          class="mobile-nav__drawer-chevron-btn"
+          class="mobile-nav__drawer-chevron-btn mobile-nav__drawer-chevron-btn--team"
           id="mobile-nav-drawer-team-toggle"
           aria-expanded={teamOpen}
           aria-controls="mobile-nav-drawer-team-sub"
@@ -332,47 +300,69 @@
         </button>
       </div>
       {#if teamOpen}
-        <div id="mobile-nav-drawer-team-sub" role="group" aria-labelledby="mobile-nav-drawer-team-toggle">
-          {#each TEAM_TAB_IDS as tabId (tabId)}
-            {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
-            <a
-              href="/team?tab={tabId}"
-              class="mobile-nav__drawer-link mobile-nav__drawer-link--sub"
-              class:mobile-nav__drawer-link--active={isTeam && activeTeamTab === tabId}
-              aria-current={isTeam && activeTeamTab === tabId ? 'page' : undefined}
-              onclick={closeMenu}
-            >
-              <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-                <TabIcon size={20} />
-              </span>
-              {$t(`team.tabs.${tabId}`)}
-            </a>
-          {/each}
+        <div id="mobile-nav-drawer-team-sub" class="mobile-nav__drawer-team-sub">
+          <div class="mobile-nav__drawer-team-heading muted" id="mobile-nav-drawer-team-sub-label">
+            {$t('team.tablistLabel')}
+          </div>
+          <div
+            class="mobile-nav__drawer-team-panel"
+            role="group"
+            aria-labelledby="mobile-nav-drawer-team-sub-label"
+          >
+            {#each TEAM_TAB_IDS as tabId (tabId)}
+              {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
+              <a
+                href="/team?tab={tabId}"
+                class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--team-tab"
+                class:mobile-nav__drawer-link--active={isTeam && activeTeamTab === tabId}
+                aria-current={isTeam && activeTeamTab === tabId ? 'page' : undefined}
+                onclick={closeMenu}
+              >
+                <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+                  <TabIcon size={20} />
+                </span>
+                {$t(`team.tabs.${tabId}`)}
+              </a>
+            {/each}
+          </div>
         </div>
       {/if}
+    </div>
+    <div
+      class="mobile-nav__drawer-group mobile-nav__drawer-group--language"
+      role="group"
+      aria-labelledby="mobile-nav-drawer-lang-label"
+    >
+      <div class="mobile-nav__drawer-lang-wrap">
+        <div class="mobile-nav__drawer-lang-label muted" id="mobile-nav-drawer-lang-label">
+          {$t('common.language')}
+        </div>
+        <div class="mobile-nav__drawer-lang">
+          <button
+            type="button"
+            class="mobile-nav__drawer-lang-btn"
+            class:mobile-nav__drawer-lang-btn--active={$locale === 'de'}
+            aria-pressed={$locale === 'de'}
+            onclick={() => pickLocale('de')}
+          >
+            {$t('lang.deShort')}
+          </button>
+          <button
+            type="button"
+            class="mobile-nav__drawer-lang-btn"
+            class:mobile-nav__drawer-lang-btn--active={$locale === 'en'}
+            aria-pressed={$locale === 'en'}
+            onclick={() => pickLocale('en')}
+          >
+            {$t('lang.enShort')}
+          </button>
+        </div>
+      </div>
     </div>
     <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.accountSection')}>
       {#if playerName}
         <p class="mobile-nav__drawer-player-name muted" role="presentation">{playerName}</p>
       {/if}
-      <div class="mobile-nav__drawer-lang" role="group" aria-label={$t('common.language')}>
-        <button
-          type="button"
-          class="mobile-nav__drawer-lang-btn"
-          class:mobile-nav__drawer-lang-btn--active={$locale === 'de'}
-          onclick={() => pickLocale('de')}
-        >
-          {$t('lang.deShort')}
-        </button>
-        <button
-          type="button"
-          class="mobile-nav__drawer-lang-btn"
-          class:mobile-nav__drawer-lang-btn--active={$locale === 'en'}
-          onclick={() => pickLocale('en')}
-        >
-          {$t('lang.enShort')}
-        </button>
-      </div>
       <div class="mobile-nav__drawer-subhead">
         <a
           href="/me"

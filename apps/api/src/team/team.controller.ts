@@ -11,6 +11,7 @@ import { TeamOverview } from './interfaces/team-overview.interface';
 import { TeamBalance } from './interfaces/team-balance.interface';
 import { UpdateTeamSettingsDto } from './dto/update-team-settings.dto';
 import { TeamInternalRankingService } from './team-internal-ranking.service';
+import { TeamAccusationsService } from './team-accusations.service';
 
 /** Read-only overview endpoints + team-wide settings. */
 @Controller('team')
@@ -21,6 +22,7 @@ export class TeamController {
     private readonly transactionsService: TeamTransactionsService,
     private readonly settingsService: TeamSettingsService,
     private readonly internalRankingService: TeamInternalRankingService,
+    private readonly accusationsService: TeamAccusationsService,
   ) {}
 
   /** Bootstrap payload: team name, current user's role, balance. */
@@ -36,11 +38,13 @@ export class TeamController {
         balance: null,
         internalRanking: null,
         internalHeadToHead: null,
+        openAccusationsCount: null,
       };
     }
-    const [balance, internalStandings] = await Promise.all([
+    const [balance, internalStandings, openAccusationsCount] = await Promise.all([
       this.computeBalance(ctx.team),
       this.internalRankingService.computeInternalStandings(ctx.team),
+      this.accusationsService.countOpen(ctx.team),
     ]);
     return {
       team: ctx.team,
@@ -50,6 +54,7 @@ export class TeamController {
       balance,
       internalRanking: internalStandings.ranking,
       internalHeadToHead: internalStandings.headToHead,
+      openAccusationsCount,
     };
   }
 

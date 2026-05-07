@@ -6,11 +6,11 @@
   import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
   import IconTeam from '$lib/icons/IconTeam.svelte';
+  import IconCircleUser from '$lib/icons/IconCircleUser.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
-  import IconInfo from '$lib/icons/IconInfo.svelte';
   import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import { authMe } from '$lib/me';
@@ -26,10 +26,10 @@
 
   let statsMenuOpen = $state(false);
   let statsDropdownEl: HTMLDivElement | null = $state(null);
+  let langMenuOpen = $state(false);
+  let langDropdownEl: HTMLDivElement | null = $state(null);
   let userMenuOpen = $state(false);
   let userDropdownEl: HTMLDivElement | null = $state(null);
-  let infoMenuOpen = $state(false);
-  let infoDropdownEl: HTMLDivElement | null = $state(null);
   let teamMenuOpen = $state(false);
   let teamDropdownEl: HTMLDivElement | null = $state(null);
 
@@ -71,8 +71,8 @@
   $effect(() => {
     $page.url.pathname;
     statsMenuOpen = false;
+    langMenuOpen = false;
     userMenuOpen = false;
-    infoMenuOpen = false;
     teamMenuOpen = false;
   });
 
@@ -84,13 +84,13 @@
         const el = statsDropdownEl;
         if (!el || !el.contains(t)) statsMenuOpen = false;
       }
+      if (langMenuOpen) {
+        const el = langDropdownEl;
+        if (!el || !el.contains(t)) langMenuOpen = false;
+      }
       if (userMenuOpen) {
         const el = userDropdownEl;
         if (!el || !el.contains(t)) userMenuOpen = false;
-      }
-      if (infoMenuOpen) {
-        const el = infoDropdownEl;
-        if (!el || !el.contains(t)) infoMenuOpen = false;
       }
       if (teamMenuOpen) {
         const el = teamDropdownEl;
@@ -207,10 +207,10 @@
     <span class="desktop-nav__link-label">{$t('nav.decks')}</span>
   </a>
   <div
-  class="desktop-nav__dropdown"
-  class:desktop-nav__dropdown--open={teamMenuOpen}
-  bind:this={teamDropdownEl}
->
+    class="desktop-nav__dropdown desktop-nav__dropdown--team"
+    class:desktop-nav__dropdown--open={teamMenuOpen}
+    bind:this={teamDropdownEl}
+  >
   <div class="desktop-nav__dropdown-inner">
     <a
       href="/team"
@@ -269,42 +269,53 @@
   </div>
 </div>
 
-<div
-    class="desktop-nav__dropdown desktop-nav__info"
-    class:desktop-nav__dropdown--open={infoMenuOpen}
-    bind:this={infoDropdownEl}
+  <a
+    href="/players"
+    class="desktop-nav__link desktop-nav__link--push-end"
+    class:desktop-nav__link--active={isPlayers}
+    aria-current={isPlayers ? 'page' : undefined}
   >
-    <div class="desktop-nav__dropdown-inner desktop-nav__dropdown-inner--info">
+    <span class="desktop-nav__link-icon" aria-hidden="true">
+      <IconCircleUser size={28} />
+    </span>
+    <span class="desktop-nav__link-label">{$t('nav.players')}</span>
+  </a>
+
+  <div
+    class="desktop-nav__dropdown desktop-nav__dropdown--lang"
+    class:desktop-nav__dropdown--open={langMenuOpen}
+    bind:this={langDropdownEl}
+  >
+    <div class="desktop-nav__dropdown-inner">
       <button
         type="button"
-        class="desktop-nav__link desktop-nav__link--dropdown-main"
-        class:desktop-nav__link--active={isPlayers}
-        aria-controls="desktop-nav-info-submenu"
+        class="desktop-nav__link desktop-nav__link--dropdown-main desktop-nav__lang-main"
+        aria-expanded={langMenuOpen}
         aria-haspopup="true"
-        id="desktop-nav-info-mainbutton"
-        aria-label={$t('nav.moreInformation')}
+        aria-controls="desktop-nav-lang-submenu"
+        id="desktop-nav-lang-mainbutton"
         onclick={(e) => {
           e.stopPropagation();
-          infoMenuOpen = !infoMenuOpen;
+          langMenuOpen = !langMenuOpen;
         }}
       >
-        <span class="desktop-nav__link-icon" aria-hidden="true">
-          <IconInfo size={28} />
+        <span class="desktop-nav__link-label">
+          {$locale === 'de' ? $t('lang.deShort') : $t('lang.enShort')}
         </span>
       </button>
       <button
         type="button"
         class="desktop-nav__dropdown-toggle"
-        aria-expanded={infoMenuOpen}
-        aria-controls="desktop-nav-info-submenu"
+        aria-expanded={langMenuOpen}
+        aria-controls="desktop-nav-lang-submenu"
         aria-haspopup="true"
-        id="desktop-nav-info-menubutton"
+        id="desktop-nav-lang-menubutton"
         onclick={(e) => {
           e.stopPropagation();
-          infoMenuOpen = !infoMenuOpen;
+          langMenuOpen = !langMenuOpen;
         }}
       >
-        <span class="visually-hidden">{$t('nav.openMoreInformationMenu')}</span>
+        <span class="visually-hidden">{$t('nav.openLanguageSubmenu')}</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="m6 9 6 6 6-6"
@@ -317,22 +328,35 @@
       </button>
     </div>
     <div
-      id="desktop-nav-info-submenu"
-      class="desktop-nav__dropdown-panel"
+      id="desktop-nav-lang-submenu"
+      class="desktop-nav__dropdown-panel desktop-nav__dropdown-panel--lang"
       role="group"
-      aria-label={$t('nav.moreInformation')}
+      aria-labelledby="desktop-nav-lang-mainbutton"
     >
-      <a
-        href="/players"
+      <button
+        type="button"
         class="desktop-nav__dropdown-link"
-        class:desktop-nav__dropdown-link--active={isPlayers}
-        aria-current={isPlayers ? 'page' : undefined}
+        class:desktop-nav__dropdown-link--active={$locale === 'de'}
+        aria-pressed={$locale === 'de'}
+        onclick={() => {
+          pickLocale('de');
+          langMenuOpen = false;
+        }}
       >
-        <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
-          <IconUsers size={18} />
-        </span>
-        <span>{$t('nav.players')}</span>
-      </a>
+        {$t('lang.de')}
+      </button>
+      <button
+        type="button"
+        class="desktop-nav__dropdown-link"
+        class:desktop-nav__dropdown-link--active={$locale === 'en'}
+        aria-pressed={$locale === 'en'}
+        onclick={() => {
+          pickLocale('en');
+          langMenuOpen = false;
+        }}
+      >
+        {$t('lang.en')}
+      </button>
     </div>
   </div>
 
@@ -393,24 +417,6 @@
       {#if playerName}
         <div class="desktop-nav__account-player muted" role="presentation">{playerName}</div>
       {/if}
-      <div class="desktop-nav__lang" role="group" aria-label={$t('common.language')}>
-        <button
-          type="button"
-          class="desktop-nav__lang-btn"
-          class:desktop-nav__lang-btn--active={$locale === 'de'}
-          onclick={() => pickLocale('de')}
-        >
-          {$t('lang.deShort')}
-        </button>
-        <button
-          type="button"
-          class="desktop-nav__lang-btn"
-          class:desktop-nav__lang-btn--active={$locale === 'en'}
-          onclick={() => pickLocale('en')}
-        >
-          {$t('lang.enShort')}
-        </button>
-      </div>
       <a
         href="/me/statistics"
         class="desktop-nav__dropdown-link"
@@ -463,11 +469,12 @@
     border: 0;
   }
 
-  .desktop-nav__info {
+  /** Keeps Players + Account aligned to the right (replaces former “Info” dropdown slot). */
+  .desktop-nav__link--push-end {
     margin-left: auto;
   }
 
-  .desktop-nav__info :global(.desktop-nav__dropdown-panel) {
+  .desktop-nav__dropdown--lang :global(.desktop-nav__dropdown-panel) {
     left: auto;
     right: 0;
   }
@@ -487,8 +494,25 @@
     flex: 0 0 auto;
   }
 
-  :global(.desktop-nav__dropdown-inner--info .desktop-nav__link.desktop-nav__link--dropdown-main) {
-    flex: 0 0 auto;
+  :global(button.desktop-nav__link.desktop-nav__link--dropdown-main.desktop-nav__lang-main) {
+    flex: 1;
+    min-width: 0;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    cursor: pointer;
+    font: inherit;
+    font-family: inherit;
+    text-align: center;
+  }
+
+  .desktop-nav__dropdown-panel--lang {
+    min-width: 10rem;
+    padding: 6px;
+  }
+
+  .desktop-nav__dropdown-panel--lang :global(.desktop-nav__dropdown-link) {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
   }
 
   :global(.desktop-nav__link.desktop-nav__link--dropdown-main) {
@@ -536,40 +560,5 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .desktop-nav__lang {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-    padding: 8px 10px 10px;
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  .desktop-nav__lang-btn {
-    min-width: 2.5rem;
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--glass-border);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    transition:
-      color var(--transition),
-      background var(--transition),
-      border-color var(--transition);
-  }
-
-  .desktop-nav__lang-btn:hover {
-    color: var(--fg);
-    background: var(--glass-bg-strong);
-  }
-
-  .desktop-nav__lang-btn--active {
-    color: var(--primary);
-    border-color: var(--primary);
-    background: color-mix(in srgb, var(--primary) 12%, transparent);
   }
 </style>

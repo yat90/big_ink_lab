@@ -14,4 +14,6 @@ export interface TeamOverview {
   internalRanking: TeamInternalRankingRow[] | null;
   /** Member × member match records (same ordering as internal ranking); null without a team. */
   internalHeadToHead: TeamHeadToHeadMatrix | null;
+  /** Open courtroom accusations (`open` status); null when the user has no team. */
+  openAccusationsCount: number | null;
 }

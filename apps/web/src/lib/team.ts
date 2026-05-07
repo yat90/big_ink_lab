@@ -90,6 +90,8 @@ export interface TeamOverview {
   balance: TeamBalance | null;
   internalRanking: TeamInternalRankingRow[] | null;
   internalHeadToHead: TeamHeadToHeadMatrix | null;
+  /** Open courtroom accusations; null when the user has no team. */
+  openAccusationsCount: number | null;
 }
 
 export interface TeamTransaction {

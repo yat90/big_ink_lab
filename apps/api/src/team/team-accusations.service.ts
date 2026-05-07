@@ -44,6 +44,13 @@ export class TeamAccusationsService {
     private readonly settingsService: TeamSettingsService,
   ) {}
 
+  /** Number of accusations still awaiting a decision (`open`). */
+  async countOpen(team: string): Promise<number> {
+    return this.accusationModel
+      .countDocuments({ team, status: AccusationStatus.Open })
+      .exec();
+  }
+
   /** Chronological list for the court room (newest first). */
   async list(team: string): Promise<TeamAccusationView[]> {
     const docs = await this.accusationModel
