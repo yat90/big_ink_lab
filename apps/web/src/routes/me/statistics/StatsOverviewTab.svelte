@@ -1,6 +1,7 @@
 <script lang="ts">
   import MatchLineRow from '$lib/MatchLineRow.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
+  import { t } from '$lib/i18n';
   import { recentFormToLorcanaMatch } from '$lib/lorcana-match';
   import type { PlayerStats } from '$lib/PlayerStatsOverview.svelte';
   import type { PlayStyleSummary, MatchAnalysisSummary, RecentFormSummary } from './stats-types';
@@ -26,7 +27,7 @@
       {#if matchAnalysis && matchAnalysis.totals.matchesPlayed > 0}
         <div class="stats-page__glance-item stats-page__glance-item--highlight">
           <span class="stats-page__glance-value">{matchAnalysis.totals.matchWinRate}%</span>
-          <span class="stats-page__glance-label">Match win rate</span>
+          <span class="stats-page__glance-label">{$t('statistics.overview.matchWinRate')}</span>
         </div>
         <div class="stats-page__glance-item">
           <span
@@ -41,9 +42,9 @@
           </span>
           <span class="stats-page__glance-label">
             {#if playerStats}
-              Matches won
+              {$t('statistics.overview.matchesWon')}
             {:else}
-              Matches played
+              {$t('statistics.overview.matchesPlayed')}
             {/if}
           </span>
         </div>
@@ -60,9 +61,9 @@
           </span>
           <span class="stats-page__glance-label">
             {#if playerStats}
-              Games won
+              {$t('statistics.overview.gamesWon')}
             {:else}
-              Games played
+              {$t('statistics.overview.gamesPlayed')}
             {/if}
           </span>
         </div>
@@ -73,7 +74,7 @@
             >{playerStats.starterWinRate}%</span
           >
           <span class="stats-page__glance-label stats-page__glance-label--wrap"
-            >Win rate when you go first</span
+            >{$t('statistics.overview.winRateFirst')}</span
           >
         </div>
         <div class="stats-page__glance-item">
@@ -81,7 +82,7 @@
             >{playerStats.nonStarterWinRate}%</span
           >
           <span class="stats-page__glance-label stats-page__glance-label--wrap"
-            >Win rate when you go second</span
+            >{$t('statistics.overview.winRateSecond')}</span
           >
         </div>
       {/if}
@@ -95,7 +96,7 @@
             {/if}
             <span class="stats-page__glance-deck-name">{deckTitle}</span>
           </span>
-          <span class="stats-page__glance-label">Most played deck</span>
+          <span class="stats-page__glance-label">{$t('statistics.overview.mostPlayedDeck')}</span>
         </div>
       {/if}
       {#if recentFormSummary}
@@ -104,7 +105,9 @@
             <span class="stats-page__form-wins">{recentFormSummary.wins}W</span>
             <span class="stats-page__form-losses">{recentFormSummary.losses}L</span>
           </span>
-          <span class="stats-page__glance-label">Last {recentFormSummary.total} matches</span>
+          <span class="stats-page__glance-label"
+            >{$t('statistics.overview.lastMatches', { n: String(recentFormSummary.total) })}</span
+          >
         </div>
       {/if}
       {#if matchAnalysis && matchAnalysis.avgLoreInLostGames != null}
@@ -112,7 +115,7 @@
         <span class="stats-overview-lore-card__value"
           >{matchAnalysis.avgLoreInLostGames.toFixed(1)}</span
         >
-        <span class="stats-overview-lore-card__label muted">Avg lore in losses</span>
+        <span class="stats-overview-lore-card__label muted">{$t('statistics.overview.avgLoreLosses')}</span>
       </div>
     {/if}
     </div>
@@ -122,15 +125,18 @@
     {#if matchAnalysis && matchAnalysis.totals.matchesPlayed > 0}
       {#if matchAnalysis.byStage?.length > 0}
         <div class="stats-page__block">
-          <h2 class="stats-page__subtitle">Results by stage</h2>
-          <table class="stats-page__table stats-page__table--wide" aria-label="Stats by stage">
+          <h2 class="stats-page__subtitle">{$t('statistics.overview.resultsByStage')}</h2>
+          <table
+            class="stats-page__table stats-page__table--wide"
+            aria-label={$t('statistics.overview.tableAriaByStage')}
+          >
             <thead>
               <tr>
-                <th scope="col">Stage</th>
-                <th scope="col">Matches</th>
-                <th scope="col">MWR</th>
-                <th scope="col">Games</th>
-                <th scope="col">GWR</th>
+                <th scope="col">{$t('statistics.overview.colStage')}</th>
+                <th scope="col">{$t('statistics.overview.colMatches')}</th>
+                <th scope="col">{$t('statistics.overview.colMwr')}</th>
+                <th scope="col">{$t('statistics.overview.colGames')}</th>
+                <th scope="col">{$t('statistics.overview.colGwr')}</th>
               </tr>
             </thead>
             <tbody>
@@ -150,8 +156,10 @@
       {#if matchAnalysis.recentForm && matchAnalysis.recentForm.length > 0}
         {@const recentList = matchAnalysis.recentForm}
         <div class="stats-page__block">
-          <h2 class="stats-page__subtitle">Your last {recentList.length} matches</h2>
-          <p class="stats-page__hint muted">Tap a row to open the match.</p>
+          <h2 class="stats-page__subtitle">
+            {$t('statistics.overview.yourLastMatches', { count: String(recentList.length) })}
+          </h2>
+          <p class="stats-page__hint muted">{$t('statistics.overview.tapRowHint')}</p>
           <ul class="match-line-row__list">
             {#each recentList as m (m.matchId)}
               <MatchLineRow
@@ -175,7 +183,7 @@
         </div>
       {/if}
     {:else}
-      <p class="muted">No match results yet. Play some matches to see results here.</p>
+      <p class="muted">{$t('statistics.overview.noResultsYet')}</p>
     {/if}
   </div>
 </div>

@@ -16,6 +16,7 @@
   import PullToRefreshIndicator from '$lib/PullToRefreshIndicator.svelte';
   import { pullToRefresh } from '$lib/pullToRefresh';
   import { initLocale } from '$lib/i18n';
+  import AppBreadcrumb from '$lib/AppBreadcrumb.svelte';
 
   let { children = undefined }: { children?: Snippet } = $props();
 
@@ -190,6 +191,12 @@
   >
     {#if authReady || isAuthPage}
       {#if children}
+        <div
+          class="main__breadcrumb"
+          class:main__breadcrumb--lore={isLorePage}
+        >
+          <AppBreadcrumb />
+        </div>
         {@render children()}
       {/if}
     {:else}
@@ -204,6 +211,19 @@
 </div>
 
 <style>
+  .main__breadcrumb {
+    width: 100%;
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .main__breadcrumb--lore {
+    padding-left: calc(12px + env(safe-area-inset-left));
+    padding-right: calc(12px + env(safe-area-inset-right));
+    padding-top: calc(12px + env(safe-area-inset-top));
+  }
+
   .auth-check {
     display: flex;
     align-items: center;

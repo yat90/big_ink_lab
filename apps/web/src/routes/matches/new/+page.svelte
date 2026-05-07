@@ -629,16 +629,6 @@
   .new-match-page {
     max-width: 720px;
   }
-  .new-match-page .page-title {
-    margin: 0 0 0.25rem 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-  }
-  .new-match-page .page-sub {
-    margin: 0 0 1.25rem 0;
-    color: var(--muted);
-    font-size: 0.9375rem;
-  }
   .new-match__form {
     margin-top: 0;
   }

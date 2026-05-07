@@ -1,5 +1,6 @@
 <script lang="ts">
   import InkIcons from '$lib/InkIcons.svelte';
+  import { t } from '$lib/i18n';
   import type { PlayStyleSummary } from './stats-types';
 
   let { playStyle }: { playStyle: PlayStyleSummary | null } = $props();
@@ -9,7 +10,10 @@
 <div class="stats-play-style card stack stats-page__card">
 {#if playStyle && (playStyle.matchesAnalyzed > 0 || playStyle.gamesAnalyzed > 0)}
   <p class="muted stats-page__hint">
-    Based on {playStyle.matchesAnalyzed} matches and {playStyle.gamesAnalyzed} games.
+    {$t('statistics.playStyle.basedOn', {
+      matches: String(playStyle.matchesAnalyzed),
+      games: String(playStyle.gamesAnalyzed),
+    })}
   </p>
   {#if playStyle.preferredDeck || playStyle.preferredDeckColor || playStyle.bestPerformingDeckColor}
     <div class="stats-page__row">
@@ -18,33 +22,33 @@
           <span class="stats-page__value"
             >{playStyle.preferredDeck?.name ?? playStyle.preferredDeckColor}</span
           >
-          <span class="stats-page__label muted">Most played deck</span>
+          <span class="stats-page__label muted">{$t('statistics.overview.mostPlayedDeck')}</span>
         </div>
       {/if}
       {#if playStyle.bestPerformingDeckColor}
         <div class="stats-page__item">
           <span class="stats-page__value">{playStyle.bestPerformingDeckColor}</span>
-          <span class="stats-page__label muted">Best win rate (min 5 games)</span>
+          <span class="stats-page__label muted">{$t('statistics.playStyle.bestWinRateMin5')}</span>
         </div>
       {/if}
     </div>
   {/if}
   <div class="stats-page__block">
-    <h2 class="stats-page__subtitle">When you go first vs second</h2>
+    <h2 class="stats-page__subtitle">{$t('statistics.playStyle.firstVsSecondTitle')}</h2>
     <p class="muted stats-page__description">
-      Win rate when you <strong>start the game</strong> vs when you <strong>go second</strong>.
+      {$t('statistics.playStyle.firstVsSecondBody')}
     </p>
-    <table class="stats-page__table" aria-label="Win rate by starting player">
+    <table class="stats-page__table" aria-label={$t('statistics.playerOverview.tableAriaStarting')}>
       <thead>
         <tr>
           <th scope="col"></th>
-          <th scope="col">You go first</th>
-          <th scope="col">You go second</th>
+          <th scope="col">{$t('statistics.playStyle.youGoFirst')}</th>
+          <th scope="col">{$t('statistics.playStyle.youGoSecond')}</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <th scope="row" class="stats-page__row-header">Win rate</th>
+          <th scope="row" class="stats-page__row-header">{$t('statistics.playStyle.winRate')}</th>
           <td>{playStyle.starterWinRate}%</td>
           <td>{playStyle.nonStarterWinRate}%</td>
         </tr>
@@ -52,19 +56,30 @@
     </table>
     {#if playStyle.starterAdvantageDelta != null && playStyle.starterAdvantageDelta !== 0}
       <p class="muted stats-page__delta">
-        You perform {playStyle.starterAdvantageDelta > 0 ? 'better' : 'worse'} when you start: {playStyle.starterAdvantageDelta > 0 ? '+' : ''}{playStyle.starterAdvantageDelta}% win rate.
+        {#if playStyle.starterAdvantageDelta > 0}
+          {$t('statistics.playStyle.starterDeltaBetter', {
+            delta: String(playStyle.starterAdvantageDelta),
+          })}
+        {:else}
+          {$t('statistics.playStyle.starterDeltaWorse', {
+            delta: String(playStyle.starterAdvantageDelta),
+          })}
+        {/if}
       </p>
     {/if}
   </div>
   {#if playStyle.stageMix?.length > 0}
     <div class="stats-page__block">
-      <h2 class="stats-page__subtitle">Where you play (by stage)</h2>
-      <table class="stats-page__table stats-page__table--wide" aria-label="Matches by stage">
+      <h2 class="stats-page__subtitle">{$t('statistics.playStyle.whereYouPlay')}</h2>
+      <table
+        class="stats-page__table stats-page__table--wide"
+        aria-label={$t('statistics.playStyle.tableAriaStageMix')}
+      >
         <thead>
           <tr>
-            <th scope="col">Stage</th>
-            <th scope="col">Matches</th>
-            <th scope="col">Share</th>
+            <th scope="col">{$t('statistics.overview.colStage')}</th>
+            <th scope="col">{$t('statistics.overview.colMatches')}</th>
+            <th scope="col">{$t('statistics.playStyle.share')}</th>
           </tr>
         </thead>
         <tbody>
@@ -81,17 +96,20 @@
   {/if}
   {#if playStyle.deckColorStats?.length > 0}
     <div class="stats-page__block">
-      <h2 class="stats-page__subtitle">Stats by deck color</h2>
-      <table class="stats-page__table stats-page__table--wide" aria-label="Stats by deck color">
+      <h2 class="stats-page__subtitle">{$t('statistics.playStyle.statsByDeckColor')}</h2>
+      <table
+        class="stats-page__table stats-page__table--wide"
+        aria-label={$t('statistics.playStyle.tableAriaDeckColor')}
+      >
         <thead>
           <tr>
             <th scope="col" class="stats-play-style__deck-col-head">
-              <span class="stats-play-style__sr-only">Deck color</span>
+              <span class="stats-play-style__sr-only">{$t('statistics.playStyle.deckColorCol')}</span>
             </th>
-            <th scope="col">Matches</th>
-            <th scope="col">Match WR</th>
-            <th scope="col">Games</th>
-            <th scope="col">Game WR</th>
+            <th scope="col">{$t('statistics.overview.colMatches')}</th>
+            <th scope="col">{$t('statistics.playStyle.matchWr')}</th>
+            <th scope="col">{$t('statistics.overview.colGames')}</th>
+            <th scope="col">{$t('statistics.playStyle.gameWr')}</th>
           </tr>
         </thead>
         <tbody>
@@ -116,19 +134,19 @@
       {#if playStyle.avgLoreWhenWinning != null}
         <div class="stats-page__item">
           <span class="stats-page__value">{playStyle.avgLoreWhenWinning.toFixed(1)}</span>
-          <span class="stats-page__label muted">Avg lore when you win</span>
+          <span class="stats-page__label muted">{$t('statistics.playStyle.avgLoreWin')}</span>
         </div>
       {/if}
       {#if playStyle.avgLoreWhenLosing != null}
         <div class="stats-page__item">
           <span class="stats-page__value">{playStyle.avgLoreWhenLosing.toFixed(1)}</span>
-          <span class="stats-page__label muted">Avg lore when you lose</span>
+          <span class="stats-page__label muted">{$t('statistics.playStyle.avgLoreLoss')}</span>
         </div>
       {/if}
     </div>
   {/if}
 {:else}
-  <p class="stats-play-style__empty muted">No play-style data yet. Play more matches to see how you play.</p>
+  <p class="stats-play-style__empty muted">{$t('statistics.playStyle.empty')}</p>
 {/if}
 </div>
 

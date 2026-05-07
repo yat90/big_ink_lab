@@ -2,6 +2,7 @@
   import { config } from '$lib/config';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import { t } from '$lib/i18n';
   import PlayerStatsOverview, { type PlayerStats } from '$lib/PlayerStatsOverview.svelte';
   import IconEdit from '../../../lib/icons/IconEdit.svelte';
 
@@ -110,17 +111,17 @@
       {#if player.stats}
         <PlayerStatsOverview
           stats={player.stats}
-          sectionTitle="Game statistics"
+          sectionTitle={$t('statistics.playerPublic.sectionTitle')}
           decksUsed={decksUsed}
           bind:filterDeckId
           onDeckFilterChange={onDeckFilterChange}
           bind:analysisMode={selectedMatrixMode}
           onMatrixModeChange={onMatrixModeChange}
-          emptyText="No matchup data found for this player and filter combination."
+          emptyText={$t('statistics.playerPublic.emptyMatchupFilter')}
         />
       {:else}
         <div class="card">
-          <p class="card__sub muted">No match data yet. Play some matches to see statistics.</p>
+          <p class="card__sub muted">{$t('statistics.playerPublic.noMatchDataYet')}</p>
         </div>
       {/if}
     </div>

@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
   import { config } from '$lib/config';
   import IconFilter from '$lib/icons/IconFilter.svelte';
   import Pagination from '$lib/Pagination.svelte';
+  import { translate, t, locale } from '$lib/i18n';
 
   type TournamentRow = {
     _id: string;
@@ -77,7 +79,7 @@
       if (appliedToDate) params.set('toDate', appliedToDate);
       const res = await fetch(`${apiUrl}/tournaments?${params}`);
       if (!res.ok) {
-        error = 'Failed to load tournaments';
+        error = translate(get(locale), 'tournaments.list.loadError');
         return;
       }
       const json = await res.json();
@@ -85,7 +87,7 @@
       totalPages = json.meta?.totalPages ?? 1;
       total = json.meta?.total ?? 0;
     } catch {
-      error = 'Could not reach API.';
+      error = translate(get(locale), 'common.apiUnreachable');
     } finally {
       loading = false;
     }
@@ -130,7 +132,7 @@
 </script>
 
 <svelte:head>
-  <title>Tournaments · Big Ink Lab</title>
+  <title>{$t('tournaments.list.pageTitle')}</title>
 </svelte:head>
 
 <div class="page tournaments-page">
@@ -138,8 +140,8 @@
     class="row"
     style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;"
   >
-    <h1 class="page-title">Tournaments</h1>
-    <a href="/tournaments/new" class="btn btn--primary">New tournament</a>
+    <h1 class="page-title">{$t('tournaments.list.heading')}</h1>
+    <a href="/tournaments/new" class="btn btn--primary">{$t('tournaments.list.newTournament')}</a>
   </div>
   <div class="card stack tournaments-page__filters">
     <button
@@ -153,9 +155,11 @@
         <span class="tournaments-page__filters-toggle-icon" aria-hidden="true">
           <IconFilter size={20} />
         </span>
-        <span class="tournaments-page__filters-toggle-label">Filters</span>
+        <span class="tournaments-page__filters-toggle-label">{$t('common.filters')}</span>
         {#if hasActiveFilters}
-          <span class="tournaments-page__filters-toggle-badge" aria-hidden="true">On</span>
+          <span class="tournaments-page__filters-toggle-badge" aria-hidden="true"
+            >{$t('tournaments.list.filtersOnBadge')}</span
+          >
         {/if}
       </span>
       <span class="tournaments-page__filters-chevron" aria-hidden="true"
@@ -166,68 +170,73 @@
       <div id="tournaments-filters-panel" class="tournaments-page__filters-panel">
         <div class="tournaments-page__filters-grid">
           <div class="tournaments-page__field">
-            <label class="label" for="tf-name">Name</label>
+            <label class="label" for="tf-name">{$t('common.name')}</label>
             <input
               id="tf-name"
               class="input"
               type="search"
               bind:value={filterName}
-              placeholder="Contains…"
+              placeholder={$t('common.containsPlaceholder')}
             />
           </div>
           <div class="tournaments-page__field">
-            <label class="label" for="tf-meta">Meta</label>
+            <label class="label" for="tf-meta">{$t('common.meta')}</label>
             <input
               id="tf-meta"
               class="input"
               type="search"
               bind:value={filterMeta}
-              placeholder="e.g. Set 11"
+              placeholder={$t('common.metaExamplePlaceholder')}
             />
           </div>
           <div class="tournaments-page__field">
-            <label class="label" for="tf-location">Location</label>
+            <label class="label" for="tf-location">{$t('common.location')}</label>
             <input
               id="tf-location"
               class="input"
               type="search"
               bind:value={filterLocation}
-              placeholder="Contains…"
+              placeholder={$t('common.containsPlaceholder')}
             />
           </div>
           <div class="tournaments-page__field">
-            <label class="label" for="tf-from">From date</label>
+            <label class="label" for="tf-from">{$t('tournaments.list.fromDate')}</label>
             <input id="tf-from" class="input" type="date" bind:value={filterFromDate} />
           </div>
           <div class="tournaments-page__field">
-            <label class="label" for="tf-to">To date</label>
+            <label class="label" for="tf-to">{$t('tournaments.list.toDate')}</label>
             <input id="tf-to" class="input" type="date" bind:value={filterToDate} />
           </div>
         </div>
         <p class="muted tournaments-page__filters-hint">
-          Dates use UTC day boundaries. Filters apply when you click Apply.
+          {$t('tournaments.list.filtersHint')}
         </p>
         <div class="row tournaments-page__filters-actions">
           <button type="button" class="btn btn--primary" onclick={applyFilters}
-            >Apply filters</button
+            >{$t('tournaments.list.applyFilters')}</button
           >
           <button type="button" class="btn" onclick={clearFilters} disabled={!canClearFilters}
-            >Clear</button
+            >{$t('tournaments.list.clear')}</button
           >
         </div>
       </div>
     {:else if hasActiveFilters}
       <p class="muted tournaments-page__filters-collapsed-note">
-        Filters are applied. Open to change or clear.
+        {$t('tournaments.list.filtersCollapsedNote')}
       </p>
     {/if}
   </div>
 
   <section class="tournaments-page__list" aria-labelledby="tournaments-list-heading">
-    <h2 id="tournaments-list-heading" class="tournaments-page__list-title">All tournaments</h2>
+    <h2 id="tournaments-list-heading" class="tournaments-page__list-title">
+      {$t('tournaments.list.allTournaments')}
+    </h2>
     {#if hasActiveFilters}
       <p class="muted tournaments-page__filter-active">
-        Filters active · {total} result{total === 1 ? '' : 's'}
+        {$t(
+          total === 1 ? 'tournaments.list.filtersActiveOne' : 'tournaments.list.filtersActiveMany',
+          { count: String(total) },
+        )}
       </p>
     {/if}
     {#if loading}
@@ -237,7 +246,7 @@
           <div class="loading-skeleton__line"></div>
           <div class="loading-skeleton__line"></div>
         </div>
-        <p class="muted" style="margin-top: var(--space-md);">Loading tournaments…</p>
+        <p class="muted" style="margin-top: var(--space-md);">{$t('tournaments.list.loadingList')}</p>
       </div>
     {:else if error}
       <div class="card" role="alert">
@@ -247,20 +256,24 @@
       <div class="card stack">
         <p class="card__sub" style="margin: 0;">
           {#if hasActiveFilters}
-            No tournaments match these filters. Try different values or <button
+            {$t('tournaments.list.emptyFilteredBefore')}<button
               type="button"
               class="tournaments-page__linklike"
-              onclick={clearFilters}>clear filters</button
-            >.
+              onclick={clearFilters}>{$t('tournaments.list.clearFiltersInline')}</button
+            >{$t('tournaments.list.emptyFilteredAfter')}
           {:else}
-            No tournaments yet. Create one from <strong>Tournament results</strong>, then save
-            rounds to link matches.
+            {$t('tournaments.list.emptyHintBefore')}<strong>{$t('tournaments.list.emptyHintStrong')}</strong
+            >{$t('tournaments.list.emptyHintAfter')}
           {/if}
         </p>
       </div>
     {:else}
       {#if !hasActiveFilters}
-        <p class="muted tournaments-page__count">{total} tournament{total === 1 ? '' : 's'}</p>
+        <p class="muted tournaments-page__count">
+          {$t(total === 1 ? 'tournaments.list.countOne' : 'tournaments.list.countMany', {
+            count: String(total),
+          })}
+        </p>
       {/if}
       <ul class="tournaments-page__ul">
         {#each rows as row (row._id)}
@@ -272,8 +285,13 @@
                   {formatDate(row.date)}{#if row.meta?.trim()}
                     · {row.meta.trim()}{/if}{#if row.location?.trim()}
                     · {row.location.trim()}{/if}
-                  · {row.matchCount} match{row.matchCount === 1 ? '' : 'es'}{#if row.latestPlayedAt}
-                    · Last match {formatDate(row.latestPlayedAt)}{/if}
+                  · {$t(
+                    row.matchCount === 1 ? 'tournaments.list.matchOne' : 'tournaments.list.matchMany',
+                    { count: String(row.matchCount) },
+                  )}{#if row.latestPlayedAt}
+                    · {$t('tournaments.list.lastMatch', {
+                      when: formatDate(row.latestPlayedAt),
+                    })}{/if}
                 </span>
               </div>
               <span class="tournaments-page__chevron" aria-hidden="true">→</span>
@@ -287,14 +305,6 @@
 </div>
 
 <style>
-  .tournaments-page {
-    max-width: 720px;
-  }
-  .page-title {
-    margin: 0 0 var(--space-md, 1rem) 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-  }
   .tournaments-page__filters {
     margin-top: var(--space-md, 1rem);
     gap: 0;

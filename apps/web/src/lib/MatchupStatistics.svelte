@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
   import InkIcons from '$lib/InkIcons.svelte';
+  import { translate, t, locale } from '$lib/i18n';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
 
   type MatrixMode = 'matches' | 'games';
@@ -9,8 +11,8 @@
   let {
     matrix,
     analysisMode = $bindable<MatrixMode>('matches'),
-    title = 'Deck color matchups',
-    emptyText = 'No matchup data yet.',
+    title = '',
+    emptyText = '',
     onchange = undefined,
   }: {
     matrix?: Matrix;
@@ -22,11 +24,45 @@
 
   const hasData = $derived(!!matrix && Object.keys(matrix).length > 0);
 
-  const subtitle = $derived(
-    analysisMode === 'games'
-      ? 'Rows: your deck color. Columns: opponent deck color. Cell: win rate by games.'
-      : 'Rows: your deck color. Columns: opponent deck color. Cell: win rate by matches.'
-  );
+  const subtitle = $derived.by(() => {
+    const loc = get(locale);
+    return analysisMode === 'games'
+      ? translate(loc, 'statistics.matrix.subtitleGames')
+      : translate(loc, 'statistics.matrix.subtitleMatches');
+  });
+
+  function countUnitLabel(mode: MatrixMode, played: number): string {
+    const loc = get(locale);
+    if (mode === 'games') {
+      return translate(
+        loc,
+        played === 1 ? 'statistics.matrix.unitGame' : 'statistics.matrix.unitGames',
+      );
+    }
+    return translate(
+      loc,
+      played === 1 ? 'statistics.matrix.unitMatch' : 'statistics.matrix.unitMatches',
+    );
+  }
+
+  function cellTooltip(
+    myDeck: string,
+    oppDeck: string,
+    winPct: number | null,
+    cell: MatrixCell,
+    mode: MatrixMode,
+  ): string {
+    const loc = get(locale);
+    const unitLabel = countUnitLabel(mode, cell.played);
+    return translate(loc, 'statistics.matrix.cellTooltip', {
+      myDeck,
+      oppDeck,
+      pct: winPct != null ? String(winPct) : '',
+      won: String(cell.won),
+      played: String(cell.played),
+      unitLabel,
+    });
+  }
 
   function setAnalysisMode(nextMode: MatrixMode) {
     if (analysisMode === nextMode) return;
@@ -42,13 +78,13 @@
   }
 </script>
 
-<section class="matchup-matrix" aria-label={title}>
+<section class="matchup-matrix" aria-label={title || $t('statistics.matrix.titleDefault')}>
   <div class="matchup-matrix__header">
     <div>
-      <h3 class="matchup-matrix__title">{title}</h3>
+      <h3 class="matchup-matrix__title">{title || $t('statistics.matrix.titleDefault')}</h3>
       <p class="matchup-matrix__sub muted">{subtitle}</p>
     </div>
-    <div class="matchup-matrix__toggle" role="group" aria-label="Analyze by">
+    <div class="matchup-matrix__toggle" role="group" aria-label={$t('statistics.matrix.analyzeByAria')}>
       <button
         type="button"
         class="matchup-matrix__toggle-btn"
@@ -56,7 +92,7 @@
         aria-pressed={analysisMode === 'matches'}
         onclick={() => setAnalysisMode('matches')}
       >
-        Matches
+        {$t('statistics.matrix.toggleMatches')}
       </button>
       <button
         type="button"
@@ -65,14 +101,14 @@
         aria-pressed={analysisMode === 'games'}
         onclick={() => setAnalysisMode('games')}
       >
-        Games
+        {$t('statistics.matrix.toggleGames')}
       </button>
     </div>
   </div>
 
   {#if hasData}
     <div class="matchup-matrix__wrap">
-      <table class="matchup-matrix__table" aria-label="{title} matrix">
+      <table class="matchup-matrix__table">
         <thead>
           <tr>
             <th scope="col" class="matchup-matrix__corner"></th>
@@ -92,15 +128,8 @@
               {#each DECK_COLOR_OPTIONS as oppDeck}
                 {@const cell = matrix?.[myDeck]?.[oppDeck]}
                 {@const winPct = cell ? Math.round((cell.won / cell.played) * 100) : null}
-                {@const unit = analysisMode === 'games' ? 'games' : 'matches'}
                 {@const countLabel =
-                  analysisMode === 'games'
-                    ? cell?.played != null && cell.played === 1
-                      ? 'game'
-                      : 'games'
-                    : cell?.played != null && cell.played === 1
-                      ? 'match'
-                      : 'matches'}
+                  cell ? countUnitLabel(analysisMode, cell.played) : ''}
                 <td
                   class="matchup-matrix__cell"
                   class:matchup-matrix__cell--tinted={winPct != null}
@@ -109,7 +138,7 @@
                   {#if cell}
                     <span
                       class="matchup-matrix__cell-inner"
-                      title="{myDeck} vs {oppDeck}: {winPct}% — {cell.won} of {cell.played} {unit} won"
+                      title={cellTooltip(myDeck, oppDeck, winPct, cell, analysisMode)}
                     >
                       <span class="matchup-matrix__cell-pct">{winPct}%</span>
                       <span class="matchup-matrix__cell-count">
@@ -128,7 +157,7 @@
       </table>
     </div>
   {:else}
-    <p class="muted">{emptyText}</p>
+    <p class="muted">{emptyText || $t('statistics.matrix.emptyDefault')}</p>
   {/if}
 </section>
 

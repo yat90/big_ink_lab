@@ -1,5 +1,6 @@
 <script lang="ts">
   import MatchupStatistics from '$lib/MatchupStatistics.svelte';
+  import { t } from '$lib/i18n';
 
   type MatrixMode = 'matches' | 'games';
   type DeckColorMatrixCell = { played: number; won: number };
@@ -34,7 +35,7 @@
     onDeckFilterChange,
     analysisMode = $bindable<MatrixMode>('matches'),
     onMatrixModeChange,
-    emptyText = 'No matchup data yet.',
+    emptyText = '',
   }: {
     stats: PlayerStats;
     sectionTitle?: string;
@@ -58,16 +59,16 @@
     <div class="card">
       <div class="player-stats-overview__deck-filter">
         <label for="player-stats-filter-deck" class="player-stats-overview__deck-filter-label"
-          >Deck</label
+          >{$t('statistics.playerOverview.deck')}</label
         >
         <select
           id="player-stats-filter-deck"
           class="input player-stats-overview__deck-filter-select"
           bind:value={filterDeckId}
           onchange={() => onDeckFilterChange?.()}
-          aria-label="Filter statistics by deck"
+          aria-label={$t('statistics.playerOverview.filterByDeckAria')}
         >
-          <option value="">All decks</option>
+          <option value="">{$t('statistics.playerOverview.allDecks')}</option>
           {#each decksUsed as deck (deck._id)}
             <option value={deck._id}>{deck.name}</option>
           {/each}
@@ -78,41 +79,47 @@
 
   <div class="card stack player-stats-overview__match-stats">
     <div class="player-stats-overview__block">
-      <h3>Matches</h3>
+      <h3>{$t('statistics.playerOverview.matchesHeading')}</h3>
       <div class="player-stats-overview__row">
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.matchesPlayed}</span>
-          <span class="player-stats-overview__label muted">Matches played</span>
+          <span class="player-stats-overview__label muted"
+            >{$t('statistics.playerOverview.matchesPlayed')}</span
+          >
         </div>
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.matchesWon}</span>
-          <span class="player-stats-overview__label muted">Matches won</span>
+          <span class="player-stats-overview__label muted">{$t('statistics.playerOverview.matchesWon')}</span>
         </div>
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.matchWinRate}%</span>
-          <span class="player-stats-overview__label muted">Match win rate</span>
+          <span class="player-stats-overview__label muted"
+            >{$t('statistics.playerOverview.matchWinRate')}</span
+          >
         </div>
       </div>
     </div>
     <div class="player-stats-overview__block">
-      <h3>Games</h3>
+      <h3>{$t('statistics.playerOverview.gamesHeading')}</h3>
       <div class="player-stats-overview__row">
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.gamesPlayed}</span>
-          <span class="player-stats-overview__label muted">Games played</span>
+          <span class="player-stats-overview__label muted">{$t('statistics.playerOverview.gamesPlayed')}</span>
         </div>
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.gamesWon}</span>
-          <span class="player-stats-overview__label muted">Games won</span>
+          <span class="player-stats-overview__label muted">{$t('statistics.playerOverview.gamesWon')}</span>
         </div>
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.gameWinRate}%</span>
-          <span class="player-stats-overview__label muted">Game win rate</span>
+          <span class="player-stats-overview__label muted">{$t('statistics.playerOverview.gameWinRate')}</span>
         </div>
         {#if stats.avgLoreInLostGames != null}
           <div class="player-stats-overview__item">
             <span class="player-stats-overview__value">{stats.avgLoreInLostGames}</span>
-            <span class="player-stats-overview__label muted">Avg. lore in games lost</span>
+            <span class="player-stats-overview__label muted"
+              >{$t('statistics.playerOverview.avgLoreInLostGames')}</span
+            >
           </div>
         {/if}
       </div>
@@ -120,32 +127,35 @@
   </div>
 
   <div class="card stack">
-    <h3>By starting player</h3>
+    <h3>{$t('statistics.playerOverview.byStartingPlayer')}</h3>
     <p class="player-stats-overview__description muted">
-      <strong>On the play (OTP)</strong>: the player started the game.
-      <strong>On the draw (OTD)</strong>: the player did not start and goes second.
+      {$t('statistics.playerOverview.starterExplainer')}
     </p>
-    <table class="player-stats-overview__table" aria-label="Statistics by starting player">
+    <table class="player-stats-overview__table" aria-label={$t('statistics.playerOverview.tableAriaStarting')}>
       <thead>
         <tr>
           <th scope="col"></th>
-          <th scope="col">OTP</th>
-          <th scope="col">OTD</th>
+          <th scope="col">{$t('statistics.playerOverview.colOtp')}</th>
+          <th scope="col">{$t('statistics.playerOverview.colOtd')}</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <th scope="row" class="player-stats-overview__table-row-header">Games</th>
+          <th scope="row" class="player-stats-overview__table-row-header"
+            >{$t('statistics.playerOverview.rowGames')}</th
+          >
           <td>{stats.gamesAsStarter}</td>
           <td>{stats.gamesNotStarter}</td>
         </tr>
         <tr>
-          <th scope="row" class="player-stats-overview__table-row-header">Won</th>
+          <th scope="row" class="player-stats-overview__table-row-header">{$t('statistics.playerOverview.rowWon')}</th>
           <td>{stats.gamesWonAsStarter}</td>
           <td>{stats.gamesWonNotStarter}</td>
         </tr>
         <tr>
-          <th scope="row" class="player-stats-overview__table-row-header">Win rate</th>
+          <th scope="row" class="player-stats-overview__table-row-header"
+            >{$t('statistics.playerOverview.rowWinRate')}</th
+          >
           <td>{stats.starterWinRate}%</td>
           <td>{stats.nonStarterWinRate}%</td>
         </tr>
@@ -155,13 +165,13 @@
 
   {#if stats.deckColorMatrix && Object.keys(stats.deckColorMatrix).length > 0}
     <div class="card stack player-stats-overview__matchup-card">
-      <h3>By deck colors</h3>
+      <h3>{$t('statistics.playerOverview.byDeckColors')}</h3>
       <MatchupStatistics
         matrix={stats.deckColorMatrix}
         bind:analysisMode={analysisMode}
         onchange={onMatrixModeChange}
-        title="Deck color matchups"
-        emptyText={emptyText}
+        title={$t('statistics.matrix.titleDefault')}
+        emptyText={emptyText || $t('statistics.matrix.emptyDefault')}
       />
     </div>
   {/if}

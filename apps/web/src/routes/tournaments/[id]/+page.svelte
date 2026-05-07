@@ -1,7 +1,11 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
+  import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { config } from '$lib/config';
+  import { breadcrumbTail } from '$lib/breadcrumbTail';
+  import { translate, t, locale } from '$lib/i18n';
   import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
   import {
     formatMatchRoundLabel,
@@ -34,6 +38,7 @@
   const apiUrl = config.apiUrl ?? '/api';
 
   const tournamentId = $derived($page.params.id ?? '');
+  const breadcrumbPath = $derived(tournamentId ? `/tournaments/${tournamentId}` : '');
 
   let tournament = $state<TournamentDetail | null>(null);
   let matches = $state<LorcanaMatch[]>([]);
@@ -42,6 +47,15 @@
   let matchesError = $state('');
   let total = $state(0);
   let listTruncated = $state(false);
+
+  $effect(() => {
+    const path = breadcrumbPath;
+    const label = tournament?.name?.trim();
+    if (path && label) breadcrumbTail.set({ path, label });
+    else breadcrumbTail.set(null);
+  });
+
+  onDestroy(() => breadcrumbTail.set(null));
 
   let editing = $state(false);
   let editName = $state('');
@@ -111,18 +125,28 @@
     return matches.filter((m) => getLorcanaMatchPlayerId(m.p1) === pid);
   });
 
-  const tournamentFilterSummary = $derived(
-    `${displayedMatches.length} of ${matches.length} shown`,
-  );
+  const tournamentFilterSummary = $derived.by(() => {
+    const loc = get(locale);
+    return translate(loc, 'tournaments.detail.filterSummary', {
+      shown: String(displayedMatches.length),
+      total: String(matches.length),
+    });
+  });
 
   const tournamentFilterBadges = $derived.by(() => {
+    const loc = get(locale);
     const badges: string[] = [];
     if (activeView === 'rounds') {
-      if (roundFilter === 'none') badges.push('Round: No round');
-      else if (roundFilter !== 'all') badges.push(`Round: ${formatMatchRoundLabel(roundFilter)}`);
+      if (roundFilter === 'none') badges.push(translate(loc, 'tournaments.detail.badgeRoundNone'));
+      else if (roundFilter !== 'all')
+        badges.push(
+          translate(loc, 'tournaments.detail.badgeRound', {
+            label: formatMatchRoundLabel(roundFilter),
+          }),
+        );
     } else if (playerFilterId.trim()) {
       const pair = tournamentPlayers.find(([id]) => id === playerFilterId.trim());
-      if (pair) badges.push(`P1: ${pair[1]}`);
+      if (pair) badges.push(translate(loc, 'tournaments.detail.badgeP1', { name: pair[1] }));
     }
     return badges;
   });
@@ -211,7 +235,7 @@
     e.preventDefault();
     saveError = '';
     if (!editName.trim() || !editDate.trim()) {
-      saveError = 'Name and date are required.';
+      saveError = translate(get(locale), 'common.requiredNameDate');
       return;
     }
     saving = true;
@@ -230,7 +254,10 @@
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        saveError = apiErrorMessage(data, `Could not save (${res.status})`);
+        saveError = apiErrorMessage(
+          data,
+          translate(get(locale), 'tournaments.detail.errSaveStatus', { status: String(res.status) }),
+        );
         return;
       }
       const row = data as Record<string, unknown>;
@@ -268,7 +295,7 @@
       };
       editing = false;
     } catch {
-      saveError = 'Could not reach API.';
+      saveError = translate(get(locale), 'common.apiUnreachable');
     } finally {
       saving = false;
     }
@@ -293,20 +320,23 @@
       if (res.status === 409) {
         deleteError = apiErrorMessage(
           data,
-          'Cannot delete while matches are linked. Unlink or reassign them first.',
+          translate(get(locale), 'tournaments.detail.deleteBlocked'),
         );
         showDeleteConfirm = false;
         return;
       }
       if (!res.ok) {
-        deleteError = apiErrorMessage(data, `Could not delete (${res.status})`);
+        deleteError = apiErrorMessage(
+          data,
+          translate(get(locale), 'tournaments.detail.errDeleteStatus', { status: String(res.status) }),
+        );
         showDeleteConfirm = false;
         return;
       }
       showDeleteConfirm = false;
       await goto('/tournaments');
     } catch {
-      deleteError = 'Could not reach API.';
+      deleteError = translate(get(locale), 'common.apiUnreachable');
       showDeleteConfirm = false;
     } finally {
       deleting = false;
@@ -351,7 +381,9 @@
         if (!dRes.ok) {
           if (!cancelled) {
             detailError =
-              dRes.status === 404 ? 'Tournament not found.' : 'Failed to load tournament.';
+              dRes.status === 404
+                ? translate(get(locale), 'tournaments.detail.notFound')
+                : translate(get(locale), 'tournaments.detail.loadFailed');
             loading = false;
           }
           return;
@@ -361,7 +393,7 @@
         tournament = d;
       } catch {
         if (!cancelled) {
-          detailError = 'Could not reach API.';
+          detailError = translate(get(locale), 'common.apiUnreachable');
           loading = false;
         }
         return;
@@ -381,7 +413,8 @@
           params.set('limit', String(PAGE_SIZE));
           const res = await fetch(`${apiUrl}/matches?${params}`);
           if (!res.ok) {
-            if (!cancelled) matchesError = 'Failed to load matches';
+            if (!cancelled)
+              matchesError = translate(get(locale), 'tournaments.detail.loadMatchesFailed');
             return;
           }
           const response = await res.json();
@@ -396,7 +429,7 @@
         total = fullTotal > 0 ? fullTotal : aggregated.length;
         listTruncated = aggregated.length < total;
       } catch {
-        if (!cancelled) matchesError = 'Could not reach API.';
+        if (!cancelled) matchesError = translate(get(locale), 'common.apiUnreachable');
       } finally {
         if (!cancelled) loading = false;
       }
@@ -408,60 +441,63 @@
 </script>
 
 <svelte:head>
-  <title>{tournament?.name ?? 'Tournament'} · Big Ink Lab</title>
+  <title
+    >{tournament?.name ?? $t('common.defaultTournamentName')}{$t('common.siteSuffix')}</title
+  >
 </svelte:head>
 
-<div class="page tournament-detail-page">
-  <nav class="tournament-detail__crumb muted" aria-label="Breadcrumb">
-    <a href="/tournaments">Tournaments</a>
-    <span aria-hidden="true"> / </span>
-    <span class="tournament-detail__crumb-current">{tournament?.name ?? '…'}</span>
-  </nav>
-
+<div class="page">
   {#if loading}
     <div class="card">
       <div class="loading-skeleton" aria-busy="true" aria-live="polite">
         <div class="loading-skeleton__line loading-skeleton__line--title"></div>
         <div class="loading-skeleton__line"></div>
       </div>
-      <p class="muted" style="margin-top: var(--space-md);">Loading…</p>
+      <p class="muted" style="margin-top: var(--space-md);">{$t('tournaments.detail.loading')}</p>
     </div>
   {:else if detailError}
     <div class="card" role="alert">
       <p class="alert">{detailError}</p>
-      <a href="/tournaments" class="btn" style="margin-top: var(--space-sm);">Back to tournaments</a>
+      <a href="/tournaments" class="btn" style="margin-top: var(--space-sm);"
+        >{$t('tournaments.detail.backToList')}</a
+      >
     </div>
   {:else if tournament}
     <section class="card stack tournament-detail__summary" aria-labelledby="tournament-detail-title">
       <h1 id="tournament-detail-title" class="page-title tournament-detail__title">
-        {editing ? (editName.trim() || '…') : tournament.name}
+        {editing ? (editName.trim() || $t('common.ellipsis')) : tournament.name}
       </h1>
 
       {#if editing}
         <form class="stack tournament-detail__edit-form" onsubmit={saveTournament}>
-          <label class="label" for="td-edit-name">Name</label>
+          <label class="label" for="td-edit-name">{$t('common.name')}</label>
           <input id="td-edit-name" class="input" bind:value={editName} autocomplete="off" required />
 
-          <label class="label" for="td-edit-date">Date</label>
+          <label class="label" for="td-edit-date">{$t('common.date')}</label>
           <input id="td-edit-date" type="date" class="input" bind:value={editDate} required />
 
-          <label class="label" for="td-edit-loc">Location</label>
-          <input id="td-edit-loc" class="input" bind:value={editLocation} placeholder="Optional" />
+          <label class="label" for="td-edit-loc">{$t('common.location')}</label>
+          <input
+            id="td-edit-loc"
+            class="input"
+            bind:value={editLocation}
+            placeholder={$t('common.optional')}
+          />
 
-          <label class="label" for="td-edit-url">URL</label>
+          <label class="label" for="td-edit-url">{$t('common.url')}</label>
           <input
             id="td-edit-url"
             class="input"
             bind:value={editUrl}
-            placeholder="PlayHub Link, Melee Link,..."
+            placeholder={$t('common.urlPlaceholder')}
           />
 
-          <label class="label" for="td-edit-meta">Meta</label>
+          <label class="label" for="td-edit-meta">{$t('common.meta')}</label>
           <input
             id="td-edit-meta"
             class="input"
             bind:value={editMeta}
-            placeholder="Optional (e.g. Set 11, Set 12, Infinity)"
+            placeholder={$t('common.metaPlaceholderShort')}
             maxlength="120"
           />
 
@@ -471,21 +507,23 @@
 
           <div class="row tournament-detail__edit-actions">
             <button type="submit" class="btn btn--primary" disabled={saving}>
-              {saving ? 'Saving…' : 'Save changes'}
+              {saving ? $t('common.saving') : $t('tournaments.detail.saveChanges')}
             </button>
-            <button type="button" class="btn" onclick={cancelEdit} disabled={saving}>Cancel</button>
+            <button type="button" class="btn" onclick={cancelEdit} disabled={saving}
+              >{$t('common.cancel')}</button
+            >
           </div>
         </form>
       {:else}
         <ul class="tournament-detail__facts muted">
-          <li><strong>Date</strong> {formatDate(tournament.date)}</li>
+          <li><strong>{$t('common.date')}</strong> {formatDate(tournament.date)}</li>
           {#if tournament.meta?.trim()}
-            <li><strong>Meta</strong> {tournament.meta.trim()}</li>
+            <li><strong>{$t('common.meta')}</strong> {tournament.meta.trim()}</li>
           {/if}
           {#if tournament.location?.trim()}
             {@const loc = tournament.location.trim()}
             <li>
-              <strong>Location</strong>
+              <strong>{$t('common.location')}</strong>
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`}
                 class="tournament-detail__url"
@@ -496,31 +534,36 @@
           {/if}
           {#if tournament.url?.trim()}
             <li>
-              <strong>Link</strong>
+              <strong>{$t('common.link')}</strong>
               <a href={tournament.url.trim()} class="tournament-detail__url" target="_blank" rel="noopener noreferrer">
                 {tournament.url.trim()}
               </a>
             </li>
           {/if}
           <li>
-            <strong>Matches</strong> {total} linked
+            <strong>{$t('nav.matches')}</strong>
+            {$t('tournaments.detail.matchesLinked', { count: String(total) })}
           </li>
         </ul>
       {/if}
     </section>
 
     <div class="row tournament-detail__actions">
-      <a href="/tournaments/results?tournamentId={tournamentId}" class="btn btn--primary">Add results</a>
-      <a href="/matches?tournamentId={tournamentId}&stage=Tournament" class="btn">Open in Matches</a>
+      <a href="/tournaments/results?tournamentId={tournamentId}" class="btn btn--primary"
+        >{$t('tournaments.detail.addResults')}</a
+      >
+      <a href="/matches?tournamentId={tournamentId}&stage=Tournament" class="btn"
+        >{$t('tournaments.detail.openInMatches')}</a
+      >
       {#if !editing}
-        <button type="button" class="btn" onclick={beginEdit}>Edit</button>
+        <button type="button" class="btn" onclick={beginEdit}>{$t('tournaments.detail.edit')}</button>
         <button
           type="button"
           class="btn btn--danger"
           onclick={openDeleteConfirm}
           disabled={deleting || showDeleteConfirm}
         >
-          Delete
+          {$t('tournaments.detail.delete')}
         </button>
       {/if}
     </div>
@@ -535,18 +578,22 @@
       </div>
     {:else if matches.length === 0}
       <div class="card stack">
-        <p class="card__sub" style="margin: 0;">No matches linked to this tournament yet.</p>
+        <p class="card__sub" style="margin: 0;">{$t('tournaments.detail.noMatchesYet')}</p>
       </div>
     {:else}
       {#if listTruncated}
         <p class="muted tournament-detail__truncated" role="status">
-          Loaded {matches.length} of {total} matches (cap {MAX_PAGES * PAGE_SIZE}). Open
-          <a href="/matches?tournamentId={tournamentId}&stage=Tournament">Matches</a>
-          for paging and filters.
+          {$t('tournaments.detail.truncatedBefore', {
+            loaded: String(matches.length),
+            total: String(total),
+            cap: String(MAX_PAGES * PAGE_SIZE),
+          })}<a href="/matches?tournamentId={tournamentId}&stage=Tournament"
+            >{$t('tournaments.detail.truncatedMatchesLink')}</a
+          >{$t('tournaments.detail.truncatedAfter')}
         </p>
       {/if}
 
-      <div class="app-tabs" role="tablist" aria-label="Match browsing">
+      <div class="app-tabs" role="tablist" aria-label={$t('tournaments.detail.tablistMatches')}>
         <button
           type="button"
           role="tab"
@@ -557,7 +604,7 @@
           class:app-tabs__tab--active={activeView === 'rounds'}
           onclick={() => (activeView = 'rounds')}
         >
-          Rounds
+          {$t('tournaments.detail.tabRounds')}
         </button>
         <button
           type="button"
@@ -569,7 +616,7 @@
           class:app-tabs__tab--active={activeView === 'players'}
           onclick={() => (activeView = 'players')}
         >
-          Players
+          {$t('tournaments.detail.tabPlayers')}
         </button>
       </div>
 
@@ -589,15 +636,17 @@
               canClear={canClearTournamentFilters}
             >
               <div class="stack" style="gap: 0.5rem;">
-                <span class="tournament-detail__filters-label muted">Round</span>
-                <div class="tournament-detail__chips" aria-label="Filter by round">
+                <span class="tournament-detail__filters-label muted"
+                  >{$t('tournaments.detail.filterRoundLabel')}</span
+                >
+                <div class="tournament-detail__chips" aria-label={$t('tournaments.detail.filterByRound')}>
                   <button
                     type="button"
                     class="tournament-detail__chip"
                     class:tournament-detail__chip--active={roundFilter === 'all'}
                     onclick={() => (roundFilter = 'all')}
                   >
-                    All
+                    {$t('tournaments.detail.chipAll')}
                   </button>
                   {#if hasUnassignedRound}
                     <button
@@ -606,7 +655,7 @@
                       class:tournament-detail__chip--active={roundFilter === 'none'}
                       onclick={() => (roundFilter = 'none')}
                     >
-                      No round
+                      {$t('tournaments.detail.chipNoRound')}
                     </button>
                   {/if}
                   {#each roundNumbers as r (r)}
@@ -628,7 +677,7 @@
                   onclick={clearTournamentViewFilters}
                   disabled={!canClearTournamentFilters}
                 >
-                  Clear filters
+                  {$t('common.clearFilters')}
                 </button>
               </div>
             </FilterCard>
@@ -650,15 +699,15 @@
               canClear={canClearTournamentFilters}
             >
               <label class="label tournament-detail__filters-label" for="tournament-player-filter"
-                >Player 1</label
+                >{$t('tournaments.detail.player1Label')}</label
               >
               <select
                 id="tournament-player-filter"
                 class="input"
                 bind:value={playerFilterId}
-                aria-label="Filter matches by player 1 (left seat)"
+                aria-label={$t('tournaments.detail.filterPlayerAria')}
               >
-                <option value="">All matches</option>
+                <option value="">{$t('tournaments.detail.allMatchesOption')}</option>
                 {#each tournamentPlayers as [pid, label] (pid)}
                   <option value={pid}>{label}</option>
                 {/each}
@@ -670,7 +719,7 @@
                   onclick={clearTournamentViewFilters}
                   disabled={!canClearTournamentFilters}
                 >
-                  Clear filters
+                  {$t('common.clearFilters')}
                 </button>
               </div>
             </FilterCard>
@@ -681,7 +730,7 @@
       {#if displayedMatches.length === 0}
         <div class="card stack">
           <p class="card__sub" style="margin: 0;">
-            No matches for this filter. Try another round or player 1.
+            {$t('tournaments.detail.emptyFilterHint')}
           </p>
         </div>
       {:else}
@@ -703,13 +752,11 @@
                   · {formatMatchRoundLabel(match.round)}{/if}
                 </span>
                 {#if idMatch}
-                  <span
-                    class="matchcard__pill--id"
-                    title="Intentional draw (not counted in win/loss statistics)"
-                    >ID</span
-                  >
+                  <span class="matchcard__pill--id" title={$t('matches.list.pillIdTitle')}>{$t('matches.list.pillId')}</span>
                 {:else if byeMatch}
-                  <span class="matchcard__pill--bye" title="Bye (free win)">Bye</span>
+                  <span class="matchcard__pill--bye" title={$t('matches.list.pillByeTitle')}
+                    >{$t('matches.list.pillBye')}</span
+                  >
                 {/if}
               </div>
               <div class="matchcard__row">
@@ -720,7 +767,7 @@
                   <span class="matchcard__name">
                     {playerName(match.p1)}
                     {#if !idMatch && winnerId === p1Id}
-                      <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">
+                      <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}>
                         <IconCrown size={16} />
                       </span>
                     {/if}
@@ -730,14 +777,18 @@
                       <InkIcons deckColor={match.p1DeckColor} />
                     </span>
                   {/if}
-                  <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p1Id ?? '')}</span>
+                  <span class="matchcard__wins muted" title={$t('matches.list.gamesWonTitle')}
+                    >{gamesWon(match, p1Id ?? '')}</span
+                  >
                 </div>
-                <div class="matchcard__vs" aria-hidden="true">VS.</div>
+                <div class="matchcard__vs" aria-hidden="true">{$t('matches.list.vs')}</div>
                 <div
                   class="matchcard__player matchcard__player--right"
                   class:matchcard__player--winner={!idMatch && winnerId === p2Id}
                 >
-                  <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p2Id ?? '')}</span>
+                  <span class="matchcard__wins muted" title={$t('matches.list.gamesWonTitle')}
+                    >{gamesWon(match, p2Id ?? '')}</span
+                  >
                   {#if match.p2DeckColor}
                     <span class="matchcard__ink" title={match.p2DeckColor} aria-hidden="true">
                       <InkIcons deckColor={match.p2DeckColor} />
@@ -746,7 +797,7 @@
                   <span class="matchcard__name">
                     {playerName(match.p2)}
                     {#if !idMatch && winnerId === p2Id}
-                      <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner">
+                      <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}>
                         <IconCrown size={16} />
                       </span>
                     {/if}
@@ -770,23 +821,26 @@
       <button
         type="button"
         class="tournament-detail__delete-modal-backdrop"
-        aria-label="Cancel"
+        aria-label={$t('common.cancel')}
         onclick={closeDeleteConfirm}
         disabled={deleting}
       ></button>
       <div class="tournament-detail__delete-modal-card card">
         <h2 id="tournament-delete-title" class="tournament-detail__delete-modal-title">
-          Delete tournament?
+          {$t('tournaments.detail.deleteTitle')}
         </h2>
         <p class="tournament-detail__delete-modal-text muted">
-          Are you sure you want to delete <strong>{tournament?.name ?? 'this tournament'}</strong>? This cannot be
-          undone. You can only delete if no matches are linked.
+          {$t('tournaments.detail.deleteBodyBefore')}<strong
+            >{tournament?.name ?? $t('tournaments.detail.deleteFallbackName')}</strong
+          >{$t('tournaments.detail.deleteBodyAfter')}
         </p>
         <div class="tournament-detail__delete-modal-actions row">
           <button type="button" class="btn btn--danger" onclick={confirmDeleteTournament} disabled={deleting}>
-            {deleting ? 'Deleting…' : 'Yes, delete'}
+            {deleting ? $t('common.deleting') : $t('tournaments.detail.deleteConfirm')}
           </button>
-          <button type="button" class="btn" onclick={closeDeleteConfirm} disabled={deleting}>Cancel</button>
+          <button type="button" class="btn" onclick={closeDeleteConfirm} disabled={deleting}
+            >{$t('common.cancel')}</button
+          >
         </div>
       </div>
     </div>
@@ -794,31 +848,9 @@
 </div>
 
 <style>
-  .tournament-detail-page {
-    max-width: 720px;
-  }
-  .tournament-detail__crumb {
-    margin: 0 0 var(--space-sm, 0.5rem) 0;
-    font-size: 0.875rem;
-  }
-  .tournament-detail__crumb a {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  .tournament-detail__crumb-current {
-    word-break: break-word;
-  }
   .tournament-detail__summary {
     margin-bottom: var(--space-md, 1rem);
     gap: 0.65rem;
-  }
-  .page-title,
-  .tournament-detail__title {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 700;
-    word-break: break-word;
   }
   .tournament-detail__facts {
     margin: 0;

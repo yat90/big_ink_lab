@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
   import { config } from '$lib/config';
   import { STAGE_OPTIONS } from '$lib/matches';
   import MatchupStatistics from '$lib/MatchupStatistics.svelte';
+  import { translate, t, locale } from '$lib/i18n';
 
   type GlobalStats = {
     totalMatches: number;
@@ -65,12 +67,12 @@
       const url = `${apiUrl}/matches/stats${params.toString() ? `?${params}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
-        error = 'Failed to load statistics';
+        error = translate(get(locale), 'statistics.globalPage.loadError');
         return;
       }
       stats = await res.json();
     } catch {
-      error = 'Could not reach API.';
+      error = translate(get(locale), 'common.apiUnreachable');
     } finally {
       loading = false;
     }
@@ -97,7 +99,7 @@
 </script>
 
 <svelte:head>
-  <title>Statistics · Big Ink Lab</title>
+  <title>{$t('statistics.globalPage.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
@@ -108,28 +110,28 @@
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         <div class="loading-skeleton__line"></div>
       </div>
-      <p class="muted margin-top-md">Loading statistics…</p>
+      <p class="muted margin-top-md">{$t('statistics.globalPage.loading')}</p>
     </div>
   {:else if error}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
       <div class="row row--sm margin-top-md">
-        <a href="/me/statistics" class="btn">My statistics</a>
-        <a href="/" class="btn">Back to home</a>
+        <a href="/me/statistics" class="btn">{$t('statistics.globalPage.myStatistics')}</a>
+        <a href="/" class="btn">{$t('statistics.globalPage.backHome')}</a>
       </div>
     </div>
   {:else if stats}
     <div class="row row--between row--center-y gap-md margin-bottom-md">
-      <h2 class="card__title card-title-reset">Statistics</h2>
+      <h2 class="card__title card-title-reset">{$t('statistics.globalPage.heading')}</h2>
       <div class="row row--sm">
-        <a href="/me/statistics" class="btn">My statistics</a>
-        <a href="/" class="btn">Back to home</a>
+        <a href="/me/statistics" class="btn">{$t('statistics.globalPage.myStatistics')}</a>
+        <a href="/" class="btn">{$t('statistics.globalPage.backHome')}</a>
       </div>
     </div>
 
     <div class="card match-stats__card match-stats__filter">
-      <h3 class="match-stats__title">Filter by stage</h3>
-      <div class="match-stats__stage-chips" role="group" aria-label="Stage filter">
+      <h3 class="match-stats__title">{$t('statistics.globalPage.filterByStage')}</h3>
+      <div class="match-stats__stage-chips" role="group" aria-label={$t('statistics.globalPage.stageFilterAria')}>
         {#each STAGE_OPTIONS as stage}
           <label class="match-stats__stage-chip" class:match-stats__stage-chip--active={selectedStages.includes(stage)}>
             <input
@@ -145,14 +147,16 @@
       </div>
       {#if tournamentStageSelected}
         <div class="match-stats__tournament-filter">
-          <label for="filter-tournament" class="match-stats__tournament-label">Tournament</label>
+          <label for="filter-tournament" class="match-stats__tournament-label"
+            >{$t('statistics.globalPage.tournament')}</label
+          >
           <select
             id="filter-tournament"
             class="input match-stats__tournament-select"
             bind:value={selectedTournamentId}
-            aria-label="Filter by tournament"
+            aria-label={$t('statistics.globalPage.filterByTournamentAria')}
           >
-            <option value="">All tournaments</option>
+            <option value="">{$t('statistics.globalPage.allTournaments')}</option>
             {#each tournamentRows as t (t._id)}
               <option value={t._id}>{t.name}</option>
             {/each}
@@ -161,7 +165,11 @@
       {/if}
       {#if selectedStages.length < STAGE_OPTIONS.length}
         <p class="muted margin-top-sm text-sm">
-          Showing stats for: {selectedStages.length === 0 ? 'all stages' : selectedStages.join(', ')}
+          {#if selectedStages.length === 0}
+            {$t('statistics.globalPage.showingForAllStages')}
+          {:else}
+            {$t('statistics.globalPage.showingForStages', { stages: selectedStages.join(', ') })}
+          {/if}
           {#if selectedTournamentLabel}
             · {selectedTournamentLabel}
           {/if}
@@ -171,21 +179,21 @@
 
     <div class="match-stats">
       <div class="card match-stats__card">
-        <h3 class="match-stats__title">Match overview</h3>
+        <h3 class="match-stats__title">{$t('statistics.globalPage.matchOverview')}</h3>
         <div class="match-stats__grid">
           <div class="match-stats__item">
             <span class="match-stats__value">{stats.totalMatches}</span>
-            <span class="match-stats__label muted">Total matches</span>
+            <span class="match-stats__label muted">{$t('statistics.globalPage.totalMatches')}</span>
           </div>
           <div class="match-stats__item">
             <span class="match-stats__value">{stats.totalGames}</span>
-            <span class="match-stats__label muted">Total games</span>
+            <span class="match-stats__label muted">{$t('statistics.globalPage.totalGames')}</span>
           </div>
         </div>
       </div>
 
       <div class="card match-stats__card">
-        <h3 class="match-stats__title">Matches by stage</h3>
+        <h3 class="match-stats__title">{$t('statistics.globalPage.matchesByStage')}</h3>
         <div class="match-stats__grid">
           {#each Object.entries(stats.matchesByStage) as [stage, count]}
             <div class="match-stats__item">
@@ -197,19 +205,23 @@
       </div>
 
       <div class="card match-stats__card">
-        <h3 class="match-stats__title">By starting player</h3>
+        <h3 class="match-stats__title">{$t('statistics.globalPage.byStartingPlayer')}</h3>
         <div class="match-stats__grid">
           <div class="match-stats__item">
             <span class="match-stats__value">{stats.gamesWonByStarter}</span>
-            <span class="match-stats__label muted">Games won by starter</span>
+            <span class="match-stats__label muted"
+              >{$t('statistics.globalPage.gamesWonByStarter')}</span
+            >
           </div>
           <div class="match-stats__item">
             <span class="match-stats__value">{stats.gamesWonByNonStarter}</span>
-            <span class="match-stats__label muted">Games won by non-starter</span>
+            <span class="match-stats__label muted"
+              >{$t('statistics.globalPage.gamesWonByNonStarter')}</span
+            >
           </div>
           <div class="match-stats__item">
             <span class="match-stats__value">{stats.starterWinRate}%</span>
-            <span class="match-stats__label muted">Starter win rate</span>
+            <span class="match-stats__label muted">{$t('statistics.globalPage.starterWinRate')}</span>
           </div>
         </div>
       </div>
@@ -218,8 +230,8 @@
         <MatchupStatistics
           matrix={stats.deckColorMatrix}
           bind:analysisMode={selectedMatrixMode}
-          title="Deck color matchups"
-          emptyText="No matchup data available for the selected filters."
+          title={$t('statistics.matrix.titleDefault')}
+          emptyText={$t('statistics.globalPage.matrixEmpty')}
         />
       </div>
     </div>

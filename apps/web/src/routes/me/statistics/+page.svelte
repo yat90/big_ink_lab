@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
+  import { translate, t, locale } from '$lib/i18n';
   import type { PlayerStats } from '$lib/PlayerStatsOverview.svelte';
   import type { PlayStyleSummary, MatchAnalysisSummary } from './stats-types';
   import StatsOverviewTab from './StatsOverviewTab.svelte';
@@ -13,11 +15,14 @@
   type TabId = 'overview' | 'matchups' | 'play-style' | 'results';
   type MatrixMode = 'matches' | 'games';
 
-  const TABS: { id: TabId; label: string }[] = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'matchups', label: 'Matchups' },
-    { id: 'play-style', label: 'Play style' }, 
-  ];
+  const tabs = $derived.by((): { id: TabId; label: string }[] => {
+    const loc = get(locale);
+    return [
+      { id: 'overview', label: translate(loc, 'statistics.myPage.tabOverview') },
+      { id: 'matchups', label: translate(loc, 'statistics.myPage.tabMatchups') },
+      { id: 'play-style', label: translate(loc, 'statistics.myPage.tabPlayStyle') },
+    ];
+  });
 
   let player = $state<MePlayer | null>(null);
   let playerStats = $state<PlayerStats | null>(null);
@@ -61,7 +66,7 @@
 
   async function loadStatistics() {
     if (!token) {
-      error = 'Not logged in.';
+      error = translate(get(locale), 'statistics.myPage.notLoggedIn');
       loading = false;
       return;
     }
@@ -70,7 +75,7 @@
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        error = 'Could not load profile.';
+        error = translate(get(locale), 'statistics.myPage.loadProfileError');
         loading = false;
         return;
       }
@@ -96,7 +101,7 @@
         matchAnalysis = null;
       }
     } catch {
-      error = 'Could not reach API.';
+      error = translate(get(locale), 'common.apiUnreachable');
     } finally {
       loading = false;
     }
@@ -122,33 +127,32 @@
 </script>
 
 <svelte:head>
-  <title>My statistics · Big Ink Lab</title>
+  <title>{$t('statistics.myPage.pageTitle')}</title>
 </svelte:head>
 
 <div class="page stats-page">
   <div class="card stack stats-page__card">
-    <h1 class="stats-page__title">My statistics</h1>
+    <h1 class="stats-page__title">{$t('statistics.myPage.title')}</h1>
     <p class="stats-page__intro muted">
-      Your performance, play style, and matchup data in one place. Use the tabs to switch between
-      categories.
+      {$t('statistics.myPage.intro')}
     </p>
 
     {#if loading}
-      <p class="muted">Loading…</p>
+      <p class="muted">{$t('statistics.myPage.loading')}</p>
     {:else if error && !player}
       <p class="alert" role="alert">{error}</p>
     {:else if !player}
-      <p class="muted">Link a player to your account to see statistics.</p>
+      <p class="muted">{$t('statistics.myPage.linkPlayerHint')}</p>
     {:else if !hasAnyStats}
-      <p class="muted">No match data yet. Play some matches to see your statistics here.</p>
+      <p class="muted">{$t('statistics.myPage.noMatchDataYet')}</p>
     {/if}
   </div>
 </div>
 
 {#if !loading && !error && player && hasAnyStats}
   <div class="page stats-page">
-    <div class="app-tabs" role="tablist" aria-label="Statistics categories">
-      {#each TABS as tab (tab.id)}
+    <div class="app-tabs" role="tablist" aria-label={$t('statistics.myPage.tablistAria')}>
+      {#each tabs as tab (tab.id)}
         <button
           type="button"
           role="tab"

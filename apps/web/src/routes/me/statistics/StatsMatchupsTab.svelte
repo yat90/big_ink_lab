@@ -1,6 +1,6 @@
 <script lang="ts">
   import PlayerStatsOverview, { type PlayerStats } from '$lib/PlayerStatsOverview.svelte';
-  import MatchupStatistics from '$lib/MatchupStatistics.svelte';
+  import { t } from '$lib/i18n';
   import type { MatchAnalysisSummary } from './stats-types';
 
   type MatrixMode = 'matches' | 'games';
@@ -29,12 +29,12 @@
 {#if playerStats}
   <PlayerStatsOverview
     stats={playerStats}
-    sectionTitle="Deck color matchups"
+    sectionTitle={$t('statistics.matchupsTab.sectionTitle')}
     decksUsed={decksUsed}
     bind:filterDeckId
     onDeckFilterChange={onDeckFilterChange}
     bind:analysisMode={selectedMatrixMode}
     onMatrixModeChange={onMatrixModeChange}
-    emptyText="No matchup data yet."
+    emptyText={$t('statistics.matchupsTab.emptyMatrix')}
   />
 {/if}
