@@ -22,6 +22,8 @@ async function bootstrap(): Promise<void> {
     origin: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    /** Fewer preflight round-trips; reduces flaky "no ACAO" when OPTIONS intermittently fails at the edge. */
+    maxAge: 86_400,
   });
   const port = Number(process.env.PORT) || DEFAULT_PORT;
   await app.listen(port);
