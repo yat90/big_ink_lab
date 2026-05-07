@@ -31,8 +31,7 @@ export default {
     choosePlayerAria: 'Spieler wählen',
     apiUnreachable: 'API nicht erreichbar.',
     errorWithStatus: 'Fehler {status}',
-    networkError:
-      'Keine Verbindung — bitte Verbindung prüfen und erneut versuchen.',
+    networkError: 'Keine Verbindung — bitte Verbindung prüfen und erneut versuchen.',
     ariaFilterByPlayer: 'Nach Spieler filtern',
     breadcrumbAria: 'Brotkrumennavigation',
     defaultTournamentName: 'Turnier',
@@ -130,15 +129,13 @@ export default {
     loadError: 'Gerichtssaal konnte nicht geladen werden.',
     retry: 'Erneut versuchen',
     title: 'Gerichtssaal',
-    lead:
-      'Hier reicht ihr Anklagen nach dem Strafenkatalog ein. Im Team Meeting werden sie besprochen; Admins markieren den Ausgang (abgewiesen oder bestätigt).',
+    lead: 'Hier reicht ihr Anklagen nach dem Strafenkatalog ein. Im Team Meeting werden sie besprochen; Admins markieren den Ausgang (abgewiesen oder bestätigt).',
     noticeNoPlayerBefore:
       'Um eine Anklage einzureichen, muss dein Account mit einem Spielerprofil verknüpft sein (siehe ',
     noticeNoPlayerLink: 'Ich',
     noticeNoPlayerAfter: ').',
     noticeNoMembers: 'Keine anderen Teammitglieder zum Anklagen.',
-    noticeNoPenalties:
-      'Der Strafenkatalog ist leer. Ein Admin kann ihn unter „Strafen“ pflegen.',
+    noticeNoPenalties: 'Der Strafenkatalog ist leer. Ein Admin kann ihn unter „Strafen“ pflegen.',
     noticePenaltiesTab: 'Strafen',
     formTitle: 'Neue Anklage',
     accusedLabel: 'Beschuldigte Person',
@@ -322,9 +319,9 @@ export default {
         'Mehrere Spieler passen zu diesem Namen — nutze die Liste, um einen zu wählen.',
       searchHintNone:
         'Kein Spieler gefunden — lege einen Gast mit diesem Namen an oder wähle aus der Liste.',
-      searchHintPickList: 'Wähle aus der Liste oder tippe den vollen Namen für genau einen Treffer.',
-      searchHintNoExact:
-        'Kein exakter Treffer — nutze die Liste oder korrigiere die Schreibweise.',
+      searchHintPickList:
+        'Wähle aus der Liste oder tippe den vollen Namen für genau einen Treffer.',
+      searchHintNoExact: 'Kein exakter Treffer — nutze die Liste oder korrigiere die Schreibweise.',
       searchHintFailed: 'Spielersuche fehlgeschlagen. Bitte erneut versuchen.',
       createGuest: 'Gast-Spieler anlegen',
       createGuestCreating: 'Wird angelegt…',
@@ -468,17 +465,14 @@ export default {
       allTournaments: 'Alle Turniere',
       fromDate: 'Von Datum',
       toDate: 'Bis Datum',
-      filtersHint:
-        'Daten nutzen UTC-Tagesgrenzen. Filter werden beim Klick auf Anwenden wirksam.',
+      filtersHint: 'Daten nutzen UTC-Tagesgrenzen. Filter werden beim Klick auf Anwenden wirksam.',
       applyFilters: 'Filter anwenden',
       clear: 'Zurücksetzen',
-      filtersCollapsedNote:
-        'Filter sind aktiv. Öffnen zum Ändern oder Zurücksetzen.',
+      filtersCollapsedNote: 'Filter sind aktiv. Öffnen zum Ändern oder Zurücksetzen.',
       loadingList: 'Turniere werden geladen…',
       filtersActiveOne: 'Filter aktiv · {count} Treffer',
       filtersActiveMany: 'Filter aktiv · {count} Treffer',
-      emptyFilteredBefore:
-        'Keine Turniere mit diesen Filtern. Andere Werte versuchen oder ',
+      emptyFilteredBefore: 'Keine Turniere mit diesen Filtern. Andere Werte versuchen oder ',
       emptyFilteredAfter: '.',
       clearFiltersInline: 'Filter zurücksetzen',
       emptyHintBefore: 'Noch keine Turniere. Erstelle eines über ',
@@ -494,8 +488,7 @@ export default {
       pageTitle: 'Neues Turnier · Big Ink Lab',
       title: 'Neues Turnier',
       crumbTournaments: 'Turniere',
-      introBefore:
-        'Lege nur den Termin an. Spiele kannst du später über ',
+      introBefore: 'Lege nur den Termin an. Spiele kannst du später über ',
       introStrong: 'Ergebnisse eintragen',
       introMiddle: ' auf der ',
       introListLink: 'Turnierliste',
@@ -535,8 +528,7 @@ export default {
       player1Label: 'Spieler 1',
       filterPlayerAria: 'Matches nach Spieler 1 (linker Platz) filtern',
       allMatchesOption: 'Alle Matches',
-      emptyFilterHint:
-        'Keine Matches für diesen Filter. Andere Runde oder Spieler 1 wählen.',
+      emptyFilterHint: 'Keine Matches für diesen Filter. Andere Runde oder Spieler 1 wählen.',
       deleteTitle: 'Turnier löschen?',
       deleteBodyBefore: 'Wirklich löschen: ',
       deleteBodyAfter:
@@ -554,8 +546,7 @@ export default {
       title: 'Turnierergebnisse',
       noTournamentBefore: 'Öffne diese Seite über ',
       noTournamentStrong: 'Ergebnisse eintragen',
-      noTournamentAfter:
-        ' im Turnier, damit es bereits gewählt ist (URL enthält ',
+      noTournamentAfter: ' im Turnier, damit es bereits gewählt ist (URL enthält ',
       noTournamentAfterCode: ').',
       paramTournamentId: 'tournamentId',
       browseLink: 'Turniere durchsuchen',
@@ -613,13 +604,11 @@ export default {
       gameNotes: 'Spiel-Notizen',
       gameNotesPlaceholder: 'Optionale Notizen zu diesem Spiel',
       removeGame: 'Spiel entfernen',
-      skipIdGames:
-        'Keine Spielzeilen bei intentional draw — Match ohne Gewinner (ID).',
+      skipIdGames: 'Keine Spielzeilen bei intentional draw — Match ohne Gewinner (ID).',
       skipByeGames:
         'Freilos nur als Matchergebnis — keine Spielzeilen. Du wirst als Sieger gespeichert.',
       deckPickerTitle: 'Deck wählen',
-      errMissingTournament:
-        'Kein Turnier. Seite über das Turnier öffnen (Ergebnisse eintragen).',
+      errMissingTournament: 'Kein Turnier. Seite über das Turnier öffnen (Ergebnisse eintragen).',
       errLinkedPlayerRequired:
         'Mit einem Konto anmelden, das einen verknüpften Spieler hat. Sonst in den Kontoeinstellungen verknüpfen.',
       errRoundLabel: 'Jede Runde braucht eine Bezeichnung (z. B. Nummer oder Name).',
@@ -632,10 +621,8 @@ export default {
       createdPartial: '{created} Match(es) angelegt. Fehlgeschlagen: {details}',
       createdOk: '{created} Match(es) angelegt.',
       createdOkExtras: '{created} Match(es) angelegt · {extras}.',
-      extrasIntDrawsOne:
-        '{n} Intentional Draw (kein Gewinner; nicht in Statistik)',
-      extrasIntDrawsMany:
-        '{n} Intentional Draws (kein Gewinner; nicht in Statistik)',
+      extrasIntDrawsOne: '{n} Intentional Draw (kein Gewinner; nicht in Statistik)',
+      extrasIntDrawsMany: '{n} Intentional Draws (kein Gewinner; nicht in Statistik)',
       extrasByesOne: '{n} Freilos (gratis Sieg)',
       extrasByesMany: '{n} Freilose (gratis Sieg)',
       opponentFallback: 'Gegner',
@@ -656,8 +643,7 @@ export default {
       unitGames: 'Spiele',
       unitMatch: 'Match',
       unitMatches: 'Matches',
-      cellTooltip:
-        '{myDeck} vs. {oppDeck}: {pct}% — {won} von {played} {unitLabel} gewonnen',
+      cellTooltip: '{myDeck} vs. {oppDeck}: {pct}% — {won} von {played} {unitLabel} gewonnen',
     },
     globalPage: {
       pageTitle: 'Statistik · Big Ink Lab',
@@ -686,15 +672,12 @@ export default {
     myPage: {
       pageTitle: 'Meine Statistik · Big Ink Lab',
       title: 'Meine Statistik',
-      intro:
-        'Performance, Spielstil und Matchups an einem Ort. Wechsle die Tabs für die Bereiche.',
+      intro: 'Performance, Spielstil und Matchups an einem Ort. Wechsle die Tabs für die Bereiche.',
       loading: 'Laden…',
       notLoggedIn: 'Nicht angemeldet.',
       loadProfileError: 'Profil konnte nicht geladen werden.',
-      linkPlayerHint:
-        'Verknüpfe einen Spieler mit deinem Konto, um Statistik zu sehen.',
-      noMatchDataYet:
-        'Noch keine Match-Daten. Spiele Matches, um hier Statistik zu sehen.',
+      linkPlayerHint: 'Verknüpfe einen Spieler mit deinem Konto, um Statistik zu sehen.',
+      noMatchDataYet: 'Noch keine Match-Daten. Spiele Matches, um hier Statistik zu sehen.',
       tablistAria: 'Statistik-Bereiche',
       tabOverview: 'Überblick',
       tabMatchups: 'Matchups',
@@ -720,23 +703,18 @@ export default {
       colGwr: 'SSR',
       yourLastMatches: 'Deine letzten {count} Matches',
       tapRowHint: 'Zeile antippen, um das Match zu öffnen.',
-      noResultsYet:
-        'Noch keine Ergebnisse. Spiele Matches, um sie hier zu sehen.',
+      noResultsYet: 'Noch keine Ergebnisse. Spiele Matches, um sie hier zu sehen.',
     },
     playStyle: {
-      basedOn:
-        'Basierend auf {matches} Matches und {games} Spielen.',
+      basedOn: 'Basierend auf {matches} Matches und {games} Spielen.',
       bestWinRateMin5: 'Beste Siegrate (mind. 5 Spiele)',
       firstVsSecondTitle: 'Mit vs. ohne Start',
-      firstVsSecondBody:
-        'Siegrate mit Start vs. wenn du nicht startest.',
+      firstVsSecondBody: 'Siegrate mit Start vs. wenn du nicht startest.',
       winRate: 'Siegrate',
       youGoFirst: 'Du startest',
       youGoSecond: 'Du gehst zweiter',
-      starterDeltaBetter:
-        'Du startest stärker: +{delta} % Siegrate.',
-      starterDeltaWorse:
-        'Du startest schwächer: {delta} % Siegrate.',
+      starterDeltaBetter: 'Du startest stärker: +{delta} % Siegrate.',
+      starterDeltaWorse: 'Du startest schwächer: {delta} % Siegrate.',
       whereYouPlay: 'Wo du spielst (nach Stage)',
       tableAriaStageMix: 'Matches nach Stage',
       share: 'Anteil',
@@ -747,8 +725,7 @@ export default {
       gameWr: 'Spiel-SR',
       avgLoreWin: 'Ø Legenden bei Sieg',
       avgLoreLoss: 'Ø Legenden bei Niederlage',
-      empty:
-        'Noch keine Spielstil-Daten. Spiele mehr Matches für Auswertungen.',
+      empty: 'Noch keine Spielstil-Daten. Spiele mehr Matches für Auswertungen.',
     },
     playerOverview: {
       deck: 'Deck',
@@ -780,10 +757,8 @@ export default {
     },
     playerPublic: {
       sectionTitle: 'Spielstatistik',
-      emptyMatchupFilter:
-        'Keine Matchup-Daten für diesen Spieler und die gewählten Filter.',
-      noMatchDataYet:
-        'Noch keine Match-Daten. Nach einigen Matches siehst du hier Statistik.',
+      emptyMatchupFilter: 'Keine Matchup-Daten für diesen Spieler und die gewählten Filter.',
+      noMatchDataYet: 'Noch keine Match-Daten. Nach einigen Matches siehst du hier Statistik.',
     },
   },
 } as const;

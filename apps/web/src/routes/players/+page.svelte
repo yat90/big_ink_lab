@@ -169,14 +169,21 @@
 
 <div class="page players-page">
   {#if loading}
-    <div class="players-page players-page--skeleton" aria-busy="true" aria-live="polite" aria-label="Loading players">
+    <div
+      class="players-page players-page--skeleton"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Loading players"
+    >
       <div class="page-header">
         <div class="players-page__header-main">
           <div class="page-header__title-row">
             <div class="loading-skeleton__line loading-skeleton__line--title"></div>
           </div>
         </div>
-        <div class="loading-skeleton__line loading-skeleton__line--primary-btn players-page__skel-new"></div>
+        <div
+          class="loading-skeleton__line loading-skeleton__line--primary-btn players-page__skel-new"
+        ></div>
       </div>
       <div class="card stack margin-bottom-md">
         <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
@@ -201,15 +208,11 @@
     <div class="card stack">
       <h2 class="card__title">No roster players</h2>
       <p class="card__sub">
-        Roster view hides guests by default. Use <strong>Guests</strong> or <strong>All</strong> below to
-        list guest profiles (e.g. from tournament results), or add a roster player.
+        Roster view hides guests by default. Use <strong>Guests</strong> or <strong>All</strong> below
+        to list guest profiles (e.g. from tournament results), or add a roster player.
       </p>
       <div class="row margin-top-sm gap-sm">
-        <div
-          class="players-page__segment"
-          role="group"
-          aria-label="Which players to list"
-        >
+        <div class="players-page__segment" role="group" aria-label="Which players to list">
           <button
             type="button"
             class="players-page__segment-btn"
@@ -374,7 +377,7 @@
         {/each}
       </div>
 
-      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+      <Pagination {currentPage} {totalPages} onPageChange={handlePageChange} />
     {/if}
   {/if}
 </div>
@@ -433,7 +436,9 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-full);
     cursor: pointer;
-    transition: background var(--transition), border-color var(--transition);
+    transition:
+      background var(--transition),
+      border-color var(--transition);
   }
 
   .players-page__filter-chip:hover {

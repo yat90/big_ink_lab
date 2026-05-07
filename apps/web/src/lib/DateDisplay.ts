@@ -79,9 +79,7 @@ export class DateDisplay {
       startOfToday.setHours(0, 0, 0, 0);
       const startOfThat = new Date(d);
       startOfThat.setHours(0, 0, 0, 0);
-      const dayDiff = Math.round(
-        (startOfThat.getTime() - startOfToday.getTime()) / DAY_MS
-      );
+      const dayDiff = Math.round((startOfThat.getTime() - startOfToday.getTime()) / DAY_MS);
 
       if (Math.abs(dayDiff) < 7) {
         return rtf.format(dayDiff, 'day');

@@ -75,7 +75,14 @@
         const pct = total > 0 ? (count / total) * 100 : 0;
         const start = acc;
         acc += pct;
-        return { ink, count, pct, start, end: acc, color: INK_CHART_COLORS[ink] ?? INK_CHART_COLORS.Other };
+        return {
+          ink,
+          count,
+          pct,
+          start,
+          end: acc,
+          color: INK_CHART_COLORS[ink] ?? INK_CHART_COLORS.Other,
+        };
       });
       return { cost, total, segments };
     });
@@ -113,7 +120,7 @@
       });
   });
   const typeConicGradient = $derived.by(() =>
-    typeChartData.map((d) => `${d.color} ${d.start}% ${d.end}%`).join(', '),
+    typeChartData.map((d) => `${d.color} ${d.start}% ${d.end}%`).join(', ')
   );
 
   const colorsChartData = $derived.by(() => {
@@ -130,7 +137,7 @@
     });
   });
   const colorsConicGradient = $derived.by(() =>
-    colorsChartData.map((d) => `${d.color} ${d.start}% ${d.end}%`).join(', '),
+    colorsChartData.map((d) => `${d.color} ${d.start}% ${d.end}%`).join(', ')
   );
 
   const inkableTotal = $derived.by(() => {
@@ -222,23 +229,23 @@
   <div class="deck-stats__summary stack">
     {#if activeTab === 'card' && stats}
       <DeckStatsCardTab
-        stats={stats}
-        curveStacked={curveStacked}
-        curveTotal={curveTotal}
-        curveMaxCount={curveMaxCount}
-        curveYScale={curveYScale}
-        curveYLabels={curveYLabels}
-        colorsChartData={colorsChartData}
-        colorsConicGradient={colorsConicGradient}
-        inkableTotal={inkableTotal}
-        inkableChart={inkableChart}
-        typeChartData={typeChartData}
-        typeConicGradient={typeConicGradient}
+        {stats}
+        {curveStacked}
+        {curveTotal}
+        {curveMaxCount}
+        {curveYScale}
+        {curveYLabels}
+        {colorsChartData}
+        {colorsConicGradient}
+        {inkableTotal}
+        {inkableChart}
+        {typeChartData}
+        {typeConicGradient}
       />
     {:else if activeTab === 'matches' && stats}
-      <DeckStatsMatchesTab stats={stats} matrixRows={matrixRows} />
+      <DeckStatsMatchesTab {stats} {matrixRows} />
     {:else if activeTab === 'mulligan' && stats}
-      <DeckStatsMulliganTab deckSize={deckSize} mulliganList={mulliganList} />
+      <DeckStatsMulliganTab {deckSize} {mulliganList} />
     {/if}
   </div>
 {/if}
@@ -267,7 +274,9 @@
     border-bottom: 2px solid transparent;
     cursor: pointer;
     margin-bottom: -1px;
-    transition: color var(--transition), border-color var(--transition);
+    transition:
+      color var(--transition),
+      border-color var(--transition);
   }
   .deck-stats__tab:hover {
     color: var(--fg);

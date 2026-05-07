@@ -38,12 +38,10 @@
   const apiUrl = config.apiUrl ?? '/api';
 
   const selectedPlayerName = $derived(
-    filterPlayer ? (players.find((p) => p._id === filterPlayer)?.name ?? '') : '',
+    filterPlayer ? (players.find((p) => p._id === filterPlayer)?.name ?? '') : ''
   );
 
-  function winRateBand(
-    rate: number | null | undefined,
-  ): 'high' | 'low' | 'mid' | 'none' {
+  function winRateBand(rate: number | null | undefined): 'high' | 'low' | 'mid' | 'none' {
     if (rate == null || Number.isNaN(rate)) return 'none';
     if (rate >= 0.6) return 'high';
     if (rate <= 0.4) return 'low';
@@ -88,9 +86,7 @@
       const myId = me?.player?._id;
       if (
         myId &&
-        allPlayers.some(
-          (p) => (p.team ?? '').trim() === BIG_INK_THEORY_TEAM && p._id === myId,
-        )
+        allPlayers.some((p) => (p.team ?? '').trim() === BIG_INK_THEORY_TEAM && p._id === myId)
       ) {
         filterPlayer = myId;
       }
@@ -138,12 +134,19 @@
 
 <div class="page">
   {#if loading}
-    <div class="decks-page decks-page--skeleton" aria-busy="true" aria-live="polite" aria-label={$t('decks.loadingAria')}>
+    <div
+      class="decks-page decks-page--skeleton"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label={$t('decks.loadingAria')}
+    >
       <div class="page-header">
         <div class="page-header__title-row">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>
         </div>
-        <div class="loading-skeleton__line loading-skeleton__line--primary-btn decks-page__skel-new"></div>
+        <div
+          class="loading-skeleton__line loading-skeleton__line--primary-btn decks-page__skel-new"
+        ></div>
       </div>
       <div class="card stack margin-bottom-md">
         <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
@@ -188,7 +191,9 @@
         : $t('decks.filterCountPlural', { count: String(total) })}
       badges={[
         ...(filterColor ? [$t('common.filterBadgeColor', { color: filterColor })] : []),
-        ...(selectedPlayerName ? [$t('common.filterBadgePlayer', { name: selectedPlayerName })] : []),
+        ...(selectedPlayerName
+          ? [$t('common.filterBadgePlayer', { name: selectedPlayerName })]
+          : []),
       ]}
       panelId="decks-filters-panel"
       onClear={clearDeckFilters}
@@ -247,7 +252,9 @@
         <div class="card stack decks-page__empty-filtered">
           <p class="card__sub margin-0">{$t('decks.emptyFiltered')}</p>
           {#if canClearDeckFilters}
-            <button type="button" class="btn" onclick={clearDeckFilters}>{$t('common.clearFilters')}</button>
+            <button type="button" class="btn" onclick={clearDeckFilters}
+              >{$t('common.clearFilters')}</button
+            >
           {/if}
         </div>
       {:else}
@@ -267,7 +274,9 @@
                 <span class="deckcard__stats row row--sm">
                   <span class="deckcard__matches muted" title={$t('common.matchesRecordedTooltip')}>
                     {deck.totalMatches ?? 0}
-                    {(deck.totalMatches ?? 0) === 1 ? $t('common.matchSingular') : $t('common.matchPlural')}
+                    {(deck.totalMatches ?? 0) === 1
+                      ? $t('common.matchSingular')
+                      : $t('common.matchPlural')}
                   </span>
                   {#if deck.winRate != null}
                     {@const band = winRateBand(deck.winRate)}

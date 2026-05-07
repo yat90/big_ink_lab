@@ -1,7 +1,5 @@
 <script lang="ts">
   import { config } from '$lib/config';
-  import { authMe } from '$lib/me';
-  import { get } from 'svelte/store';
   import { ERR, messageFromFailedResponse } from '$lib/errors';
   import Pagination from '$lib/Pagination.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
@@ -123,16 +121,14 @@
     aria-modal="true"
     aria-labelledby="player-picker-title"
   >
-    <button
-      type="button"
-      class="player-picker-modal__backdrop"
-      aria-label="Close"
-      onclick={onClose}
+    <button type="button" class="player-picker-modal__backdrop" aria-label="Close" onclick={onClose}
     ></button>
     <div class="player-picker-modal__card card" use:focusTrap use:scrollLock>
       <h2 id="player-picker-title" class="player-picker-modal__title">{title}</h2>
       {#if forLabel}
-        <p class="player-picker-modal__for muted">Selecting player for <strong>{forLabel}</strong></p>
+        <p class="player-picker-modal__for muted">
+          Selecting player for <strong>{forLabel}</strong>
+        </p>
       {/if}
 
       <div class="player-picker-modal__filters">
@@ -168,11 +164,7 @@
         <ul class="player-picker-modal__list">
           <li class="player-picker-modal__item">
             <span class="player-picker-modal__item-name muted">No player</span>
-            <button
-              type="button"
-              class="btn btn--sm"
-              onclick={() => selectPlayer('', undefined)}
-            >
+            <button type="button" class="btn btn--sm" onclick={() => selectPlayer('', undefined)}>
               Select
             </button>
           </li>
@@ -196,11 +188,7 @@
             </li>
           {/each}
         </ul>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
+        <Pagination {currentPage} {totalPages} {onPageChange} />
       {/if}
 
       <div class="player-picker-modal__actions">

@@ -178,12 +178,14 @@
 </script>
 
 {#if open}
-  <div class="deck-picker-modal" use:portal role="dialog" aria-modal="true" aria-labelledby="deck-picker-title">
-    <button
-      type="button"
-      class="deck-picker-modal__backdrop"
-      aria-label="Close"
-      onclick={onClose}
+  <div
+    class="deck-picker-modal"
+    use:portal
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="deck-picker-title"
+  >
+    <button type="button" class="deck-picker-modal__backdrop" aria-label="Close" onclick={onClose}
     ></button>
     <div
       class="deck-picker-modal__card card"
@@ -262,11 +264,7 @@
         <ul class="deck-picker-modal__list">
           <li class="deck-picker-modal__item">
             <span class="deck-picker-modal__item-name muted">No deck</span>
-            <button
-              type="button"
-              class="btn btn--sm"
-              onclick={() => selectDeck('')}
-            >
+            <button type="button" class="btn btn--sm" onclick={() => selectDeck('')}>
               Select
             </button>
           </li>
@@ -288,11 +286,7 @@
             </li>
           {/each}
         </ul>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
-        />
+        <Pagination {currentPage} {totalPages} {onPageChange} />
       {/if}
 
       <div class="deck-picker-modal__actions">

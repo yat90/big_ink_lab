@@ -13,9 +13,7 @@
   >
     <div
       class="ptr-indicator__inner"
-      style:transform="translateY({$pullRefreshing
-        ? 0
-        : Math.min(36, $pullDistance * 0.45)}px)"
+      style:transform="translateY({$pullRefreshing ? 0 : Math.min(36, $pullDistance * 0.45)}px)"
     >
       {#if $pullRefreshing}
         <span class="spinner ptr-indicator__spinner" aria-hidden="true"></span>

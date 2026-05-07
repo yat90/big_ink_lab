@@ -44,9 +44,7 @@
         if (me?.player?._id) {
           playerId = me.player._id;
           const p = me.player as { name?: string; team?: string };
-          selectedPlayerLabel = p.name
-            ? `${p.name}${p.team ? ` · ${p.team}` : ''}`
-            : '';
+          selectedPlayerLabel = p.name ? `${p.name}${p.team ? ` · ${p.team}` : ''}` : '';
         }
       }
     } catch {
@@ -56,9 +54,7 @@
 
   function onPlayerSelect(id: string, player?: { name: string; team?: string }) {
     playerId = id;
-    selectedPlayerLabel = player
-      ? `${player.name}${player.team ? ` · ${player.team}` : ''}`
-      : '';
+    selectedPlayerLabel = player ? `${player.name}${player.team ? ` · ${player.team}` : ''}` : '';
   }
 
   async function onSubmit(e: Event) {

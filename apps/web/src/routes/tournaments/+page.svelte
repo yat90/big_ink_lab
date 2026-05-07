@@ -235,7 +235,7 @@
       <p class="muted tournaments-page__filter-active">
         {$t(
           total === 1 ? 'tournaments.list.filtersActiveOne' : 'tournaments.list.filtersActiveMany',
-          { count: String(total) },
+          { count: String(total) }
         )}
       </p>
     {/if}
@@ -246,7 +246,9 @@
           <div class="loading-skeleton__line"></div>
           <div class="loading-skeleton__line"></div>
         </div>
-        <p class="muted" style="margin-top: var(--space-md);">{$t('tournaments.list.loadingList')}</p>
+        <p class="muted" style="margin-top: var(--space-md);">
+          {$t('tournaments.list.loadingList')}
+        </p>
       </div>
     {:else if error}
       <div class="card" role="alert">
@@ -262,7 +264,8 @@
               onclick={clearFilters}>{$t('tournaments.list.clearFiltersInline')}</button
             >{$t('tournaments.list.emptyFilteredAfter')}
           {:else}
-            {$t('tournaments.list.emptyHintBefore')}<strong>{$t('tournaments.list.emptyHintStrong')}</strong
+            {$t('tournaments.list.emptyHintBefore')}<strong
+              >{$t('tournaments.list.emptyHintStrong')}</strong
             >{$t('tournaments.list.emptyHintAfter')}
           {/if}
         </p>
@@ -286,8 +289,10 @@
                     · {row.meta.trim()}{/if}{#if row.location?.trim()}
                     · {row.location.trim()}{/if}
                   · {$t(
-                    row.matchCount === 1 ? 'tournaments.list.matchOne' : 'tournaments.list.matchMany',
-                    { count: String(row.matchCount) },
+                    row.matchCount === 1
+                      ? 'tournaments.list.matchOne'
+                      : 'tournaments.list.matchMany',
+                    { count: String(row.matchCount) }
                   )}{#if row.latestPlayedAt}
                     · {$t('tournaments.list.lastMatch', {
                       when: formatDate(row.latestPlayedAt),

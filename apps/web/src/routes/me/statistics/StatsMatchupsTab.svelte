@@ -11,7 +11,7 @@
     filterDeckId = $bindable(''),
     selectedMatrixMode = $bindable<MatrixMode>('matches'),
     analyticsMatrixMode = $bindable<MatrixMode>('matches'),
-    matchAnalysis,
+    matchAnalysis: _matchAnalysis,
     onDeckFilterChange,
     onMatrixModeChange,
   }: {
@@ -30,11 +30,11 @@
   <PlayerStatsOverview
     stats={playerStats}
     sectionTitle={$t('statistics.matchupsTab.sectionTitle')}
-    decksUsed={decksUsed}
+    {decksUsed}
     bind:filterDeckId
-    onDeckFilterChange={onDeckFilterChange}
+    {onDeckFilterChange}
     bind:analysisMode={selectedMatrixMode}
-    onMatrixModeChange={onMatrixModeChange}
+    {onMatrixModeChange}
     emptyText={$t('statistics.matchupsTab.emptyMatrix')}
   />
 {/if}

@@ -173,17 +173,35 @@
         {/each}
       </div>
 
-      <div class="deck-view__panel" id="panel-info" role="tabpanel" aria-labelledby="tab-info" hidden={activeTab !== 'info'}>
+      <div
+        class="deck-view__panel"
+        id="panel-info"
+        role="tabpanel"
+        aria-labelledby="tab-info"
+        hidden={activeTab !== 'info'}
+      >
         {#if activeTab === 'info' && deck}
-          <DeckViewInfoTab {deck} deckStats={deckStats} />
+          <DeckViewInfoTab {deck} {deckStats} />
         {/if}
       </div>
-      <div class="deck-view__panel" id="panel-matches" role="tabpanel" aria-labelledby="tab-matches" hidden={activeTab !== 'matches'}>
+      <div
+        class="deck-view__panel"
+        id="panel-matches"
+        role="tabpanel"
+        aria-labelledby="tab-matches"
+        hidden={activeTab !== 'matches'}
+      >
         {#if activeTab === 'matches'}
           <DeckViewMatchesTab deckId={id!} />
         {/if}
       </div>
-      <div class="deck-view__panel" id="panel-statistics" role="tabpanel" aria-labelledby="tab-statistics" hidden={activeTab !== 'statistics'}>
+      <div
+        class="deck-view__panel"
+        id="panel-statistics"
+        role="tabpanel"
+        aria-labelledby="tab-statistics"
+        hidden={activeTab !== 'statistics'}
+      >
         {#if activeTab === 'statistics'}
           <DeckViewStatisticsTab deckId={id!} />
         {/if}
@@ -321,7 +339,9 @@
     border-bottom: 2px solid transparent;
     cursor: pointer;
     margin-bottom: -1px;
-    transition: color var(--transition), border-color var(--transition);
+    transition:
+      color var(--transition),
+      border-color var(--transition);
   }
   .deck-view__tab:hover {
     color: var(--fg);

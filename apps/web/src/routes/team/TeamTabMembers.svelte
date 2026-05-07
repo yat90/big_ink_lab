@@ -42,7 +42,7 @@
       (m) =>
         m.name.toLowerCase().includes(q) ||
         (m.email ?? '').toLowerCase().includes(q) ||
-        (m.notes ?? '').toLowerCase().includes(q),
+        (m.notes ?? '').toLowerCase().includes(q)
     );
   });
 
@@ -60,7 +60,7 @@
 
   async function confirmRemove(member: TeamMember) {
     const ok = window.confirm(
-      `Remove ${member.name} from the team? Their contributions will be kept.`,
+      `Remove ${member.name} from the team? Their contributions will be kept.`
     );
     if (!ok) return;
     removingPlayerId = member.playerId;
@@ -94,7 +94,7 @@
 
   async function confirmResetPassword(member: TeamMember) {
     const ok = window.confirm(
-      `Reset the login password for ${member.name}? You'll see a temporary password to share with them once.`,
+      `Reset the login password for ${member.name}? You'll see a temporary password to share with them once.`
     );
     if (!ok) return;
     passwordResetError = '';
@@ -146,8 +146,7 @@
     </div>
     {#if !isAdmin}
       <p class="muted text-sm members-tab__note">
-        Only team admins can edit member profiles. Ask an admin to update your dues, role or
-        notes.
+        Only team admins can edit member profiles. Ask an admin to update your dues, role or notes.
       </p>
     {/if}
   </div>
@@ -247,8 +246,11 @@
                 type="button"
                 class="btn btn--icon btn--danger"
                 aria-label="Remove member"
-                disabled={removingPlayerId === member.playerId || member.playerId === currentPlayerId}
-                title={member.playerId === currentPlayerId ? "You can't remove yourself" : 'Remove from team'}
+                disabled={removingPlayerId === member.playerId ||
+                  member.playerId === currentPlayerId}
+                title={member.playerId === currentPlayerId
+                  ? "You can't remove yourself"
+                  : 'Remove from team'}
                 onclick={() => void confirmRemove(member)}
               >
                 <IconTrash size={16} className="icon-inline" />
@@ -272,7 +274,7 @@
 
 {#if adding}
   <AddMemberModal
-    team={team}
+    {team}
     existingPlayerIds={new Set(members.map((m) => m.playerId))}
     onClose={() => (adding = false)}
     onAdded={handleAdded}
@@ -294,8 +296,8 @@
     <div class="card reset-pw-dialog">
       <h2 id="reset-pw-title" class="card__title">New temporary password</h2>
       <p class="card__sub">
-        Share this with <strong>{resetPasswordFor.name}</strong> once. They can log in at the usual
-        login page.
+        Share this with <strong>{resetPasswordFor.name}</strong> once. They can log in at the usual login
+        page.
       </p>
       <div class="reset-pw-value" role="group" aria-label="Temporary password">
         <code class="reset-pw-code">{resetPasswordFor.temporaryPassword}</code>

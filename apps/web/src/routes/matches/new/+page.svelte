@@ -78,7 +78,8 @@
   const p2PlayerDisplayName = $derived.by(() => {
     void get(locale);
     return p2
-      ? (players.find((pl) => pl._id === p2)?.name ?? translate(get(locale), 'matches.new.player2Default'))
+      ? (players.find((pl) => pl._id === p2)?.name ??
+          translate(get(locale), 'matches.new.player2Default'))
       : translate(get(locale), 'matches.new.player2Default');
   });
 
@@ -116,10 +117,7 @@
     playerPickerOpen = true;
   }
 
-  function handlePlayerSelect(
-    playerId: string,
-    player?: { name: string; team?: string }
-  ) {
+  function handlePlayerSelect(playerId: string, player?: { name: string; team?: string }) {
     if (!playerId.trim()) {
       p2 = '';
       p2SearchText = '';
@@ -132,9 +130,7 @@
     p2SearchHint = '';
     p2OfferGuestCreate = false;
     if (player?.name) p2SearchText = player.name;
-    mergePlayers([
-      { _id: playerId, name: player?.name ?? '', team: (player?.team ?? '').trim() },
-    ]);
+    mergePlayers([{ _id: playerId, name: player?.name ?? '', team: (player?.team ?? '').trim() }]);
   }
 
   /** True when the search box text exactly matches the resolved opponent's name (keeps picker selection). */
@@ -489,8 +485,13 @@
     </section>
 
     <!-- Player 1 -->
-    <section class="card stack new-match__card new-match__card--player" aria-labelledby="p1-card-title">
-      <h3 id="p1-card-title" class="card__title new-match__card-title">{$t('matches.new.p1SectionTitle')}</h3>
+    <section
+      class="card stack new-match__card new-match__card--player"
+      aria-labelledby="p1-card-title"
+    >
+      <h3 id="p1-card-title" class="card__title new-match__card-title">
+        {$t('matches.new.p1SectionTitle')}
+      </h3>
       <p class="label" id="p1-label">{$t('common.player')}</p>
       <div
         id="p1"
@@ -518,12 +519,21 @@
         </button>
       {/if}
       <label class="label" for="p1DeckColor">{$t('matches.new.labelDeckColor')}</label>
-      <DeckColorSelect id="p1DeckColor" bind:value={p1DeckColor} ariaLabel={$t('matches.new.ariaP1DeckColor')} />
+      <DeckColorSelect
+        id="p1DeckColor"
+        bind:value={p1DeckColor}
+        ariaLabel={$t('matches.new.ariaP1DeckColor')}
+      />
     </section>
 
     <!-- Player 2 -->
-    <section class="card stack new-match__card new-match__card--player" aria-labelledby="p2-card-title">
-      <h3 id="p2-card-title" class="card__title new-match__card-title">{$t('matches.new.p2SectionTitle')}</h3>
+    <section
+      class="card stack new-match__card new-match__card--player"
+      aria-labelledby="p2-card-title"
+    >
+      <h3 id="p2-card-title" class="card__title new-match__card-title">
+        {$t('matches.new.p2SectionTitle')}
+      </h3>
       <label class="label" for="p2-opponent">{$t('matches.new.opponentLabel')}</label>
       <div class="new-match__opponent-row">
         <input
@@ -557,7 +567,9 @@
             disabled={createGuestLoading || !p2SearchText.trim()}
             onclick={createGuestOpponent}
           >
-            {createGuestLoading ? $t('matches.new.createGuestCreating') : $t('matches.new.createGuest')}
+            {createGuestLoading
+              ? $t('matches.new.createGuestCreating')
+              : $t('matches.new.createGuest')}
           </button>
           <p class="card__sub muted new-match__guest-create-help">
             {$t('matches.new.createGuestHelp', { name: p2SearchText.trim() })}
@@ -581,7 +593,11 @@
       {/if}
 
       <label class="label" for="p2DeckColor">{$t('matches.new.labelDeckColor')}</label>
-      <DeckColorSelect id="p2DeckColor" bind:value={p2DeckColor} ariaLabel={$t('matches.new.ariaP2DeckColor')} />
+      <DeckColorSelect
+        id="p2DeckColor"
+        bind:value={p2DeckColor}
+        ariaLabel={$t('matches.new.ariaP2DeckColor')}
+      />
     </section>
 
     {#if error}
@@ -616,7 +632,7 @@
   <TournamentPickerModal
     bind:open={tournamentPickerOpen}
     title={$t('matches.new.tournamentPickerTitle')}
-    tournaments={tournaments}
+    {tournaments}
     loading={tournamentsLoading}
     error={tournamentsError}
     selectedId={tournamentId}

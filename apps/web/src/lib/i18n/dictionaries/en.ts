@@ -129,15 +129,13 @@ export default {
     loadError: 'Could not load courtroom.',
     retry: 'Try again',
     title: 'Courtroom',
-    lead:
-      'File accusations from the team penalty catalog. They are discussed in the team meeting; admins record the outcome (dismissed or upheld).',
+    lead: 'File accusations from the team penalty catalog. They are discussed in the team meeting; admins record the outcome (dismissed or upheld).',
     noticeNoPlayerBefore:
       'To file an accusation, your account must be linked to a player profile (see ',
     noticeNoPlayerLink: 'Me',
     noticeNoPlayerAfter: ').',
     noticeNoMembers: 'No other team members to accuse.',
-    noticeNoPenalties:
-      'The penalty catalog is empty. An admin can maintain it under “Penalties”.',
+    noticeNoPenalties: 'The penalty catalog is empty. An admin can maintain it under “Penalties”.',
     noticePenaltiesTab: 'Penalties',
     formTitle: 'New accusation',
     accusedLabel: 'Accused person',
@@ -317,13 +315,11 @@ export default {
       opponentNameAria: 'Opponent name',
       pickListTitle: 'Select player from list',
       pickListAria: 'Select opponent from list',
-      searchHintMultiple:
-        'Multiple players match this name — use the list button to choose one.',
+      searchHintMultiple: 'Multiple players match this name — use the list button to choose one.',
       searchHintNone:
         'No player found — create a guest player with this name or pick from the list.',
       searchHintPickList: 'Pick from the list or type the full name to match one player.',
-      searchHintNoExact:
-        'No exact name match — use the list button or correct the spelling.',
+      searchHintNoExact: 'No exact name match — use the list button or correct the spelling.',
       searchHintFailed: 'Could not search players. Try again.',
       createGuest: 'Create guest player',
       createGuestCreating: 'Creating…',
@@ -335,7 +331,8 @@ export default {
       playerPickerFor: 'Opponent',
       deckPickerTitle: 'Select deck',
       tournamentPickerTitle: 'Select tournament',
-      errNoLinkedPlayer: 'Your account has no linked player. Link a player before creating a match.',
+      errNoLinkedPlayer:
+        'Your account has no linked player. Link a player before creating a match.',
       errNoOpponent: 'Enter or select an opponent.',
       errOpponentSelf: 'Opponent must be different from you.',
       tournamentsLoadError: 'Could not load tournaments.',
@@ -532,12 +529,10 @@ export default {
       emptyFilterHint: 'No matches for this filter. Try another round or player 1.',
       deleteTitle: 'Delete tournament?',
       deleteBodyBefore: 'Are you sure you want to delete ',
-      deleteBodyAfter:
-        '? This cannot be undone. You can only delete if no matches are linked.',
+      deleteBodyAfter: '? This cannot be undone. You can only delete if no matches are linked.',
       deleteFallbackName: 'this tournament',
       deleteConfirm: 'Yes, delete',
-      deleteBlocked:
-        'Cannot delete while matches are linked. Unlink or reassign them first.',
+      deleteBlocked: 'Cannot delete while matches are linked. Unlink or reassign them first.',
       errSaveStatus: 'Could not save ({status})',
       errDeleteStatus: 'Could not delete ({status})',
       winnerAria: 'Winner',
@@ -547,8 +542,7 @@ export default {
       title: 'Tournament results',
       noTournamentBefore: 'Open this page from a tournament’s ',
       noTournamentStrong: 'Add results',
-      noTournamentAfter:
-        ' action so the tournament is already selected (URL includes ',
+      noTournamentAfter: ' action so the tournament is already selected (URL includes ',
       noTournamentAfterCode: ').',
       paramTournamentId: 'tournamentId',
       browseLink: 'Browse tournaments',
@@ -618,16 +612,12 @@ export default {
         'Round “{round}”: intentional draw needs an opponent name (match is saved without games or winner).',
       errOpponentSelf: 'Round “{round}”: Opponent must be different from You (same name).',
       errOpponentRequired: 'Round “{round}”: enter Opponent name.',
-      errGameWinner:
-        'Round “{round}”: each game needs a winner (set lore or pick You / Opponent).',
-      createdPartial:
-        'Created {created} match(es). Failed: {details}',
+      errGameWinner: 'Round “{round}”: each game needs a winner (set lore or pick You / Opponent).',
+      createdPartial: 'Created {created} match(es). Failed: {details}',
       createdOk: 'Created {created} match(es).',
       createdOkExtras: 'Created {created} match(es) · {extras}.',
-      extrasIntDrawsOne:
-        '{n} intentional draw (no winner; excluded from stats)',
-      extrasIntDrawsMany:
-        '{n} intentional draws (no winner; excluded from stats)',
+      extrasIntDrawsOne: '{n} intentional draw (no winner; excluded from stats)',
+      extrasIntDrawsMany: '{n} intentional draws (no winner; excluded from stats)',
       extrasByesOne: '{n} bye (free win)',
       extrasByesMany: '{n} byes (free win)',
       opponentFallback: 'Opponent',
@@ -648,8 +638,7 @@ export default {
       unitGames: 'games',
       unitMatch: 'match',
       unitMatches: 'matches',
-      cellTooltip:
-        '{myDeck} vs {oppDeck}: {pct}% — {won} of {played} {unitLabel} won',
+      cellTooltip: '{myDeck} vs {oppDeck}: {pct}% — {won} of {played} {unitLabel} won',
     },
     globalPage: {
       pageTitle: 'Statistics · Big Ink Lab',
@@ -713,19 +702,15 @@ export default {
       noResultsYet: 'No match results yet. Play some matches to see results here.',
     },
     playStyle: {
-      basedOn:
-        'Based on {matches} matches and {games} games.',
+      basedOn: 'Based on {matches} matches and {games} games.',
       bestWinRateMin5: 'Best win rate (min 5 games)',
       firstVsSecondTitle: 'When you go first vs second',
-      firstVsSecondBody:
-        'Win rate when you start the game vs when you go second.',
+      firstVsSecondBody: 'Win rate when you start the game vs when you go second.',
       winRate: 'Win rate',
       youGoFirst: 'You go first',
       youGoSecond: 'You go second',
-      starterDeltaBetter:
-        'You perform better when you start: +{delta}% win rate.',
-      starterDeltaWorse:
-        'You perform worse when you start: {delta}% win rate.',
+      starterDeltaBetter: 'You perform better when you start: +{delta}% win rate.',
+      starterDeltaWorse: 'You perform worse when you start: {delta}% win rate.',
       whereYouPlay: 'Where you play (by stage)',
       tableAriaStageMix: 'Matches by stage',
       share: 'Share',
@@ -768,10 +753,8 @@ export default {
     },
     playerPublic: {
       sectionTitle: 'Game statistics',
-      emptyMatchupFilter:
-        'No matchup data found for this player and filter combination.',
-      noMatchDataYet:
-        'No match data yet. Play some matches to see statistics.',
+      emptyMatchupFilter: 'No matchup data found for this player and filter combination.',
+      noMatchDataYet: 'No match data yet. Play some matches to see statistics.',
     },
   },
 } as const;

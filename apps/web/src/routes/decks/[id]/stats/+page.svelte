@@ -31,7 +31,7 @@
 <div class="page">
   <div class="card stack">
     <h1 class="deck-stats__title">Deck statistics</h1>
-    <DeckStatsContent stats={stats} loading={loading} error={error} showBackLink={true} deckId={id} />
+    <DeckStatsContent {stats} {loading} {error} showBackLink={true} deckId={id} />
   </div>
 </div>
 

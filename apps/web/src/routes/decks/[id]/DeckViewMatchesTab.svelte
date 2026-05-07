@@ -58,19 +58,12 @@
   {:else}
     <ul class="match-line-row__list">
       {#each matches as match (match._id)}
-        <MatchLineRow
-          {match}
-          perspective={{ matchupMode: 'opponent-only', deckId }}
-        />
+        <MatchLineRow {match} perspective={{ matchupMode: 'opponent-only', deckId }} />
       {/each}
     </ul>
     {#if totalPages > 1}
       <div class="deck-view-matches__pagination">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={(p) => loadMatches(p)}
-        />
+        <Pagination {currentPage} {totalPages} onPageChange={(p) => loadMatches(p)} />
       </div>
     {/if}
   {/if}

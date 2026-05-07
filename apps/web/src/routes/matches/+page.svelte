@@ -81,7 +81,7 @@
     return translate(
       loc,
       total === 1 ? 'matches.list.filterTotalOne' : 'matches.list.filterTotalMany',
-      { count: String(total) },
+      { count: String(total) }
     );
   });
 
@@ -104,7 +104,7 @@
   function looksLikeBulkZip(files: FileList): boolean {
     if (files.length !== 1) return false;
     const file = files[0];
-    return file.name.toLowerCase().endsWith('.zip')   ;
+    return file.name.toLowerCase().endsWith('.zip');
   }
 
   function triggerDuelsImport() {
@@ -150,9 +150,7 @@
   }
 
   /** Populated tournament ref → link target for list chips. */
-  function matchTournamentChip(
-    m: LorcanaMatch
-  ): { id: string; name: string } | null {
+  function matchTournamentChip(m: LorcanaMatch): { id: string; name: string } | null {
     const t = m.tournament;
     if (t && typeof t === 'object' && t._id) {
       return {
@@ -195,7 +193,10 @@
       const url = `${apiUrl}/matches${params.toString() ? `?${params}` : ''}`;
       const res = await fetch(url);
       if (!res.ok) {
-        error = await messageFromFailedResponse(res, translate(getLocale(), 'matches.list.loadError'));
+        error = await messageFromFailedResponse(
+          res,
+          translate(getLocale(), 'matches.list.loadError')
+        );
         return;
       }
       const response = await res.json();
@@ -227,7 +228,7 @@
   }
 
   const canClearFilters = $derived(
-    !!(filterStage || filterTime || filterPlayerId || filterTournamentId),
+    !!(filterStage || filterTime || filterPlayerId || filterTournamentId)
   );
 
   $effect(() => {
@@ -334,13 +335,11 @@
 
   $effect(() => {
     // Track filter deps so we reset page when they change
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _ = [filterStage, filterTime, filterPlayerId, filterTournamentId];
     currentPage = 1;
   });
 
   $effect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _ = [currentPage, filterStage, filterTime, filterPlayerId, filterTournamentId];
     fetchMatches();
   });
@@ -364,7 +363,12 @@
     />
   {/if}
   {#if loading}
-    <div class="matches-page matches-page--skeleton" aria-busy="true" aria-live="polite" aria-label={$t('matches.list.loadingAria')}>
+    <div
+      class="matches-page matches-page--skeleton"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label={$t('matches.list.loadingAria')}
+    >
       <div class="row matches-header row--between">
         <div class="page-header__title-row">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>
@@ -406,11 +410,17 @@
             onclick={triggerDuelsImport}
             disabled={importingDuels}
             aria-busy={importingDuels}
-            aria-label={importingDuels ? $t('matches.list.importing') : $t('matches.list.importLabel')}
+            aria-label={importingDuels
+              ? $t('matches.list.importing')
+              : $t('matches.list.importLabel')}
             title={$t('matches.list.duelsImportTooltip')}
           >
             <IconUpload size={20} />
-            <span>{importingDuels ? $t('matches.list.importing') : $t('matches.list.importLabel')}</span>
+            <span
+              >{importingDuels
+                ? $t('matches.list.importing')
+                : $t('matches.list.importLabel')}</span
+            >
           </button>
           <button
             type="button"
@@ -418,7 +428,9 @@
             onclick={toggleDuelsHelp}
             aria-expanded={duelsHelpOpen}
             aria-controls="duels-import-help"
-            aria-label={duelsHelpOpen ? $t('matches.list.duelsHelpCollapseAria') : $t('matches.list.duelsHelpExpandAria')}
+            aria-label={duelsHelpOpen
+              ? $t('matches.list.duelsHelpCollapseAria')
+              : $t('matches.list.duelsHelpExpandAria')}
             title={$t('matches.list.duelsHelpButtonTitle')}
           >
             ?
@@ -459,11 +471,17 @@
             onclick={triggerDuelsImport}
             disabled={importingDuels}
             aria-busy={importingDuels}
-            aria-label={importingDuels ? $t('matches.list.importing') : $t('matches.list.importLabel')}
+            aria-label={importingDuels
+              ? $t('matches.list.importing')
+              : $t('matches.list.importLabel')}
             title={$t('matches.list.duelsImportTooltip')}
           >
             <IconUpload size={20} />
-            <span>{importingDuels ? $t('matches.list.importing') : $t('matches.list.importLabel')}</span>
+            <span
+              >{importingDuels
+                ? $t('matches.list.importing')
+                : $t('matches.list.importLabel')}</span
+            >
           </button>
         {/if}
         <a href="/matches/new" class="btn btn--primary">{$t('matches.list.newMatch')}</a>
@@ -540,7 +558,9 @@
       <div class="card stack matches-page__empty-filtered">
         <p class="card__sub">{$t('matches.list.emptyFiltered')}</p>
         {#if canClearFilters}
-          <button type="button" class="btn" onclick={clearFilters}>{$t('common.clearFilters')}</button>
+          <button type="button" class="btn" onclick={clearFilters}
+            >{$t('common.clearFilters')}</button
+          >
         {/if}
       </div>
     {:else}
@@ -563,11 +583,11 @@
                   >{$t('matches.list.pillId')}</span
                 >
               {:else if byeMatch}
-                <span class="matchcard__pill--bye" title={$t('matches.list.pillByeTitle')}>{$t('matches.list.pillBye')}</span>
+                <span class="matchcard__pill--bye" title={$t('matches.list.pillByeTitle')}
+                  >{$t('matches.list.pillBye')}</span
+                >
               {/if}
-              <span
-                class="matchcard__date-chip"
-                title={DateDisplay.formatDateTime(match.playedAt)}
+              <span class="matchcard__date-chip" title={DateDisplay.formatDateTime(match.playedAt)}
                 >{DateDisplay.formatDate(match.playedAt)}</span
               >
               {#if tournamentLink}
@@ -599,8 +619,9 @@
                 <span class="matchcard__name">
                   {playerName(match.p1)}
                   {#if !idMatch && winnerId === p1Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}
-                      ><IconCrown size={16} /></span
+                    <span
+                      class="matchcard__badge matchcard__badge--winner"
+                      aria-label={$t('matches.list.winnerAria')}><IconCrown size={16} /></span
                     >
                   {/if}
                 </span>
@@ -629,8 +650,9 @@
                 <span class="matchcard__name">
                   {playerName(match.p2)}
                   {#if !idMatch && winnerId === p2Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}
-                      ><IconCrown size={16} /></span
+                    <span
+                      class="matchcard__badge matchcard__badge--winner"
+                      aria-label={$t('matches.list.winnerAria')}><IconCrown size={16} /></span
                     >
                   {/if}
                 </span>

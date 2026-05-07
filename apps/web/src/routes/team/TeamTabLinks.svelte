@@ -6,18 +6,15 @@
 
 <section class="card stack team-data-links" aria-labelledby="team-data-links-heading">
   <div class="team-data-links__header">
-    <h2 id="team-data-links-heading" class="team-data-links__title">{$t('team.dataLinks.heading')}</h2>
+    <h2 id="team-data-links-heading" class="team-data-links__title">
+      {$t('team.dataLinks.heading')}
+    </h2>
     <p class="team-data-links__intro muted">{$t('team.dataLinks.intro')}</p>
   </div>
   <ul class="team-data-links__list">
     {#each TEAM_DRIVE_LINKS as row (row.id)}
       <li>
-        <a
-          class="team-data-links__link"
-          href={row.href}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a class="team-data-links__link" href={row.href} target="_blank" rel="noopener noreferrer">
           <span class="team-data-links__icon" aria-hidden="true">
             <IconCloud size={22} className="team-data-links__icon-svg" />
           </span>

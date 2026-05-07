@@ -34,9 +34,7 @@
   const MAX_LIST_H = 280;
   const VIEW_MARGIN = 8;
 
-  const displayLabel = $derived(
-    options.find((o) => o.value === value)?.label ?? placeholder
-  );
+  const displayLabel = $derived(options.find((o) => o.value === value)?.label ?? placeholder);
 
   function computeListStyle(): string {
     if (!buttonEl) return '';
@@ -159,7 +157,7 @@
     aria-haspopup="listbox"
     aria-expanded={open}
     aria-disabled={disabled}
-    disabled={disabled}
+    {disabled}
     onclick={toggle}
   >
     <span class="select-custom__value">{displayLabel}</span>

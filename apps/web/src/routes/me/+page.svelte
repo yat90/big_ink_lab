@@ -187,9 +187,7 @@
   </div>
   {#if player}
     <div class="me-stats-cta">
-      <a href="/me/statistics" class="me-stats-cta__link">
-        View all my statistics
-      </a>
+      <a href="/me/statistics" class="me-stats-cta__link"> View all my statistics </a>
       <p class="me-stats-cta__hint muted">
         Win rates, matchups, play style, and recent results in one place.
       </p>

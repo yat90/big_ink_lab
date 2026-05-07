@@ -20,7 +20,7 @@ export function messageFromHttpStatus(status: number): string {
 /** Map a failed JSON response or network error to a short user message. */
 export async function messageFromFailedResponse(
   res: Response | null,
-  fallback: string,
+  fallback: string
 ): Promise<string> {
   if (!res) return ERR.network;
   try {

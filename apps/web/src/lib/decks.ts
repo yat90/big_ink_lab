@@ -56,7 +56,7 @@ export function getDeckPlayerId(deck: Deck): string | undefined {
 
 export function getDeckPlayerName(deck: Deck): string {
   if (!deck.player) return '–';
-  return typeof deck.player === 'string' ? deck.player : deck.player.name ?? '–';
+  return typeof deck.player === 'string' ? deck.player : (deck.player.name ?? '–');
 }
 
 /** Display name for lastEditedBy (name or email). */

@@ -1,0 +1,5 @@
+.svelte-kit
+build
+.vercel
+node_modules
+static

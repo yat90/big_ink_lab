@@ -228,7 +228,10 @@
         <div class="auth-register-password-meta">
           <p class="hint">At least 6 characters.</p>
           {#if registerPasswordStrength}
-            <span class="password-strength password-strength--{registerPasswordStrength}" aria-live="polite">
+            <span
+              class="password-strength password-strength--{registerPasswordStrength}"
+              aria-live="polite"
+            >
               {strengthLabel[registerPasswordStrength]}
             </span>
           {/if}

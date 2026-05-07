@@ -1,11 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import {
-    fetchTeamSettings,
-    formatMoney,
-    updateTeamSettings,
-    type TeamPenalty,
-  } from '$lib/team';
+  import { fetchTeamSettings, formatMoney, updateTeamSettings, type TeamPenalty } from '$lib/team';
   import IconEdit from '$lib/icons/IconEdit.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
 
@@ -60,10 +55,7 @@
     draft = draft.filter((p) => p.id !== id);
   }
 
-  function patchRow(
-    id: string,
-    patch: Partial<Pick<TeamPenalty, 'description' | 'amount'>>,
-  ) {
+  function patchRow(id: string, patch: Partial<Pick<TeamPenalty, 'description' | 'amount'>>) {
     draft = draft.map((p) => (p.id === id ? { ...p, ...patch } : p));
   }
 
@@ -96,13 +88,15 @@
   {:else if loadError}
     <div class="card" role="alert">
       <p class="alert">{loadError}</p>
-      <button type="button" class="btn" onclick={() => void loadPenalties()}>Erneut versuchen</button>
+      <button type="button" class="btn" onclick={() => void loadPenalties()}
+        >Erneut versuchen</button
+      >
     </div>
   {:else}
     <div class="card penalties-toolbar">
       <p class="penalties-toolbar__intro muted">
-        Strafenkatalog des Teams. Strafen werden im nächsten Team Meeting geklärt. Beträge gelten pro
-        Verstoß, sofern nicht anders vereinbart.
+        Strafenkatalog des Teams. Strafen werden im nächsten Team Meeting geklärt. Beträge gelten
+        pro Verstoß, sofern nicht anders vereinbart.
       </p>
       {#if isAdmin && !editing}
         <button type="button" class="btn btn--primary penalties-toolbar__edit" onclick={startEdit}>
@@ -112,8 +106,14 @@
       {:else if isAdmin && editing}
         <div class="penalties-toolbar__actions">
           <button type="button" class="btn" onclick={addRow}>Strafe hinzufügen</button>
-          <button type="button" class="btn" onclick={cancelEdit} disabled={saving}>Abbrechen</button>
-          <button type="button" class="btn btn--primary" onclick={() => void save()} disabled={saving}>
+          <button type="button" class="btn" onclick={cancelEdit} disabled={saving}>Abbrechen</button
+          >
+          <button
+            type="button"
+            class="btn btn--primary"
+            onclick={() => void save()}
+            disabled={saving}
+          >
             {saving ? 'Speichern…' : 'Speichern'}
           </button>
         </div>
@@ -149,8 +149,7 @@
                       maxlength={500}
                       placeholder="Beschreibung"
                       value={row.description}
-                      oninput={(e) =>
-                        patchRow(row.id, { description: e.currentTarget.value })}
+                      oninput={(e) => patchRow(row.id, { description: e.currentTarget.value })}
                     />
                   </td>
                   <td class="penalties-table__amount">

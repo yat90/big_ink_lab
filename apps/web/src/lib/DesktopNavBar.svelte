@@ -50,9 +50,7 @@
   };
 
   const activeTeamTab = $derived(
-    $page.url.pathname.startsWith('/team')
-      ? teamTabFromSearchParams($page.url.searchParams)
-      : null,
+    $page.url.pathname.startsWith('/team') ? teamTabFromSearchParams($page.url.searchParams) : null
   );
 
   const isHome = $derived($page.url.pathname === '/');
@@ -213,63 +211,63 @@
     class:desktop-nav__dropdown--open={teamMenuOpen}
     bind:this={teamDropdownEl}
   >
-  <div class="desktop-nav__dropdown-inner">
-    <a
-      href="/team"
-      class="desktop-nav__link desktop-nav__link--dropdown-main"
-      class:desktop-nav__link--active={isTeam}
-    >
-      <span class="desktop-nav__link-icon" aria-hidden="true">
-        <IconTeam size={28} />
-      </span>
-      <span class="desktop-nav__link-label">{$t('nav.team')}</span>
-    </a>
-    <button
-      type="button"
-      class="desktop-nav__dropdown-toggle"
-      aria-expanded={teamMenuOpen}
-      aria-controls="desktop-nav-team-submenu"
-      aria-haspopup="true"
-      id="desktop-nav-team-menubutton"
-      onclick={(e) => {
-        e.stopPropagation();
-        teamMenuOpen = !teamMenuOpen;
-      }}
-    >
-      <span class="visually-hidden">{$t('nav.openTeamSubmenu')}</span>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="m6 9 6 6 6-6"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-      </svg>
-    </button>
-  </div>
-  <div
-    id="desktop-nav-team-submenu"
-    class="desktop-nav__dropdown-panel"
-    role="group"
-    aria-label={$t('team.tablistLabel')}
-  >
-    {#each TEAM_TAB_IDS as tabId (tabId)}
-      {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
+    <div class="desktop-nav__dropdown-inner">
       <a
-        href="/team?tab={tabId}"
-        class="desktop-nav__dropdown-link"
-        class:desktop-nav__dropdown-link--active={activeTeamTab === tabId}
-        aria-current={activeTeamTab === tabId ? 'page' : undefined}
+        href="/team"
+        class="desktop-nav__link desktop-nav__link--dropdown-main"
+        class:desktop-nav__link--active={isTeam}
       >
-        <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
-          <TabIcon size={18} />
+        <span class="desktop-nav__link-icon" aria-hidden="true">
+          <IconTeam size={28} />
         </span>
-        <span>{$t(`team.tabs.${tabId}`)}</span>
+        <span class="desktop-nav__link-label">{$t('nav.team')}</span>
       </a>
-    {/each}
+      <button
+        type="button"
+        class="desktop-nav__dropdown-toggle"
+        aria-expanded={teamMenuOpen}
+        aria-controls="desktop-nav-team-submenu"
+        aria-haspopup="true"
+        id="desktop-nav-team-menubutton"
+        onclick={(e) => {
+          e.stopPropagation();
+          teamMenuOpen = !teamMenuOpen;
+        }}
+      >
+        <span class="visually-hidden">{$t('nav.openTeamSubmenu')}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path
+            d="m6 9 6 6 6-6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </div>
+    <div
+      id="desktop-nav-team-submenu"
+      class="desktop-nav__dropdown-panel"
+      role="group"
+      aria-label={$t('team.tablistLabel')}
+    >
+      {#each TEAM_TAB_IDS as tabId (tabId)}
+        {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
+        <a
+          href="/team?tab={tabId}"
+          class="desktop-nav__dropdown-link"
+          class:desktop-nav__dropdown-link--active={activeTeamTab === tabId}
+          aria-current={activeTeamTab === tabId ? 'page' : undefined}
+        >
+          <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
+            <TabIcon size={18} />
+          </span>
+          <span>{$t(`team.tabs.${tabId}`)}</span>
+        </a>
+      {/each}
+    </div>
   </div>
-</div>
 
   <a
     href="/players"
@@ -492,7 +490,9 @@
     min-width: 0;
   }
 
-  :global(.desktop-nav__dropdown-inner--account .desktop-nav__link.desktop-nav__link--dropdown-main) {
+  :global(
+    .desktop-nav__dropdown-inner--account .desktop-nav__link.desktop-nav__link--dropdown-main
+  ) {
     flex: 0 0 auto;
   }
 

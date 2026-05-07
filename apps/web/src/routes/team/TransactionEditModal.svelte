@@ -119,14 +119,7 @@
 
         <label class="label">
           Amount
-          <input
-            type="number"
-            class="input"
-            min="0.01"
-            step="0.01"
-            bind:value={amount}
-            required
-          />
+          <input type="number" class="input" min="0.01" step="0.01" bind:value={amount} required />
         </label>
 
         {#if type === 'contribution' || type === 'penalty_fine' || type === 'expense'}

@@ -25,12 +25,19 @@ function getByPath(obj: unknown, path: string): string | undefined {
 export function interpolate(template: string, vars?: Record<string, string | number>): string {
   if (!vars) return template;
   return template.replace(/\{(\w+)\}/g, (_, key: string) =>
-    key in vars ? String(vars[key]) : `{${key}}`,
+    key in vars ? String(vars[key]) : `{${key}}`
   );
 }
 
-export function translate(locale: Locale, path: string, vars?: Record<string, string | number>): string {
-  const raw = getByPath(dictionaries[locale] as Dict, path) ?? getByPath(dictionaries.en as Dict, path) ?? path;
+export function translate(
+  locale: Locale,
+  path: string,
+  vars?: Record<string, string | number>
+): string {
+  const raw =
+    getByPath(dictionaries[locale] as Dict, path) ??
+    getByPath(dictionaries.en as Dict, path) ??
+    path;
   return interpolate(raw, vars);
 }
 
@@ -86,9 +93,9 @@ export function getLocale(): Locale {
 }
 
 /** Reactive translator: use `$t('team.tabs.members')` in components (subscribe with `$`). */
-export const t: Readable<(path: string, vars?: Record<string, string | number>) => string> = derived(
-  locale,
-  ($locale) =>
-    (path: string, vars?: Record<string, string | number>) =>
-      translate($locale, path, vars),
-);
+export const t: Readable<(path: string, vars?: Record<string, string | number>) => string> =
+  derived(
+    locale,
+    ($locale) => (path: string, vars?: Record<string, string | number>) =>
+      translate($locale, path, vars)
+  );

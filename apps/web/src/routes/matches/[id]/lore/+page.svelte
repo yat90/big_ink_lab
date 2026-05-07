@@ -33,7 +33,11 @@
     starter?: string;
     updatedAt: number;
     /** Events (start, lore_increased, lore_decreased) to merge into game.events when syncing. */
-    events?: Array<{ type: 'start' | 'lore_increased' | 'lore_decreased'; timestamp: number; player: string }>;
+    events?: Array<{
+      type: 'start' | 'lore_increased' | 'lore_decreased';
+      timestamp: number;
+      player: string;
+    }>;
   };
   type LoreDraftMap = Record<string, LoreDraft>;
   type WakeLockNavigator = Navigator & {
@@ -163,9 +167,7 @@
   /** Current user's linked player id; set after loading /auth/me. */
   let myPlayerId = $state<string | null>(null);
   /** True if the current user is p1 or p2 and can edit (track lore, sync, add games). */
-  const canEditMatch = $derived(
-    !!myPlayerId && (myPlayerId === p1Id || myPlayerId === p2Id)
-  );
+  const canEditMatch = $derived(!!myPlayerId && (myPlayerId === p1Id || myPlayerId === p2Id));
   const gameOverWinnerName = $derived.by(() => {
     void get(locale);
     if (gameOverWinnerId === p1Id) return p1Name;
@@ -300,7 +302,10 @@
    * Persist current game state (and optionally one new lore_increased/lore_decreased event) to local drafts.
    * Events are merged into game.events when syncing to the API.
    */
-  function persistCurrentGameLocally(loreEvent?: { player: string; direction: 'increase' | 'decrease' }) {
+  function persistCurrentGameLocally(loreEvent?: {
+    player: string;
+    direction: 'increase' | 'decrease';
+  }) {
     const drafts = readLocalDrafts();
     const key = String(gameIndex);
     const existing = drafts[key];
@@ -309,7 +314,11 @@
     const newEvents = loreEvent
       ? [
           ...existingEvents,
-          { type: eventType as 'lore_increased' | 'lore_decreased', timestamp: Date.now(), player: loreEvent.player },
+          {
+            type: eventType as 'lore_increased' | 'lore_decreased',
+            timestamp: Date.now(),
+            player: loreEvent.player,
+          },
         ]
       : existingEvents;
     drafts[key] = {
@@ -638,7 +647,8 @@
       if (!updatedGames[gameIndex]) updatedGames[gameIndex] = {};
       const existingEvents = (updatedGames[gameIndex].events ?? []).map((e) => ({
         type: e.type,
-        timestamp: typeof e.timestamp === 'string' ? e.timestamp : new Date(e.timestamp).toISOString(),
+        timestamp:
+          typeof e.timestamp === 'string' ? e.timestamp : new Date(e.timestamp).toISOString(),
         player: e.player,
       }));
       const endEvent = {
@@ -995,7 +1005,9 @@
         onclick={dismissStarterPrompt}
       ></button>
       <div class="lore-modal__card card lore-starter-choice">
-        <h2 id="starter-choice-title" class="lore-starter-choice__title">{$t('matches.lore.starterTitle')}</h2>
+        <h2 id="starter-choice-title" class="lore-starter-choice__title">
+          {$t('matches.lore.starterTitle')}
+        </h2>
         <div class="lore-starter-choice__buttons">
           <button
             type="button"

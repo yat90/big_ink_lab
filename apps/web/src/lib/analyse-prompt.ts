@@ -174,16 +174,7 @@ export class AnalyseMatchPromptBuilder {
 
   /** Returns the full prompt string. */
   build(): string {
-    const {
-      stage,
-      round,
-      p1Name,
-      p2Name,
-      p1DeckList,
-      p2DeckList,
-      games,
-      matchWinner,
-    } = this.input;
+    const { stage, round, p1Name, p2Name, p1DeckList, p2DeckList, games, matchWinner } = this.input;
 
     const roundPart =
       round != null && round !== '' && String(round) !== '–'

@@ -231,10 +231,7 @@
     <div class="card balance-card">
       <div class="balance-card__main">
         <span class="muted balance-card__label">Treasury</span>
-        <span
-          class="balance-card__value"
-          class:balance-card__value--neg={balance.balance < 0}
-        >
+        <span class="balance-card__value" class:balance-card__value--neg={balance.balance < 0}>
           {formatMoney(balance.balance)}
         </span>
       </div>
@@ -261,7 +258,7 @@
             <dd>{formatMoney(balance.outstandingTotal)}</dd>
           </div>
         </dl>
-        <TransactionTypePieChart balance={balance} />
+        <TransactionTypePieChart {balance} />
       </div>
     </div>
   {/if}
@@ -284,7 +281,9 @@
             <li class="tx-row">
               <div class="tx-row__main">
                 <div class="tx-row__title">{t.description || 'Contribution'}</div>
-                <div class="tx-row__meta muted">{typeLabel(t.type)} · {formatDate(t.occurredAt)}</div>
+                <div class="tx-row__meta muted">
+                  {typeLabel(t.type)} · {formatDate(t.occurredAt)}
+                </div>
               </div>
               <div class="tx-row__amount tx-row__amount--positive">
                 +{formatMoney(t.amount)}
@@ -315,11 +314,7 @@
       <div class="finance-tab__filters">
         <label class="label">
           <span class="muted text-sm">Type</span>
-          <select
-            class="input"
-            bind:value={typeFilter}
-            onchange={() => (page = 1)}
-          >
+          <select class="input" bind:value={typeFilter} onchange={() => (page = 1)}>
             <option value="">All</option>
             <option value="contribution">Contributions</option>
             <option value="penalty_fine">Penalty fines</option>

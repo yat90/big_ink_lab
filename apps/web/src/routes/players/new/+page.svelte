@@ -46,13 +46,16 @@
     <p class="card__sub">Add a new player with name and team.</p>
 
     <form onsubmit={onSubmit} class="stack" style="margin-top: 8px;">
-      <label class="label" style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer;">
+      <label
+        class="label"
+        style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer;"
+      >
         <input type="checkbox" bind:checked={isGuest} style="margin-top: 0.2rem;" />
         <span>
           <strong style="font-weight: 700;">Guest profile</strong>
           <span class="hint" style="display: block; margin-top: 0.25rem;">
-            Use for people without a login. Guest players are hidden from the default roster list; use
-            the Players filters to see them.
+            Use for people without a login. Guest players are hidden from the default roster list;
+            use the Players filters to see them.
           </span>
         </span>
       </label>

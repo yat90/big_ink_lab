@@ -339,7 +339,7 @@
   function patchGameLore(
     roundIndex: number,
     gameIndex: number,
-    lore: { p1Lore?: string; p2Lore?: string },
+    lore: { p1Lore?: string; p2Lore?: string }
   ) {
     rounds = rounds.map((row, i) => {
       if (i !== roundIndex) return row;
@@ -498,7 +498,9 @@
           details: failed.map((f) => `${f.round}: ${f.message}`).join('; '),
         });
       } else {
-        const intentionalDrawRounds = rounds.filter((r) => r.resultMode === 'intentionalDraw').length;
+        const intentionalDrawRounds = rounds.filter(
+          (r) => r.resultMode === 'intentionalDraw'
+        ).length;
         const byeRounds = rounds.filter((r) => r.resultMode === 'bye').length;
         const parts: string[] = [];
         if (intentionalDrawRounds > 0) {
@@ -508,17 +510,19 @@
               intentionalDrawRounds === 1
                 ? 'tournaments.results.extrasIntDrawsOne'
                 : 'tournaments.results.extrasIntDrawsMany',
-              { n: String(intentionalDrawRounds) },
-            ),
+              { n: String(intentionalDrawRounds) }
+            )
           );
         }
         if (byeRounds > 0) {
           parts.push(
             translate(
               loc,
-              byeRounds === 1 ? 'tournaments.results.extrasByesOne' : 'tournaments.results.extrasByesMany',
-              { n: String(byeRounds) },
-            ),
+              byeRounds === 1
+                ? 'tournaments.results.extrasByesOne'
+                : 'tournaments.results.extrasByesMany',
+              { n: String(byeRounds) }
+            )
           );
         }
         resultMessage =
@@ -551,11 +555,11 @@
   {#if !tournamentIdFromUrl}
     <div class="card stack">
       <p class="card__sub" style="margin: 0;">
-        {$t('tournaments.results.noTournamentBefore')}<strong>{$t('tournaments.results.noTournamentStrong')}</strong>{$t(
-          'tournaments.results.noTournamentAfter',
-        )}<code class="muted">{$t('tournaments.results.paramTournamentId')}</code>{$t(
-          'tournaments.results.noTournamentAfterCode',
-        )}
+        {$t('tournaments.results.noTournamentBefore')}<strong
+          >{$t('tournaments.results.noTournamentStrong')}</strong
+        >{$t('tournaments.results.noTournamentAfter')}<code class="muted"
+          >{$t('tournaments.results.paramTournamentId')}</code
+        >{$t('tournaments.results.noTournamentAfterCode')}
       </p>
       <p class="card__sub" style="margin: 0;">
         <a href="/tournaments">{$t('tournaments.results.browseLink')}</a>
@@ -652,7 +656,9 @@
             {p1DeckDisplayName || $t('tournaments.results.chooseDeckOptional')}
           </button>
 
-          <label class="label" for="event-p1-deck-color">{$t('tournaments.results.yourDeckColor')}</label>
+          <label class="label" for="event-p1-deck-color"
+            >{$t('tournaments.results.yourDeckColor')}</label
+          >
           <DeckColorSelect
             id="event-p1-deck-color"
             bind:value={p1DeckColor}
@@ -671,7 +677,11 @@
       <div class="stack tournament-results__rounds-wrap">
         <div class="tournament-results__tabs-bar">
           <div class="tournament-results__tabs-scroll">
-            <div class="app-tabs tournament-results__round-tabs" role="tablist" aria-label={$t('tournaments.results.roundsTablist')}>
+            <div
+              class="app-tabs tournament-results__round-tabs"
+              role="tablist"
+              aria-label={$t('tournaments.results.roundsTablist')}
+            >
               {#each rounds as rTab, i (i)}
                 <button
                   type="button"
@@ -734,14 +744,17 @@
                   onclick={() => removeRound(roundIndex)}
                 >
                   <IconTrash size={18} className="game-line__icon icon-trash" />&nbsp;{$t(
-                    'tournaments.results.remove',
+                    'tournaments.results.remove'
                   )}
                 </button>
               {/if}
             </div>
 
             <div class="tournament-results__id-field">
-              <p class="label tournament-results__id-field-label" id="tr-round-mode-label-{roundIndex}">
+              <p
+                class="label tournament-results__id-field-label"
+                id="tr-round-mode-label-{roundIndex}"
+              >
                 {$t('tournaments.results.pairingResult')}
               </p>
               <div
@@ -760,7 +773,9 @@
                     checked={r.resultMode === 'match'}
                     onchange={() => setRoundResultMode(roundIndex, 'match')}
                   />
-                  <span class="tournament-results__id-chip-text">{$t('tournaments.results.modeMatch')}</span>
+                  <span class="tournament-results__id-chip-text"
+                    >{$t('tournaments.results.modeMatch')}</span
+                  >
                 </label>
                 <label
                   class="tournament-results__id-chip"
@@ -788,7 +803,9 @@
                     checked={r.resultMode === 'bye'}
                     onchange={() => setRoundResultMode(roundIndex, 'bye')}
                   />
-                  <span class="tournament-results__id-chip-text">{$t('tournaments.results.modeBye')}</span>
+                  <span class="tournament-results__id-chip-text"
+                    >{$t('tournaments.results.modeBye')}</span
+                  >
                 </label>
               </div>
               <p class="card__sub muted tournament-results__id-help">
@@ -807,7 +824,9 @@
                 {$t('tournaments.results.byeNoOpponent')}
               </p>
             {:else}
-              <label class="label" for="opponent-{roundIndex}">{$t('tournaments.results.opponent')}</label>
+              <label class="label" for="opponent-{roundIndex}"
+                >{$t('tournaments.results.opponent')}</label
+              >
               <input
                 id="opponent-{roundIndex}"
                 type="text"
@@ -826,7 +845,9 @@
                 aria-label={$t('tournaments.results.opponentAria')}
               />
 
-              <label class="label" for="p2c-{roundIndex}">{$t('tournaments.results.opponentDeckColor')}</label>
+              <label class="label" for="p2c-{roundIndex}"
+                >{$t('tournaments.results.opponentDeckColor')}</label
+              >
               <DeckColorSelect
                 id="p2c-{roundIndex}"
                 bind:value={r.p2DeckColor}
@@ -834,7 +855,9 @@
               />
             {/if}
 
-            <label class="label" for="mnotes-{roundIndex}">{$t('tournaments.results.matchNotes')}</label>
+            <label class="label" for="mnotes-{roundIndex}"
+              >{$t('tournaments.results.matchNotes')}</label
+            >
             <textarea
               id="mnotes-{roundIndex}"
               class="input"
@@ -844,168 +867,171 @@
             ></textarea>
 
             {#if r.resultMode === 'match'}
-            <div class="tournament-results__games-head row">
-              <h3 class="tournament-results__games-title">{$t('tournaments.results.gamesTitle')}</h3>
+              <div class="tournament-results__games-head row">
+                <h3 class="tournament-results__games-title">
+                  {$t('tournaments.results.gamesTitle')}
+                </h3>
+                <button
+                  type="button"
+                  class="btn tournament-results__add-game-btn"
+                  onclick={() => addGame(roundIndex)}
+                >
+                  + {$t('tournaments.results.addGame')}
+                </button>
+              </div>
+              {#each r.games as g, gi (`${roundIndex}-${gi}`)}
+                <div class="tournament-results__game stack">
+                  <span class="tournament-results__game-label"
+                    >{$t('tournaments.results.gameN', { n: String(gi + 1) })}</span
+                  >
+                  <div
+                    class="tournament-results__lore-vs"
+                    role="group"
+                    aria-label={$t('tournaments.results.loreYouVsOpponent')}
+                  >
+                    <div class="tournament-results__lore-side tournament-results__lore-side--p1">
+                      <label class="tournament-results__lore-label" for="l1-{roundIndex}-{gi}"
+                        >{$t('tournaments.results.yourLore')}</label
+                      >
+                      <input
+                        id="l1-{roundIndex}-{gi}"
+                        type="number"
+                        min="0"
+                        class="input tournament-results__lore-input"
+                        inputmode="numeric"
+                        value={g.p1Lore}
+                        oninput={(e) =>
+                          patchGameLore(roundIndex, gi, { p1Lore: e.currentTarget.value })}
+                      />
+                    </div>
+                    <div class="tournament-results__lore-vs-mid" aria-hidden="true">
+                      {$t('tournaments.results.vsDot')}
+                    </div>
+                    <div class="tournament-results__lore-side tournament-results__lore-side--p2">
+                      <label class="tournament-results__lore-label" for="l2-{roundIndex}-{gi}"
+                        >{$t('tournaments.results.opponentLore')}</label
+                      >
+                      <input
+                        id="l2-{roundIndex}-{gi}"
+                        type="number"
+                        min="0"
+                        class="input tournament-results__lore-input tournament-results__lore-input--p2"
+                        inputmode="numeric"
+                        value={g.p2Lore}
+                        oninput={(e) =>
+                          patchGameLore(roundIndex, gi, { p2Lore: e.currentTarget.value })}
+                      />
+                    </div>
+                  </div>
+                  <div class="tournament-results__game-toggles">
+                    <div class="tournament-results__toggle-group">
+                      <p class="tournament-results__toggle-label" id="gs-label-{roundIndex}-{gi}">
+                        {$t('tournaments.results.starterOptional')}
+                      </p>
+                      <div
+                        class="tournament-results__toggle"
+                        role="group"
+                        aria-labelledby="gs-label-{roundIndex}-{gi}"
+                      >
+                        <button
+                          type="button"
+                          class="tournament-results__toggle-btn"
+                          aria-pressed={g.starterSide === 'p1'}
+                          disabled={!eventP1}
+                          onclick={() => patchGame(roundIndex, gi, { starterSide: 'p1' })}
+                        >
+                          {$t('tournaments.results.youToggle')}
+                        </button>
+                        <button
+                          type="button"
+                          class="tournament-results__toggle-btn tournament-results__toggle-btn--mid"
+                          aria-pressed={g.starterSide === ''}
+                          onclick={() => patchGame(roundIndex, gi, { starterSide: '' })}
+                        >
+                          {$t('tournaments.results.dashNeutral')}
+                        </button>
+                        <button
+                          type="button"
+                          class="tournament-results__toggle-btn"
+                          aria-pressed={g.starterSide === 'p2'}
+                          disabled={!r.opponentName.trim()}
+                          onclick={() => patchGame(roundIndex, gi, { starterSide: 'p2' })}
+                        >
+                          {roundP2Label(r)}
+                        </button>
+                      </div>
+                    </div>
+                    <div class="tournament-results__toggle-group">
+                      <p class="tournament-results__toggle-label" id="gw-label-{roundIndex}-{gi}">
+                        {$t('tournaments.results.winner')}
+                      </p>
+                      <div
+                        class="tournament-results__toggle"
+                        role="group"
+                        aria-labelledby="gw-label-{roundIndex}-{gi}"
+                        title={$t('tournaments.results.winnerLoreTitle')}
+                      >
+                        <button
+                          type="button"
+                          class="tournament-results__toggle-btn"
+                          aria-pressed={g.winnerSide === 'p1'}
+                          disabled={!eventP1}
+                          onclick={() => patchGame(roundIndex, gi, { winnerSide: 'p1' })}
+                        >
+                          {$t('tournaments.results.youToggle')}
+                        </button>
+                        <button
+                          type="button"
+                          class="tournament-results__toggle-btn tournament-results__toggle-btn--mid"
+                          aria-pressed={g.winnerSide === ''}
+                          onclick={() => patchGame(roundIndex, gi, { winnerSide: '' })}
+                        >
+                          {$t('tournaments.results.dashNeutral')}
+                        </button>
+                        <button
+                          type="button"
+                          class="tournament-results__toggle-btn"
+                          aria-pressed={g.winnerSide === 'p2'}
+                          disabled={!r.opponentName.trim()}
+                          onclick={() => patchGame(roundIndex, gi, { winnerSide: 'p2' })}
+                        >
+                          {roundP2Label(r)}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <label
+                    class="label tournament-results__game-field-label"
+                    for="gn-{roundIndex}-{gi}">{$t('tournaments.results.gameNotes')}</label
+                  >
+                  <textarea
+                    id="gn-{roundIndex}-{gi}"
+                    rows="2"
+                    class="input tournament-results__note-input"
+                    bind:value={g.notes}
+                    oninput={(e) => patchGame(roundIndex, gi, { notes: e.currentTarget.value })}
+                    placeholder={$t('tournaments.results.gameNotesPlaceholder')}
+                  ></textarea>
+                  {#if r.games.length > 1}
+                    <button
+                      type="button"
+                      class="btn btn--sm btn--danger-outline tournament-results__remove-game-btn"
+                      onclick={() => removeGame(roundIndex, gi)}
+                    >
+                      <IconTrash size={18} className="game-line__icon icon-trash" />&nbsp;{$t(
+                        'tournaments.results.removeGame'
+                      )}
+                    </button>
+                  {/if}
+                </div>
+              {/each}
               <button
                 type="button"
-                class="btn tournament-results__add-game-btn"
+                class="btn tournament-results__add-game-btn tournament-results__add-game-btn--footer"
                 onclick={() => addGame(roundIndex)}
               >
                 + {$t('tournaments.results.addGame')}
               </button>
-            </div>
-            {#each r.games as g, gi (`${roundIndex}-${gi}`)}
-              <div class="tournament-results__game stack">
-                <span class="tournament-results__game-label"
-                  >{$t('tournaments.results.gameN', { n: String(gi + 1) })}</span
-                >
-                <div
-                  class="tournament-results__lore-vs"
-                  role="group"
-                  aria-label={$t('tournaments.results.loreYouVsOpponent')}
-                >
-                  <div class="tournament-results__lore-side tournament-results__lore-side--p1">
-                    <label class="tournament-results__lore-label" for="l1-{roundIndex}-{gi}"
-                      >{$t('tournaments.results.yourLore')}</label
-                    >
-                    <input
-                      id="l1-{roundIndex}-{gi}"
-                      type="number"
-                      min="0"
-                      class="input tournament-results__lore-input"
-                      inputmode="numeric"
-                      value={g.p1Lore}
-                      oninput={(e) =>
-                        patchGameLore(roundIndex, gi, { p1Lore: e.currentTarget.value })}
-                    />
-                  </div>
-                  <div class="tournament-results__lore-vs-mid" aria-hidden="true"
-                    >{$t('tournaments.results.vsDot')}</div
-                  >
-                  <div class="tournament-results__lore-side tournament-results__lore-side--p2">
-                    <label class="tournament-results__lore-label" for="l2-{roundIndex}-{gi}"
-                      >{$t('tournaments.results.opponentLore')}</label
-                    >
-                    <input
-                      id="l2-{roundIndex}-{gi}"
-                      type="number"
-                      min="0"
-                      class="input tournament-results__lore-input tournament-results__lore-input--p2"
-                      inputmode="numeric"
-                      value={g.p2Lore}
-                      oninput={(e) =>
-                        patchGameLore(roundIndex, gi, { p2Lore: e.currentTarget.value })}
-                    />
-                  </div>
-                </div>
-                <div class="tournament-results__game-toggles">
-                  <div class="tournament-results__toggle-group">
-                    <p class="tournament-results__toggle-label" id="gs-label-{roundIndex}-{gi}">
-                      {$t('tournaments.results.starterOptional')}
-                    </p>
-                    <div
-                      class="tournament-results__toggle"
-                      role="group"
-                      aria-labelledby="gs-label-{roundIndex}-{gi}"
-                    >
-                      <button
-                        type="button"
-                        class="tournament-results__toggle-btn"
-                        aria-pressed={g.starterSide === 'p1'}
-                        disabled={!eventP1}
-                        onclick={() => patchGame(roundIndex, gi, { starterSide: 'p1' })}
-                      >
-                        {$t('tournaments.results.youToggle')}
-                      </button>
-                      <button
-                        type="button"
-                        class="tournament-results__toggle-btn tournament-results__toggle-btn--mid"
-                        aria-pressed={g.starterSide === ''}
-                        onclick={() => patchGame(roundIndex, gi, { starterSide: '' })}
-                      >
-                        {$t('tournaments.results.dashNeutral')}
-                      </button>
-                      <button
-                        type="button"
-                        class="tournament-results__toggle-btn"
-                        aria-pressed={g.starterSide === 'p2'}
-                        disabled={!r.opponentName.trim()}
-                        onclick={() => patchGame(roundIndex, gi, { starterSide: 'p2' })}
-                      >
-                        {roundP2Label(r)}
-                      </button>
-                    </div>
-                  </div>
-                  <div class="tournament-results__toggle-group">
-                    <p class="tournament-results__toggle-label" id="gw-label-{roundIndex}-{gi}">
-                      {$t('tournaments.results.winner')}
-                    </p>
-                    <div
-                      class="tournament-results__toggle"
-                      role="group"
-                      aria-labelledby="gw-label-{roundIndex}-{gi}"
-                      title={$t('tournaments.results.winnerLoreTitle')}
-                    >
-                      <button
-                        type="button"
-                        class="tournament-results__toggle-btn"
-                        aria-pressed={g.winnerSide === 'p1'}
-                        disabled={!eventP1}
-                        onclick={() => patchGame(roundIndex, gi, { winnerSide: 'p1' })}
-                      >
-                        {$t('tournaments.results.youToggle')}
-                      </button>
-                      <button
-                        type="button"
-                        class="tournament-results__toggle-btn tournament-results__toggle-btn--mid"
-                        aria-pressed={g.winnerSide === ''}
-                        onclick={() => patchGame(roundIndex, gi, { winnerSide: '' })}
-                      >
-                        {$t('tournaments.results.dashNeutral')}
-                      </button>
-                      <button
-                        type="button"
-                        class="tournament-results__toggle-btn"
-                        aria-pressed={g.winnerSide === 'p2'}
-                        disabled={!r.opponentName.trim()}
-                        onclick={() => patchGame(roundIndex, gi, { winnerSide: 'p2' })}
-                      >
-                        {roundP2Label(r)}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <label class="label tournament-results__game-field-label" for="gn-{roundIndex}-{gi}"
-                  >{$t('tournaments.results.gameNotes')}</label
-                >
-                <textarea
-                  id="gn-{roundIndex}-{gi}"
-                  rows="2"
-                  class="input tournament-results__note-input"
-                  bind:value={g.notes}
-                  oninput={(e) => patchGame(roundIndex, gi, { notes: e.currentTarget.value })}
-                  placeholder={$t('tournaments.results.gameNotesPlaceholder')}
-                ></textarea>
-                {#if r.games.length > 1}
-                  <button
-                    type="button"
-                    class="btn btn--sm btn--danger-outline tournament-results__remove-game-btn"
-                    onclick={() => removeGame(roundIndex, gi)}
-                  >
-                    <IconTrash size={18} className="game-line__icon icon-trash" />&nbsp;{$t(
-                      'tournaments.results.removeGame',
-                    )}
-                  </button>
-                {/if}
-              </div>
-            {/each}
-            <button
-              type="button"
-              class="btn tournament-results__add-game-btn tournament-results__add-game-btn--footer"
-              onclick={() => addGame(roundIndex)}
-            >
-              + {$t('tournaments.results.addGame')}
-            </button>
             {:else if r.resultMode === 'intentionalDraw'}
               <div class="tournament-results__id-games-skip card stack">
                 <p class="card__sub muted" style="margin: 0;">

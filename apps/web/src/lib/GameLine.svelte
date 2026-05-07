@@ -152,12 +152,20 @@
         ? (game.winner as { _id?: string })._id
         : (game.winner ?? '')}
     <div class="game-line__meta-row">
-      <div class="game-line__meta-block" role="group" aria-label={$t('matches.gameLine.starterGroupAria')}>
+      <div
+        class="game-line__meta-block"
+        role="group"
+        aria-label={$t('matches.gameLine.starterGroupAria')}
+      >
         <div class="game-line__meta-title">
           <IconPlay size={14} className="game-line__meta-icon" />
           <span class="muted">{$t('matches.gameLine.starter')}</span>
         </div>
-        <div class="game-line__toggle" role="group" aria-label={$t('matches.gameLine.chooseStarterAria')}>
+        <div
+          class="game-line__toggle"
+          role="group"
+          aria-label={$t('matches.gameLine.chooseStarterAria')}
+        >
           {#if p1Id}
             <button
               type="button"
@@ -197,12 +205,20 @@
           {/if}
         </div>
       </div>
-      <div class="game-line__meta-block" role="group" aria-label={$t('matches.gameLine.winnerGroupAria')}>
+      <div
+        class="game-line__meta-block"
+        role="group"
+        aria-label={$t('matches.gameLine.winnerGroupAria')}
+      >
         <div class="game-line__meta-title">
           <IconCrown size={14} className="game-line__meta-icon" />
           <span class="muted">{$t('matches.gameLine.winner')}</span>
         </div>
-        <div class="game-line__toggle" role="group" aria-label={$t('matches.gameLine.chooseWinnerAria')}>
+        <div
+          class="game-line__toggle"
+          role="group"
+          aria-label={$t('matches.gameLine.chooseWinnerAria')}
+        >
           {#if p1Id}
             <button
               type="button"
@@ -324,7 +340,6 @@
     font-size: 0.9rem;
     padding-left: 6px;
   }
-
 
   .game-line__meta-icon {
     flex-shrink: 0;

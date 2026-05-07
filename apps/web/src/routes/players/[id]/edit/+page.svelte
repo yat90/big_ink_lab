@@ -95,7 +95,10 @@
             This player is linked to a login account — they stay on the roster as a regular profile.
           </p>
         {:else}
-          <label class="label" style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer;">
+          <label
+            class="label"
+            style="display: flex; align-items: flex-start; gap: 0.5rem; cursor: pointer;"
+          >
             <input type="checkbox" bind:checked={isGuest} style="margin-top: 0.2rem;" />
             <span>
               <strong style="font-weight: 700;">Guest profile</strong>

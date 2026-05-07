@@ -52,7 +52,7 @@ export async function searchCardsFuzzy(query: string): Promise<LorcastCard[]> {
     const res = await rateLimitedFetch(url);
     if (!res.ok) return [];
     const data = await res.json();
-    return Array.isArray(data) ? data : data?.results ?? [];
+    return Array.isArray(data) ? data : (data?.results ?? []);
   } catch {
     return [];
   }

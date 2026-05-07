@@ -70,9 +70,7 @@
   );
   const isTeam = $derived($page.url.pathname.startsWith('/team'));
   const activeTeamTab = $derived(
-    $page.url.pathname.startsWith('/team')
-      ? teamTabFromSearchParams($page.url.searchParams)
-      : null,
+    $page.url.pathname.startsWith('/team') ? teamTabFromSearchParams($page.url.searchParams) : null
   );
 
   const TEAM_TAB_ICON_MAP: Record<
@@ -139,302 +137,309 @@
       <IconClose size={24} />
     </button>
     <div class="mobile-nav__drawer-scroll">
-    <div class="mobile-nav__drawer-header">
-      <img class="mobile-nav__drawer-header-logo" src={logo} alt="" width="128" height="128" />
-    </div>
-    <a
-      href="/"
-      class="mobile-nav__drawer-link"
-      class:mobile-nav__drawer-link--active={isHome}
-      aria-current={isHome ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      {$t('nav.dashboard')}
-    </a>
-    <a
-      href="/matches"
-      class="mobile-nav__drawer-link"
-      class:mobile-nav__drawer-link--active={isMatches}
-      aria-current={isMatches ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconTrophy size={24} />
-      </span>
-      {$t('nav.matches')}
-    </a>
-    <a
-      href="/tournaments"
-      class="mobile-nav__drawer-link"
-      class:mobile-nav__drawer-link--active={isTournaments}
-      aria-current={isTournaments ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconCrownOutline size={24} />
-      </span>
-      {$t('nav.tournaments')}
-    </a>
-    <a
-      href="/decks"
-      class="mobile-nav__drawer-link"
-      class:mobile-nav__drawer-link--active={isDecks}
-      aria-current={isDecks ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconDecks size={24} />
-      </span>
-      {$t('nav.decks')}
-    </a>
-    <a
-      href="/players"
-      class="mobile-nav__drawer-link"
-      class:mobile-nav__drawer-link--active={isPlayers}
-      aria-current={isPlayers ? 'page' : undefined}
-      onclick={closeMenu}
-    >
-      <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-        <IconCircleUser size={24} />
-      </span>
-      {$t('nav.players')}
-    </a>
-    <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.statisticsSection')}>
-      <div class="mobile-nav__drawer-subhead">
-        <a
-          href="/stats"
-          class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
-          class:mobile-nav__drawer-link--active={isStats && !isMyStatistics}
-          aria-current={isStats && !isMyStatistics ? 'page' : undefined}
-          onclick={closeMenu}
-        >
-          <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-            <IconBarChart size={24} />
-          </span>
-          {$t('nav.statistics')}
-        </a>
-        <button
-          type="button"
-          class="mobile-nav__drawer-chevron-btn"
-          id="mobile-nav-drawer-stats-toggle"
-          aria-expanded={statsOpen}
-          aria-controls="mobile-nav-drawer-stats-sub"
-          aria-label={$t('nav.openStatisticsSubmenu')}
-          onclick={() => (statsOpen = !statsOpen)}
-        >
-          <svg
-            class="mobile-nav__drawer-chevron-svg"
-            class:mobile-nav__drawer-chevron-svg--open={statsOpen}
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="m6 9 6 6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
+      <div class="mobile-nav__drawer-header">
+        <img class="mobile-nav__drawer-header-logo" src={logo} alt="" width="128" height="128" />
       </div>
-      {#if statsOpen}
-        <div id="mobile-nav-drawer-stats-sub" role="group" aria-labelledby="mobile-nav-drawer-stats-toggle">
+      <a
+        href="/"
+        class="mobile-nav__drawer-link"
+        class:mobile-nav__drawer-link--active={isHome}
+        aria-current={isHome ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        {$t('nav.dashboard')}
+      </a>
+      <a
+        href="/matches"
+        class="mobile-nav__drawer-link"
+        class:mobile-nav__drawer-link--active={isMatches}
+        aria-current={isMatches ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconTrophy size={24} />
+        </span>
+        {$t('nav.matches')}
+      </a>
+      <a
+        href="/tournaments"
+        class="mobile-nav__drawer-link"
+        class:mobile-nav__drawer-link--active={isTournaments}
+        aria-current={isTournaments ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconCrownOutline size={24} />
+        </span>
+        {$t('nav.tournaments')}
+      </a>
+      <a
+        href="/decks"
+        class="mobile-nav__drawer-link"
+        class:mobile-nav__drawer-link--active={isDecks}
+        aria-current={isDecks ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconDecks size={24} />
+        </span>
+        {$t('nav.decks')}
+      </a>
+      <a
+        href="/players"
+        class="mobile-nav__drawer-link"
+        class:mobile-nav__drawer-link--active={isPlayers}
+        aria-current={isPlayers ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconCircleUser size={24} />
+        </span>
+        {$t('nav.players')}
+      </a>
+      <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.statisticsSection')}>
+        <div class="mobile-nav__drawer-subhead">
           <a
-            href="/me/statistics"
-            class="mobile-nav__drawer-link mobile-nav__drawer-link--sub"
-            class:mobile-nav__drawer-link--active={isMyStatistics}
-            aria-current={isMyStatistics ? 'page' : undefined}
+            href="/stats"
+            class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
+            class:mobile-nav__drawer-link--active={isStats && !isMyStatistics}
+            aria-current={isStats && !isMyStatistics ? 'page' : undefined}
             onclick={closeMenu}
           >
             <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-              <IconBarChart size={20} />
+              <IconBarChart size={24} />
             </span>
-            {$t('nav.myStatistics')}
+            {$t('nav.statistics')}
           </a>
-        </div>
-      {/if}
-    </div>
-    <div
-      class="mobile-nav__drawer-group mobile-nav__drawer-group--team"
-      role="group"
-      aria-label={$t('nav.teamSection')}
-    >
-      <div
-        class="mobile-nav__drawer-subhead mobile-nav__drawer-subhead--team"
-        class:mobile-nav__drawer-subhead--team-expanded={teamOpen}
-      >
-        <a
-          href="/team"
-          class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
-          class:mobile-nav__drawer-link--active={isTeam}
-          onclick={closeMenu}
-        >
-          <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-            <IconTeam size={24} />
-          </span>
-          {$t('nav.team')}
-        </a>
-        <button
-          type="button"
-          class="mobile-nav__drawer-chevron-btn mobile-nav__drawer-chevron-btn--team"
-          id="mobile-nav-drawer-team-toggle"
-          aria-expanded={teamOpen}
-          aria-controls="mobile-nav-drawer-team-sub"
-          aria-label={$t('nav.openTeamSubmenu')}
-          onclick={() => (teamOpen = !teamOpen)}
-        >
-          <svg
-            class="mobile-nav__drawer-chevron-svg"
-            class:mobile-nav__drawer-chevron-svg--open={teamOpen}
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
+          <button
+            type="button"
+            class="mobile-nav__drawer-chevron-btn"
+            id="mobile-nav-drawer-stats-toggle"
+            aria-expanded={statsOpen}
+            aria-controls="mobile-nav-drawer-stats-sub"
+            aria-label={$t('nav.openStatisticsSubmenu')}
+            onclick={() => (statsOpen = !statsOpen)}
           >
-            <path
-              d="m6 9 6 6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-      </div>
-      {#if teamOpen}
-        <div id="mobile-nav-drawer-team-sub" class="mobile-nav__drawer-team-sub">
-          <div class="mobile-nav__drawer-team-heading muted" id="mobile-nav-drawer-team-sub-label">
-            {$t('team.tablistLabel')}
-          </div>
+            <svg
+              class="mobile-nav__drawer-chevron-svg"
+              class:mobile-nav__drawer-chevron-svg--open={statsOpen}
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="m6 9 6 6 6-6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        {#if statsOpen}
           <div
-            class="mobile-nav__drawer-team-panel"
+            id="mobile-nav-drawer-stats-sub"
             role="group"
-            aria-labelledby="mobile-nav-drawer-team-sub-label"
+            aria-labelledby="mobile-nav-drawer-stats-toggle"
           >
-            {#each TEAM_TAB_IDS as tabId (tabId)}
-              {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
-              <a
-                href="/team?tab={tabId}"
-                class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--team-tab"
-                class:mobile-nav__drawer-link--active={isTeam && activeTeamTab === tabId}
-                aria-current={isTeam && activeTeamTab === tabId ? 'page' : undefined}
-                onclick={closeMenu}
-              >
-                <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-                  <TabIcon size={20} />
-                </span>
-                {$t(`team.tabs.${tabId}`)}
-              </a>
-            {/each}
+            <a
+              href="/me/statistics"
+              class="mobile-nav__drawer-link mobile-nav__drawer-link--sub"
+              class:mobile-nav__drawer-link--active={isMyStatistics}
+              aria-current={isMyStatistics ? 'page' : undefined}
+              onclick={closeMenu}
+            >
+              <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+                <IconBarChart size={20} />
+              </span>
+              {$t('nav.myStatistics')}
+            </a>
           </div>
-        </div>
-      {/if}
-    </div>
-    <div
-      class="mobile-nav__drawer-group mobile-nav__drawer-group--language"
-      role="group"
-      aria-labelledby="mobile-nav-drawer-lang-label"
-    >
-      <div class="mobile-nav__drawer-lang-wrap">
-        <div class="mobile-nav__drawer-lang-label muted" id="mobile-nav-drawer-lang-label">
-          {$t('common.language')}
-        </div>
-        <div class="mobile-nav__drawer-lang">
-          <button
-            type="button"
-            class="mobile-nav__drawer-lang-btn"
-            class:mobile-nav__drawer-lang-btn--active={$locale === 'de'}
-            aria-pressed={$locale === 'de'}
-            onclick={() => pickLocale('de')}
-          >
-            {$t('lang.deShort')}
-          </button>
-          <button
-            type="button"
-            class="mobile-nav__drawer-lang-btn"
-            class:mobile-nav__drawer-lang-btn--active={$locale === 'en'}
-            aria-pressed={$locale === 'en'}
-            onclick={() => pickLocale('en')}
-          >
-            {$t('lang.enShort')}
-          </button>
-        </div>
+        {/if}
       </div>
-    </div>
-    <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.accountSection')}>
-      {#if playerName}
-        <p class="mobile-nav__drawer-player-name muted" role="presentation">{playerName}</p>
-      {/if}
-      <div class="mobile-nav__drawer-subhead">
-        <a
-          href="/me"
-          class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
-          class:mobile-nav__drawer-link--active={isMe}
-          aria-current={isMe ? 'page' : undefined}
-          onclick={closeMenu}
+      <div
+        class="mobile-nav__drawer-group mobile-nav__drawer-group--team"
+        role="group"
+        aria-label={$t('nav.teamSection')}
+      >
+        <div
+          class="mobile-nav__drawer-subhead mobile-nav__drawer-subhead--team"
+          class:mobile-nav__drawer-subhead--team-expanded={teamOpen}
         >
-          <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-            <IconUser size={24} />
-          </span>
-          {$t('nav.mobileMe')}
-        </a>
-        <button
-          type="button"
-          class="mobile-nav__drawer-chevron-btn"
-          id="mobile-nav-drawer-account-toggle"
-          aria-expanded={accountOpen}
-          aria-controls="mobile-nav-drawer-account-sub"
-          aria-label={$t('nav.openAccountMenu')}
-          onclick={() => (accountOpen = !accountOpen)}
-        >
-          <svg
-            class="mobile-nav__drawer-chevron-svg"
-            class:mobile-nav__drawer-chevron-svg--open={accountOpen}
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
-          >
-            <path
-              d="m6 9 6 6 6-6"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </button>
-      </div>
-      {#if accountOpen}
-        <div id="mobile-nav-drawer-account-sub" role="group" aria-labelledby="mobile-nav-drawer-account-toggle">
-          <button
-            type="button"
-            class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--button"
-            onclick={openLogoutPrompt}
+          <a
+            href="/team"
+            class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
+            class:mobile-nav__drawer-link--active={isTeam}
+            onclick={closeMenu}
           >
             <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-              <IconLogOut size={20} />
+              <IconTeam size={24} />
             </span>
-            {$t('nav.logOut')}
+            {$t('nav.team')}
+          </a>
+          <button
+            type="button"
+            class="mobile-nav__drawer-chevron-btn mobile-nav__drawer-chevron-btn--team"
+            id="mobile-nav-drawer-team-toggle"
+            aria-expanded={teamOpen}
+            aria-controls="mobile-nav-drawer-team-sub"
+            aria-label={$t('nav.openTeamSubmenu')}
+            onclick={() => (teamOpen = !teamOpen)}
+          >
+            <svg
+              class="mobile-nav__drawer-chevron-svg"
+              class:mobile-nav__drawer-chevron-svg--open={teamOpen}
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="m6 9 6 6 6-6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
           </button>
         </div>
-      {/if}
-    </div>
-    <div class="mobile-nav__drawer-divider" role="separator" aria-hidden="true"></div>
-    <button
-      type="button"
-      class="mobile-nav__drawer-footer-close btn"
-      onclick={closeMenu}
-    >
-      <IconClose size={22} />
-      {$t('common.closeMenu')}
-    </button>
+        {#if teamOpen}
+          <div id="mobile-nav-drawer-team-sub" class="mobile-nav__drawer-team-sub">
+            <div
+              class="mobile-nav__drawer-team-heading muted"
+              id="mobile-nav-drawer-team-sub-label"
+            >
+              {$t('team.tablistLabel')}
+            </div>
+            <div
+              class="mobile-nav__drawer-team-panel"
+              role="group"
+              aria-labelledby="mobile-nav-drawer-team-sub-label"
+            >
+              {#each TEAM_TAB_IDS as tabId (tabId)}
+                {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
+                <a
+                  href="/team?tab={tabId}"
+                  class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--team-tab"
+                  class:mobile-nav__drawer-link--active={isTeam && activeTeamTab === tabId}
+                  aria-current={isTeam && activeTeamTab === tabId ? 'page' : undefined}
+                  onclick={closeMenu}
+                >
+                  <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+                    <TabIcon size={20} />
+                  </span>
+                  {$t(`team.tabs.${tabId}`)}
+                </a>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+      <div
+        class="mobile-nav__drawer-group mobile-nav__drawer-group--language"
+        role="group"
+        aria-labelledby="mobile-nav-drawer-lang-label"
+      >
+        <div class="mobile-nav__drawer-lang-wrap">
+          <div class="mobile-nav__drawer-lang-label muted" id="mobile-nav-drawer-lang-label">
+            {$t('common.language')}
+          </div>
+          <div class="mobile-nav__drawer-lang">
+            <button
+              type="button"
+              class="mobile-nav__drawer-lang-btn"
+              class:mobile-nav__drawer-lang-btn--active={$locale === 'de'}
+              aria-pressed={$locale === 'de'}
+              onclick={() => pickLocale('de')}
+            >
+              {$t('lang.deShort')}
+            </button>
+            <button
+              type="button"
+              class="mobile-nav__drawer-lang-btn"
+              class:mobile-nav__drawer-lang-btn--active={$locale === 'en'}
+              aria-pressed={$locale === 'en'}
+              onclick={() => pickLocale('en')}
+            >
+              {$t('lang.enShort')}
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.accountSection')}>
+        {#if playerName}
+          <p class="mobile-nav__drawer-player-name muted" role="presentation">{playerName}</p>
+        {/if}
+        <div class="mobile-nav__drawer-subhead">
+          <a
+            href="/me"
+            class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
+            class:mobile-nav__drawer-link--active={isMe}
+            aria-current={isMe ? 'page' : undefined}
+            onclick={closeMenu}
+          >
+            <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+              <IconUser size={24} />
+            </span>
+            {$t('nav.mobileMe')}
+          </a>
+          <button
+            type="button"
+            class="mobile-nav__drawer-chevron-btn"
+            id="mobile-nav-drawer-account-toggle"
+            aria-expanded={accountOpen}
+            aria-controls="mobile-nav-drawer-account-sub"
+            aria-label={$t('nav.openAccountMenu')}
+            onclick={() => (accountOpen = !accountOpen)}
+          >
+            <svg
+              class="mobile-nav__drawer-chevron-svg"
+              class:mobile-nav__drawer-chevron-svg--open={accountOpen}
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="m6 9 6 6 6-6"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </div>
+        {#if accountOpen}
+          <div
+            id="mobile-nav-drawer-account-sub"
+            role="group"
+            aria-labelledby="mobile-nav-drawer-account-toggle"
+          >
+            <button
+              type="button"
+              class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--button"
+              onclick={openLogoutPrompt}
+            >
+              <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+                <IconLogOut size={20} />
+              </span>
+              {$t('nav.logOut')}
+            </button>
+          </div>
+        {/if}
+      </div>
+      <div class="mobile-nav__drawer-divider" role="separator" aria-hidden="true"></div>
+      <button type="button" class="mobile-nav__drawer-footer-close btn" onclick={closeMenu}>
+        <IconClose size={22} />
+        {$t('common.closeMenu')}
+      </button>
     </div>
 
     {#if showLogoutPrompt}
@@ -450,15 +455,27 @@
           aria-label={$t('nav.logOutCancel')}
           onclick={closeLogoutPrompt}
         ></button>
-        <div class="delete-game-modal__card card" use:focusTrap={{ focusRoot: true }} use:scrollLock>
-          <h2 id="logout-confirm-title" class="delete-game-modal__title">{$t('nav.logOutConfirmTitle')}</h2>
+        <div
+          class="delete-game-modal__card card"
+          use:focusTrap={{ focusRoot: true }}
+          use:scrollLock
+        >
+          <h2 id="logout-confirm-title" class="delete-game-modal__title">
+            {$t('nav.logOutConfirmTitle')}
+          </h2>
           <p class="delete-game-modal__text muted">{$t('nav.logOutConfirmBody')}</p>
           <div class="delete-game-modal__actions row">
-            <button type="button" class="btn btn--primary btn--icon" onclick={() => void confirmLogout()}>
+            <button
+              type="button"
+              class="btn btn--primary btn--icon"
+              onclick={() => void confirmLogout()}
+            >
               <IconLogOut size={18} />
               {$t('nav.logOut')}
             </button>
-            <button type="button" class="btn" onclick={closeLogoutPrompt}>{$t('nav.logOutCancel')}</button>
+            <button type="button" class="btn" onclick={closeLogoutPrompt}
+              >{$t('nav.logOutCancel')}</button
+            >
           </div>
         </div>
       </div>

@@ -50,8 +50,7 @@
     try {
       overview = await fetchTeamOverview();
     } catch (err) {
-      error =
-        err instanceof Error ? err.message : translate(getLocale(), 'team.loadError');
+      error = err instanceof Error ? err.message : translate(getLocale(), 'team.loadError');
     } finally {
       loading = false;
     }
@@ -126,13 +125,16 @@
   {:else if error}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
-      <button type="button" class="btn" onclick={() => void loadOverview()}>{$t('common.retry')}</button>
+      <button type="button" class="btn" onclick={() => void loadOverview()}
+        >{$t('common.retry')}</button
+      >
     </div>
   {:else if overview && !overview.hasTeam}
     <div class="card stack">
       <h1 class="card__title">{$t('team.noTeamTitle')}</h1>
       <p class="card__sub">
-        {$t('team.noTeamBefore')}<a href="/me">{$t('team.noTeamLink')}</a>{$t('team.noTeamAfter')}</p>
+        {$t('team.noTeamBefore')}<a href="/me">{$t('team.noTeamLink')}</a>{$t('team.noTeamAfter')}
+      </p>
     </div>
   {:else if overview}
     <div class="team-header card">
@@ -163,7 +165,11 @@
           </div>
         {/if}
       </div>
-      <div class="team-header__metrics" role="group" aria-label={$t('team.header.metricsGroupLabel')}>
+      <div
+        class="team-header__metrics"
+        role="group"
+        aria-label={$t('team.header.metricsGroupLabel')}
+      >
         <div class="team-metric">
           <IconUsers size={22} className="team-metric__icon" />
           <div class="team-metric__text">
@@ -262,7 +268,7 @@
     >
       {#if activeTab === 'members'}
         <TeamTabMembers
-          isAdmin={isAdmin}
+          {isAdmin}
           team={overview.team}
           currentPlayerId={overview.playerId}
           onChange={handleTabRefresh}
@@ -294,7 +300,7 @@
       hidden={activeTab !== 'penalties'}
     >
       {#if activeTab === 'penalties'}
-        <TeamTabPenalties isAdmin={isAdmin} />
+        <TeamTabPenalties {isAdmin} />
       {/if}
     </div>
 
@@ -306,7 +312,7 @@
       hidden={activeTab !== 'court'}
     >
       {#if activeTab === 'court'}
-        <TeamTabCourt isAdmin={isAdmin} currentPlayerId={overview.playerId} />
+        <TeamTabCourt {isAdmin} currentPlayerId={overview.playerId} />
       {/if}
     </div>
 
@@ -319,7 +325,7 @@
     >
       {#if activeTab === 'finance'}
         <TeamTabFinance
-          isAdmin={isAdmin}
+          {isAdmin}
           balance={overview.balance}
           authMeStore={authMe}
           onChange={handleTabRefresh}
@@ -565,7 +571,9 @@
     cursor: pointer;
     color: var(--muted);
     background: color-mix(in srgb, var(--bg) 88%, transparent);
-    transition: color 0.15s ease, background 0.15s ease;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
   }
 
   .team-tabs__edge:hover {
@@ -627,7 +635,9 @@
     border-bottom: 2px solid transparent;
     cursor: pointer;
     margin-bottom: -1px;
-    transition: color var(--transition), border-color var(--transition);
+    transition:
+      color var(--transition),
+      border-color var(--transition);
     white-space: nowrap;
   }
 

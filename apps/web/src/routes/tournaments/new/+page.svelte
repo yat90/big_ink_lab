@@ -67,8 +67,10 @@
   <h1 class="page-title">{$t('tournaments.new.title')}</h1>
   <p class="page-sub">
     {$t('tournaments.new.introBefore')}<strong>{$t('tournaments.new.introStrong')}</strong>{$t(
-      'tournaments.new.introMiddle',
-    )}<a href="/tournaments">{$t('tournaments.new.introListLink')}</a>{$t('tournaments.new.introAfter')}
+      'tournaments.new.introMiddle'
+    )}<a href="/tournaments">{$t('tournaments.new.introListLink')}</a>{$t(
+      'tournaments.new.introAfter'
+    )}
   </p>
 
   <form class="card stack tournament-new__form" onsubmit={onSubmit}>
@@ -79,20 +81,10 @@
     <input id="tn-date" type="date" class="input" bind:value={date} required />
 
     <label class="label" for="tn-loc">{$t('common.location')}</label>
-    <input
-      id="tn-loc"
-      class="input"
-      bind:value={location}
-      placeholder={$t('common.optional')}
-    />
+    <input id="tn-loc" class="input" bind:value={location} placeholder={$t('common.optional')} />
 
     <label class="label" for="tn-url">{$t('common.url')}</label>
-    <input
-      id="tn-url"
-      class="input"
-      bind:value={url}
-      placeholder={$t('common.urlPlaceholder')}
-    />
+    <input id="tn-url" class="input" bind:value={url} placeholder={$t('common.urlPlaceholder')} />
 
     <label class="label" for="tn-meta">{$t('common.meta')}</label>
     <input

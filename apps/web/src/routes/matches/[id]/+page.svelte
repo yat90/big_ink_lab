@@ -6,11 +6,7 @@
   import { getLocale, translate, t, locale } from '$lib/i18n';
   import { get } from 'svelte/store';
   import { type Game, type GameStatus, STAGE_OPTIONS } from '$lib/matches';
-  import type {
-    LorcanaMatch,
-    LorcanaMatchDeckRef,
-    LorcanaMatchPlayer,
-  } from '$lib/lorcana-match';
+  import type { LorcanaMatch, LorcanaMatchDeckRef, LorcanaMatchPlayer } from '$lib/lorcana-match';
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
@@ -45,7 +41,6 @@
   /** Full deck data (with cards) for match decks, keyed by deck id. */
   let deckDetails = $state<Record<string, Deck>>({});
   let loading = $state(true);
-  let saving = $state(false);
   let error = $state('');
   let deleting = $state(false);
   let addingGame = $state(false);
@@ -106,7 +101,6 @@
       return 0;
     })
   );
-  const isQuickMatch = $derived(!p1Id && !p2Id);
   /** Current user's linked player id; set after loading /auth/me. */
   let myPlayerId = $state<string | null>(null);
   /** True if the current user is p1 or p2 and can edit the match. */
@@ -128,12 +122,15 @@
   /** Display name for UI: localized Player 1 / Player 2 when no player selected. */
   function displayPlayerName(
     p: Player | LorcanaMatchPlayer | string | undefined,
-    which: 1 | 2,
+    which: 1 | 2
   ): string {
     void get(locale);
     const name = playerName(p);
     if (name !== '–') return name;
-    return translate(get(locale), which === 1 ? 'matches.detail.player1' : 'matches.detail.player2');
+    return translate(
+      get(locale),
+      which === 1 ? 'matches.detail.player1' : 'matches.detail.player2'
+    );
   }
 
   function formatDate(s: string | undefined): string {
@@ -209,7 +206,11 @@
           ? (g.winner as { _id?: string })._id
           : g.winner;
       winner =
-        wid === p1Id ? p1Name : wid === p2Id ? p2Name : translate(getLocale(), 'matches.detail.winnerWord');
+        wid === p1Id
+          ? p1Name
+          : wid === p2Id
+            ? p2Name
+            : translate(getLocale(), 'matches.detail.winnerWord');
     }
     const events = getGameEventsForPopup(gameIndex).map((e) => ({
       time: e.time,
@@ -253,7 +254,11 @@
             ? (g.winner as { _id?: string })._id
             : g.winner;
         winner =
-          wid === p1Id ? p1Name : wid === p2Id ? p2Name : translate(getLocale(), 'matches.detail.winnerWord');
+          wid === p1Id
+            ? p1Name
+            : wid === p2Id
+              ? p2Name
+              : translate(getLocale(), 'matches.detail.winnerWord');
       }
       return {
         gameIndex: i,
@@ -286,7 +291,7 @@
       deck as AnalyseDeckRef | string | undefined,
       getDeckId(deck),
       deckDetails,
-      (d) => getDeckDisplayName(d as DeckRef | LorcanaMatchDeckRef | string | undefined),
+      (d) => getDeckDisplayName(d as DeckRef | LorcanaMatchDeckRef | string | undefined)
     );
   }
 
@@ -490,9 +495,9 @@
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       error =
-          typeof data.message === 'string' && data.message.trim()
-            ? data.message.trim()
-            : translate(getLocale(), 'matches.detail.updateFailed');
+        typeof data.message === 'string' && data.message.trim()
+          ? data.message.trim()
+          : translate(getLocale(), 'matches.detail.updateFailed');
       return false;
     }
     match = await res.json();
@@ -738,7 +743,9 @@
               >{$t('matches.list.pillId')}</span
             >
           {:else if isBye}
-            <span class="matchcard__pill--bye" title={$t('matches.list.pillByeTitle')}>{$t('matches.list.pillBye')}</span>
+            <span class="matchcard__pill--bye" title={$t('matches.list.pillByeTitle')}
+              >{$t('matches.list.pillBye')}</span
+            >
           {/if}
 
           {#if canEditMatch}
@@ -821,12 +828,18 @@
                 <span class="matchcard__name_text">
                   {displayPlayerName(match.p1, 1)}
                   {#if !isIntentionalDraw && matchWinnerId === p1Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}>
+                    <span
+                      class="matchcard__badge matchcard__badge--winner"
+                      aria-label={$t('matches.list.winnerAria')}
+                    >
                       <IconCrown size={16} />
                     </span>
                   {/if}
                 </span>
-                <span class="matchcard__deck-readonly" aria-label={$t('matches.detail.p1DeckColorAria')}>
+                <span
+                  class="matchcard__deck-readonly"
+                  aria-label={$t('matches.detail.p1DeckColorAria')}
+                >
                   <InkIcons deckColor={match.p1DeckColor} size="sm" />
                   {#if getDeckDisplayName(match.p1Deck) !== '—'}
                     {#if p1DeckId}
@@ -859,12 +872,18 @@
                 <span class="matchcard__name_text">
                   {displayPlayerName(match.p2, 2)}
                   {#if !isIntentionalDraw && matchWinnerId === p2Id}
-                    <span class="matchcard__badge matchcard__badge--winner" aria-label={$t('matches.list.winnerAria')}>
+                    <span
+                      class="matchcard__badge matchcard__badge--winner"
+                      aria-label={$t('matches.list.winnerAria')}
+                    >
                       <IconCrown size={16} />
                     </span>
                   {/if}
                 </span>
-                <span class="matchcard__deck-readonly" aria-label={$t('matches.detail.p2DeckColorAria')}>
+                <span
+                  class="matchcard__deck-readonly"
+                  aria-label={$t('matches.detail.p2DeckColorAria')}
+                >
                   <InkIcons deckColor={match.p2DeckColor} size="sm" />
                   {#if getDeckDisplayName(match.p2Deck) !== '—'}
                     {#if p2DeckId}
@@ -932,8 +951,16 @@
               <span>{$t('matches.detail.winnerLabel')}</span>
             </dt>
             <dd>
-              <div class="match-page__winner-block" role="group" aria-label={$t('matches.detail.matchWinnerGroupAria')}>
-                <div class="match-page__toggle" role="group" aria-label={$t('matches.detail.chooseWinnerGroupAria')}>
+              <div
+                class="match-page__winner-block"
+                role="group"
+                aria-label={$t('matches.detail.matchWinnerGroupAria')}
+              >
+                <div
+                  class="match-page__toggle"
+                  role="group"
+                  aria-label={$t('matches.detail.chooseWinnerGroupAria')}
+                >
                   {#if p1Id}
                     <button
                       type="button"
@@ -943,8 +970,8 @@
                       onclick={() => onMatchWinnerChange(p1Id)}
                       aria-pressed={matchWinnerId === p1Id}
                       aria-label={translate(getLocale(), 'matches.detail.winsAria', {
-                      name: displayPlayerName(match.p1, 1),
-                    })}
+                        name: displayPlayerName(match.p1, 1),
+                      })}
                     >
                       {displayPlayerName(match.p1, 1)}
                     </button>
@@ -969,8 +996,8 @@
                       onclick={() => onMatchWinnerChange(p2Id)}
                       aria-pressed={matchWinnerId === p2Id}
                       aria-label={translate(getLocale(), 'matches.detail.winsAria', {
-                      name: displayPlayerName(match.p2, 2),
-                    })}
+                        name: displayPlayerName(match.p2, 2),
+                      })}
                     >
                       {displayPlayerName(match.p2, 2)}
                     </button>
@@ -1083,14 +1110,18 @@
           onclick={closeDeleteMatchModal}
         ></button>
         <div class="delete-game-modal__card card">
-          <h2 id="delete-match-title" class="delete-game-modal__title">{$t('matches.detail.deleteMatchHeading')}</h2>
+          <h2 id="delete-match-title" class="delete-game-modal__title">
+            {$t('matches.detail.deleteMatchHeading')}
+          </h2>
           <p class="delete-game-modal__text muted">{$t('matches.detail.deleteMatchBody')}</p>
           <div class="delete-game-modal__actions row">
             <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteMatch}>
               <IconTrash size={18} className="icon-trash" />
               {$t('matches.detail.deleteLabel')}
             </button>
-            <button type="button" class="btn" onclick={closeDeleteMatchModal}>{$t('common.cancel')}</button>
+            <button type="button" class="btn" onclick={closeDeleteMatchModal}
+              >{$t('common.cancel')}</button
+            >
           </div>
         </div>
       </div>
@@ -1111,14 +1142,18 @@
           onclick={closeDeleteGameModal}
         ></button>
         <div class="delete-game-modal__card card">
-          <h2 id="delete-game-title" class="delete-game-modal__title">{$t('matches.detail.deleteGameHeading')}</h2>
+          <h2 id="delete-game-title" class="delete-game-modal__title">
+            {$t('matches.detail.deleteGameHeading')}
+          </h2>
           <p class="delete-game-modal__text muted">{$t('matches.detail.deleteGameBody')}</p>
           <div class="delete-game-modal__actions row">
             <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteGame}>
               <IconTrash size={18} className="icon-trash" />
               {$t('matches.detail.deleteLabel')}
             </button>
-            <button type="button" class="btn" onclick={closeDeleteGameModal}>{$t('common.cancel')}</button>
+            <button type="button" class="btn" onclick={closeDeleteGameModal}
+              >{$t('common.cancel')}</button
+            >
           </div>
         </div>
       </div>
@@ -1457,7 +1492,9 @@
     background: transparent;
     color: var(--fg);
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
     border-right: 1px solid var(--border);
     min-width: 0;
   }

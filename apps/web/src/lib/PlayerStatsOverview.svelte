@@ -89,7 +89,9 @@
         </div>
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.matchesWon}</span>
-          <span class="player-stats-overview__label muted">{$t('statistics.playerOverview.matchesWon')}</span>
+          <span class="player-stats-overview__label muted"
+            >{$t('statistics.playerOverview.matchesWon')}</span
+          >
         </div>
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.matchWinRate}%</span>
@@ -104,15 +106,21 @@
       <div class="player-stats-overview__row">
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.gamesPlayed}</span>
-          <span class="player-stats-overview__label muted">{$t('statistics.playerOverview.gamesPlayed')}</span>
+          <span class="player-stats-overview__label muted"
+            >{$t('statistics.playerOverview.gamesPlayed')}</span
+          >
         </div>
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.gamesWon}</span>
-          <span class="player-stats-overview__label muted">{$t('statistics.playerOverview.gamesWon')}</span>
+          <span class="player-stats-overview__label muted"
+            >{$t('statistics.playerOverview.gamesWon')}</span
+          >
         </div>
         <div class="player-stats-overview__item">
           <span class="player-stats-overview__value">{stats.gameWinRate}%</span>
-          <span class="player-stats-overview__label muted">{$t('statistics.playerOverview.gameWinRate')}</span>
+          <span class="player-stats-overview__label muted"
+            >{$t('statistics.playerOverview.gameWinRate')}</span
+          >
         </div>
         {#if stats.avgLoreInLostGames != null}
           <div class="player-stats-overview__item">
@@ -131,7 +139,10 @@
     <p class="player-stats-overview__description muted">
       {$t('statistics.playerOverview.starterExplainer')}
     </p>
-    <table class="player-stats-overview__table" aria-label={$t('statistics.playerOverview.tableAriaStarting')}>
+    <table
+      class="player-stats-overview__table"
+      aria-label={$t('statistics.playerOverview.tableAriaStarting')}
+    >
       <thead>
         <tr>
           <th scope="col"></th>
@@ -148,7 +159,9 @@
           <td>{stats.gamesNotStarter}</td>
         </tr>
         <tr>
-          <th scope="row" class="player-stats-overview__table-row-header">{$t('statistics.playerOverview.rowWon')}</th>
+          <th scope="row" class="player-stats-overview__table-row-header"
+            >{$t('statistics.playerOverview.rowWon')}</th
+          >
           <td>{stats.gamesWonAsStarter}</td>
           <td>{stats.gamesWonNotStarter}</td>
         </tr>
@@ -168,7 +181,7 @@
       <h3>{$t('statistics.playerOverview.byDeckColors')}</h3>
       <MatchupStatistics
         matrix={stats.deckColorMatrix}
-        bind:analysisMode={analysisMode}
+        bind:analysisMode
         onchange={onMatrixModeChange}
         title={$t('statistics.matrix.titleDefault')}
         emptyText={emptyText || $t('statistics.matrix.emptyDefault')}

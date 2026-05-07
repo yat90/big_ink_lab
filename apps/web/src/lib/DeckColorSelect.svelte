@@ -13,7 +13,7 @@
     disabled = false,
     onchange = undefined,
     className = '',
-    hideLabel = false
+    hideLabel = false,
   }: {
     value?: string;
     id?: string;
@@ -150,12 +150,12 @@
     class="deck-color-select__trigger input"
     class:deck-color-select__trigger--open={open}
     class:deck-color-select__trigger--disabled={disabled}
-    id={id}
+    {id}
     aria-label={ariaLabel}
     aria-haspopup="listbox"
     aria-expanded={open}
     aria-disabled={disabled}
-    disabled={disabled}
+    {disabled}
     onclick={toggle}
   >
     {#if value}

@@ -164,7 +164,7 @@ export async function updateTeamMember(
     joinedAt?: string;
     status?: MemberStatus;
     role?: MeRole;
-  },
+  }
 ): Promise<TeamMember> {
   const res = await fetch(`${apiUrl}/team/members/${playerId}`, {
     method: 'PATCH',
@@ -180,7 +180,7 @@ export async function removeTeamMember(playerId: string): Promise<void> {
 }
 
 export async function resetTeamMemberPassword(
-  playerId: string,
+  playerId: string
 ): Promise<{ temporaryPassword: string }> {
   const res = await fetch(`${apiUrl}/team/members/${playerId}/reset-password`, {
     method: 'POST',
@@ -189,7 +189,7 @@ export async function resetTeamMemberPassword(
 }
 
 export async function fetchTeamTransactions(
-  params: { page?: number; limit?: number; type?: TransactionType; playerId?: string } = {},
+  params: { page?: number; limit?: number; type?: TransactionType; playerId?: string } = {}
 ): Promise<PaginatedResult<TeamTransaction>> {
   const qs = new URLSearchParams();
   if (params.page) qs.set('page', String(params.page));
@@ -203,20 +203,15 @@ export async function fetchTeamTransactions(
 }
 
 export async function fetchMyContributions(
-  params: { page?: number; limit?: number } = {},
+  params: { page?: number; limit?: number } = {}
 ): Promise<PaginatedResult<TeamTransaction>> {
   const qs = new URLSearchParams();
   if (params.page) qs.set('page', String(params.page));
   if (params.limit) qs.set('limit', String(params.limit));
   const query = qs.toString();
-  const url = query
-    ? `${apiUrl}/team/transactions/me?${query}`
-    : `${apiUrl}/team/transactions/me`;
+  const url = query ? `${apiUrl}/team/transactions/me?${query}` : `${apiUrl}/team/transactions/me`;
   const res = await fetch(url);
-  return jsonOrThrow<PaginatedResult<TeamTransaction>>(
-    res,
-    "Couldn't load your contributions.",
-  );
+  return jsonOrThrow<PaginatedResult<TeamTransaction>>(res, "Couldn't load your contributions.");
 }
 
 export async function createTransaction(input: {
@@ -242,7 +237,7 @@ export async function updateTransaction(
     description?: string;
     occurredAt?: string;
     playerId?: string;
-  },
+  }
 ): Promise<TeamTransaction> {
   const res = await fetch(`${apiUrl}/team/transactions/${id}`, {
     method: 'PATCH',
@@ -276,10 +271,7 @@ export async function updateTeamSettings(patch: {
 
 export async function fetchTeamAccusations(): Promise<TeamAccusation[]> {
   const res = await fetch(`${apiUrl}/team/accusations`);
-  const body = await jsonOrThrow<{ data: TeamAccusation[] }>(
-    res,
-    "Couldn't load accusations.",
-  );
+  const body = await jsonOrThrow<{ data: TeamAccusation[] }>(res, "Couldn't load accusations.");
   return body.data;
 }
 
@@ -298,7 +290,7 @@ export async function createTeamAccusation(input: {
 
 export async function updateTeamAccusationStatus(
   id: string,
-  status: AccusationStatus,
+  status: AccusationStatus
 ): Promise<TeamAccusation> {
   const res = await fetch(`${apiUrl}/team/accusations/${id}`, {
     method: 'PATCH',

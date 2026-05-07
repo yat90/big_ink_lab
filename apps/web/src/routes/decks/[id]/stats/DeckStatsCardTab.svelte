@@ -97,7 +97,11 @@
             {#each curveStacked as bar (bar.cost)}
               <span class="deck-stats__curve-x-tick">
                 <span class="deck-stats__curve-x-cost">{bar.cost}</span>
-                <span class="deck-stats__curve-x-meta">{bar.total} ({curveTotal > 0 ? (bar.total / curveTotal * 100).toFixed(0) : 0}%)</span>
+                <span class="deck-stats__curve-x-meta"
+                  >{bar.total} ({curveTotal > 0
+                    ? ((bar.total / curveTotal) * 100).toFixed(0)
+                    : 0}%)</span
+                >
               </span>
             {/each}
           </div>
@@ -145,7 +149,10 @@
             </li>
             <li>
               <span class="deck-stats__pie-legend-dot" style="background: var(--muted)"></span>
-              <span>Not inkable: {inkableChart.notInkablePct.toFixed(1)}% ({stats.inkable.notInkable})</span>
+              <span
+                >Not inkable: {inkableChart.notInkablePct.toFixed(1)}% ({stats.inkable
+                  .notInkable})</span
+              >
             </li>
           </ul>
         </div>

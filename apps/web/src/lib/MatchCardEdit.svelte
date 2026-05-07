@@ -85,18 +85,18 @@
   const p1DeckName = $derived(
     (p1DeckDisplayName && p1DeckDisplayName !== '—' ? p1DeckDisplayName : null) ??
       decks.find((d) => d._id === p1DeckId)?.name ??
-      '—',
+      '—'
   );
   const p2DeckName = $derived(
     (p2DeckDisplayName && p2DeckDisplayName !== '—' ? p2DeckDisplayName : null) ??
       decks.find((d) => d._id === p2DeckId)?.name ??
-      '—',
+      '—'
   );
   const p1PlayerDisplayName = $derived(
-    p1Id ? players.find((p) => p._id === p1Id)?.name ?? 'Player 1' : 'Player 1',
+    p1Id ? (players.find((p) => p._id === p1Id)?.name ?? 'Player 1') : 'Player 1'
   );
   const p2PlayerDisplayName = $derived(
-    p2Id ? players.find((p) => p._id === p2Id)?.name ?? 'Player 2' : 'Player 2',
+    p2Id ? (players.find((p) => p._id === p2Id)?.name ?? 'Player 2') : 'Player 2'
   );
 
   const lockP1Player = $derived(!!linkedPlayerId && linkedPlayerId === p1Id);
@@ -110,7 +110,9 @@
       <div class="matchcard__edit-field">
         <span class="matchcard__edit-field-label">Player</span>
         {#if lockP1Player}
-          <p class="matchcard__edit-readonly" title="Your linked player profile">{p1PlayerDisplayName}</p>
+          <p class="matchcard__edit-readonly" title="Your linked player profile">
+            {p1PlayerDisplayName}
+          </p>
         {:else}
           <button
             type="button"
@@ -157,7 +159,9 @@
       <div class="matchcard__edit-field">
         <span class="matchcard__edit-field-label">Player</span>
         {#if lockP2Player}
-          <p class="matchcard__edit-readonly" title="Your linked player profile">{p2PlayerDisplayName}</p>
+          <p class="matchcard__edit-readonly" title="Your linked player profile">
+            {p2PlayerDisplayName}
+          </p>
         {:else}
           <button
             type="button"
@@ -211,7 +215,7 @@
     bind:open={playerPickerOpen}
     title="Select player"
     forLabel={playerPickerRole === 'p1' ? 'Player 1' : 'Player 2'}
-    excludePlayerId={playerPickerRole === 'p1' ? p2Id ?? '' : p1Id ?? ''}
+    excludePlayerId={playerPickerRole === 'p1' ? (p2Id ?? '') : (p1Id ?? '')}
     onSelect={handlePlayerSelect}
     onClose={() => (playerPickerOpen = false)}
   />

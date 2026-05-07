@@ -24,24 +24,15 @@ export function breadcrumbTrail(pathname: string): TrailSegment[] {
   if (p === '/team') return [{ key: 'nav.team' }];
 
   if (p === '/me/statistics') {
-    return [
-      { key: 'nav.mobileMe', href: '/me' },
-      { key: 'nav.myStatistics' },
-    ];
+    return [{ key: 'nav.mobileMe', href: '/me' }, { key: 'nav.myStatistics' }];
   }
   if (p === '/me') return [{ key: 'nav.mobileMe' }];
 
   if (p === '/matches/new') {
-    return [
-      { key: 'matches.list.heading', href: '/matches' },
-      { key: 'matches.new.title' },
-    ];
+    return [{ key: 'matches.list.heading', href: '/matches' }, { key: 'matches.new.title' }];
   }
   if (p === '/matches/quick') {
-    return [
-      { key: 'matches.list.heading', href: '/matches' },
-      { key: 'matches.list.quickMatch' },
-    ];
+    return [{ key: 'matches.list.heading', href: '/matches' }, { key: 'matches.list.quickMatch' }];
   }
 
   {
@@ -58,10 +49,7 @@ export function breadcrumbTrail(pathname: string): TrailSegment[] {
   {
     const m = p.match(new RegExp(`^/matches/(${OID})$`, 'i'));
     if (m) {
-      return [
-        { key: 'matches.list.heading', href: '/matches' },
-        { key: 'breadcrumb.match' },
-      ];
+      return [{ key: 'matches.list.heading', href: '/matches' }, { key: 'breadcrumb.match' }];
     }
   }
   if (p === '/matches') return [{ key: 'matches.list.heading' }];
@@ -90,10 +78,7 @@ export function breadcrumbTrail(pathname: string): TrailSegment[] {
   if (p === '/tournaments') return [{ key: 'tournaments.list.heading' }];
 
   if (p === '/decks/new') {
-    return [
-      { key: 'decks.heading', href: '/decks' },
-      { key: 'decks.newDeck' },
-    ];
+    return [{ key: 'decks.heading', href: '/decks' }, { key: 'decks.newDeck' }];
   }
   {
     const m = p.match(new RegExp(`^/decks/(${OID})/stats$`, 'i'));
@@ -120,19 +105,13 @@ export function breadcrumbTrail(pathname: string): TrailSegment[] {
   {
     const m = p.match(new RegExp(`^/decks/(${OID})$`, 'i'));
     if (m) {
-      return [
-        { key: 'decks.heading', href: '/decks' },
-        { key: 'breadcrumb.deck' },
-      ];
+      return [{ key: 'decks.heading', href: '/decks' }, { key: 'breadcrumb.deck' }];
     }
   }
   if (p === '/decks') return [{ key: 'decks.heading' }];
 
   if (p === '/players/new') {
-    return [
-      { key: 'nav.players', href: '/players' },
-      { key: 'breadcrumb.newPlayer' },
-    ];
+    return [{ key: 'nav.players', href: '/players' }, { key: 'breadcrumb.newPlayer' }];
   }
   {
     const m = p.match(new RegExp(`^/players/(${OID})/edit$`, 'i'));
@@ -148,10 +127,7 @@ export function breadcrumbTrail(pathname: string): TrailSegment[] {
   {
     const m = p.match(new RegExp(`^/players/(${OID})$`, 'i'));
     if (m) {
-      return [
-        { key: 'nav.players', href: '/players' },
-        { key: 'breadcrumb.player' },
-      ];
+      return [{ key: 'nav.players', href: '/players' }, { key: 'breadcrumb.player' }];
     }
   }
   if (p === '/players') return [{ key: 'nav.players' }];

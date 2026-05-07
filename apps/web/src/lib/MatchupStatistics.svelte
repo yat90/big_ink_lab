@@ -36,12 +36,12 @@
     if (mode === 'games') {
       return translate(
         loc,
-        played === 1 ? 'statistics.matrix.unitGame' : 'statistics.matrix.unitGames',
+        played === 1 ? 'statistics.matrix.unitGame' : 'statistics.matrix.unitGames'
       );
     }
     return translate(
       loc,
-      played === 1 ? 'statistics.matrix.unitMatch' : 'statistics.matrix.unitMatches',
+      played === 1 ? 'statistics.matrix.unitMatch' : 'statistics.matrix.unitMatches'
     );
   }
 
@@ -50,7 +50,7 @@
     oppDeck: string,
     winPct: number | null,
     cell: MatrixCell,
-    mode: MatrixMode,
+    mode: MatrixMode
   ): string {
     const loc = get(locale);
     const unitLabel = countUnitLabel(mode, cell.played);
@@ -84,7 +84,11 @@
       <h3 class="matchup-matrix__title">{title || $t('statistics.matrix.titleDefault')}</h3>
       <p class="matchup-matrix__sub muted">{subtitle}</p>
     </div>
-    <div class="matchup-matrix__toggle" role="group" aria-label={$t('statistics.matrix.analyzeByAria')}>
+    <div
+      class="matchup-matrix__toggle"
+      role="group"
+      aria-label={$t('statistics.matrix.analyzeByAria')}
+    >
       <button
         type="button"
         class="matchup-matrix__toggle-btn"
@@ -128,12 +132,13 @@
               {#each DECK_COLOR_OPTIONS as oppDeck}
                 {@const cell = matrix?.[myDeck]?.[oppDeck]}
                 {@const winPct = cell ? Math.round((cell.won / cell.played) * 100) : null}
-                {@const countLabel =
-                  cell ? countUnitLabel(analysisMode, cell.played) : ''}
+                {@const countLabel = cell ? countUnitLabel(analysisMode, cell.played) : ''}
                 <td
                   class="matchup-matrix__cell"
                   class:matchup-matrix__cell--tinted={winPct != null}
-                  style={winPct != null ? `background-color: ${backgroundColorForPercent(winPct)}` : ''}
+                  style={winPct != null
+                    ? `background-color: ${backgroundColorForPercent(winPct)}`
+                    : ''}
                 >
                   {#if cell}
                     <span

@@ -52,28 +52,22 @@
   let actionsMenuLayout = $state<ActionsMenuLayout | null>(null);
 
   const openActionsRow = $derived(
-    openActionsRowId ? (accusations.find((a) => a.id === openActionsRowId) ?? null) : null,
+    openActionsRowId ? (accusations.find((a) => a.id === openActionsRowId) ?? null) : null
   );
 
-  const accusableMembers = $derived(
-    members.filter((m) => m.playerId !== currentPlayerId),
-  );
+  const accusableMembers = $derived(members.filter((m) => m.playerId !== currentPlayerId));
 
   const showCourtActionsCol = $derived(
     isAdmin ||
       accusations.some(
         (a) =>
-          a.status === 'open' &&
-          currentPlayerId !== null &&
-          a.accuser.playerId === currentPlayerId,
-      ),
+          a.status === 'open' && currentPlayerId !== null && a.accuser.playerId === currentPlayerId
+      )
   );
 
   function canDeleteOwnAccusation(row: TeamAccusation): boolean {
     return (
-      row.status === 'open' &&
-      currentPlayerId !== null &&
-      row.accuser.playerId === currentPlayerId
+      row.status === 'open' && currentPlayerId !== null && row.accuser.playerId === currentPlayerId
     );
   }
 
@@ -179,8 +173,7 @@
         penaltyId = '';
       }
     } catch (err) {
-      loadError =
-        err instanceof Error ? err.message : translate(getLocale(), 'court.loadError');
+      loadError = err instanceof Error ? err.message : translate(getLocale(), 'court.loadError');
       members = [];
       penalties = [];
       accusations = [];
@@ -208,8 +201,7 @@
       penaltyId = '';
       await loadAll();
     } catch (err) {
-      fileError =
-        err instanceof Error ? err.message : translate(getLocale(), 'court.fileError');
+      fileError = err instanceof Error ? err.message : translate(getLocale(), 'court.fileError');
     } finally {
       filing = false;
     }
@@ -336,7 +328,9 @@
     {#if !currentPlayerId}
       <div class="card court-room__notice" role="status">
         <p class="court-room__notice-text">
-          {$t('court.noticeNoPlayerBefore')}<a href="/me">{$t('court.noticeNoPlayerLink')}</a>{$t('court.noticeNoPlayerAfter')}
+          {$t('court.noticeNoPlayerBefore')}<a href="/me">{$t('court.noticeNoPlayerLink')}</a>{$t(
+            'court.noticeNoPlayerAfter'
+          )}
         </p>
       </div>
     {:else if accusableMembers.length === 0}
@@ -491,7 +485,9 @@
       data-court-panel-for={openActionsRowId}
       style:top="{actionsMenuLayout.top}px"
       style:right="{actionsMenuLayout.right}px"
-      style:max-height={actionsMenuLayout.maxHeight !== undefined ? `${actionsMenuLayout.maxHeight}px` : undefined}
+      style:max-height={actionsMenuLayout.maxHeight !== undefined
+        ? `${actionsMenuLayout.maxHeight}px`
+        : undefined}
       role="menu"
       id="court-actions-panel-{openActionsRow.id}"
       aria-labelledby="court-actions-btn-{openActionsRow.id}"
@@ -539,7 +535,9 @@
           onclick={() => openWithdrawPrompt(openActionsRow)}
         >
           <IconTrash size={16} className="court-actions-menu__item-icon" />
-          {deletingId === openActionsRow.id ? $t('court.menuWithdrawing') : $t('court.menuWithdraw')}
+          {deletingId === openActionsRow.id
+            ? $t('court.menuWithdrawing')
+            : $t('court.menuWithdraw')}
         </button>
       {/if}
     </div>
@@ -558,16 +556,14 @@
         aria-label={$t('court.backdropCancel')}
         onclick={closeWithdrawPrompt}
       ></button>
-      <div
-        class="delete-game-modal__card card"
-        use:focusTrap={{ focusRoot: true }}
-        use:scrollLock
-      >
+      <div class="delete-game-modal__card card" use:focusTrap={{ focusRoot: true }} use:scrollLock>
         <h2 id="court-withdraw-title" class="delete-game-modal__title">
           {$t('court.withdrawModalTitle')}
         </h2>
         <p class="delete-game-modal__text muted">
-          {$t('court.withdrawModalBodyBefore')}<strong>{withdrawPromptRow.accused.name}</strong>{$t('court.withdrawModalBodyAfter')}
+          {$t('court.withdrawModalBodyBefore')}<strong>{withdrawPromptRow.accused.name}</strong>{$t(
+            'court.withdrawModalBodyAfter'
+          )}
         </p>
         <div class="delete-game-modal__actions row">
           <button

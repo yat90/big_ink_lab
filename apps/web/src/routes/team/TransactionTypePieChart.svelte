@@ -61,9 +61,7 @@
     return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
   }
 
-  type SliceDraw =
-    | { kind: 'circle'; seg: Seg }
-    | { kind: 'path'; d: string; seg: Seg };
+  type SliceDraw = { kind: 'circle'; seg: Seg } | { kind: 'path'; d: string; seg: Seg };
 
   const slices = $derived.by((): SliceDraw[] => {
     if (totalVolume <= 0) return [];

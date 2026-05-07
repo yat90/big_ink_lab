@@ -50,12 +50,7 @@
 </script>
 
 <div use:portal>
-  <div
-    class="modal-overlay"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="edit-member-title"
-  >
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="edit-member-title">
     <button type="button" class="modal-backdrop" aria-label="Close" onclick={onClose}></button>
     <div class="card modal-card" use:focusTrap={{ focusRoot: true }} use:scrollLock>
       <h2 id="edit-member-title" class="card__title">Edit {member.name}</h2>

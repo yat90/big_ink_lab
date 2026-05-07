@@ -44,7 +44,10 @@
             <th class="deck-stats__mulligan-ink-th">Ink</th>
             <th class="deck-stats__mulligan-cost-th">Cost</th>
             <th>Card</th>
-            <th class="deck-stats__num deck-stats__th-sort" aria-sort={sortByChance === 'desc' ? 'descending' : 'ascending'}>
+            <th
+              class="deck-stats__num deck-stats__th-sort"
+              aria-sort={sortByChance === 'desc' ? 'descending' : 'ascending'}
+            >
               <button
                 type="button"
                 class="deck-stats__th-sort-btn"
@@ -61,29 +64,49 @@
               <td class="deck-stats__mulligan-count">{row.amount}×</td>
               <td class="deck-stats__mulligan-ink">
                 {#if row.ink && INK_IMAGE[row.ink]}
-                  <img src={INK_IMAGE[row.ink]} alt="" width="24" height="24" class="deck-stats__mulligan-ink-img" aria-hidden="true" />
+                  <img
+                    src={INK_IMAGE[row.ink]}
+                    alt=""
+                    width="24"
+                    height="24"
+                    class="deck-stats__mulligan-ink-img"
+                    aria-hidden="true"
+                  />
                 {:else}
                   <span class="deck-stats__mulligan-ink-na" aria-hidden="true">—</span>
                 {/if}
               </td>
               <td class="deck-stats__mulligan-cost">
                 <span
-                  class="deck-stats__mulligan-inkable deck-stats__mulligan-inkable--{row.inkwell ? 'inkwell' : row.cost != null ? 'cost' : 'na'}"
-                  title={row.inkwell ? `Inkable, cost ${row.cost ?? '?'}` : row.cost != null ? `Cost ${row.cost} (not inkable)` : 'No cost'}
+                  class="deck-stats__mulligan-inkable deck-stats__mulligan-inkable--{row.inkwell
+                    ? 'inkwell'
+                    : row.cost != null
+                      ? 'cost'
+                      : 'na'}"
+                  title={row.inkwell
+                    ? `Inkable, cost ${row.cost ?? '?'}`
+                    : row.cost != null
+                      ? `Cost ${row.cost} (not inkable)`
+                      : 'No cost'}
                 >
                   {#if row.inkwell && row.cost != null}
                     <span class="deck-stats__mulligan-inkable-num">{row.cost}</span>
                   {:else if row.cost != null}
-                    <span class="deck-stats__mulligan-inkable-num deck-stats__mulligan-inkable-num--plain">{row.cost}</span>
+                    <span
+                      class="deck-stats__mulligan-inkable-num deck-stats__mulligan-inkable-num--plain"
+                      >{row.cost}</span
+                    >
                   {:else}
                     <span class="deck-stats__mulligan-inkable-na" aria-hidden="true">—</span>
                   {/if}
                 </span>
               </td>
-              <td><div class="deck-stats__mulligan-card">{row.name}
-                {#if row.version}
-                  <span class="deck-stats__mulligan-version muted">{row.version}</span>
-                {/if}
+              <td
+                ><div class="deck-stats__mulligan-card">
+                  {row.name}
+                  {#if row.version}
+                    <span class="deck-stats__mulligan-version muted">{row.version}</span>
+                  {/if}
                 </div>
               </td>
               <td class="deck-stats__num">{(row.probability * 100).toFixed(1)}%</td>
@@ -93,7 +116,9 @@
       </table>
     </div>
   {:else}
-    <p class="muted">No card list available. Save the deck with a valid deck list to see mulligan probabilities.</p>
+    <p class="muted">
+      No card list available. Save the deck with a valid deck list to see mulligan probabilities.
+    </p>
   {/if}
 </div>
 
@@ -187,7 +212,9 @@
     font-size: 0.7rem;
     font-weight: 700;
     color: #d4b889;
-    text-shadow: 0 0 1px rgba(0, 0, 0, 0.8), 0 1px 2px rgba(0, 0, 0, 0.6);
+    text-shadow:
+      0 0 1px rgba(0, 0, 0, 0.8),
+      0 1px 2px rgba(0, 0, 0, 0.6);
   }
   .deck-stats__mulligan-inkable-num--plain {
     color: #d4b889;

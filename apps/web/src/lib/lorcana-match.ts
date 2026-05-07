@@ -53,7 +53,7 @@ export type RecentFormMatchFields = {
 /** Build a minimal {@link LorcanaMatch} from analytics “recent form” rows (viewer as P1). */
 export function recentFormToLorcanaMatch(
   r: RecentFormMatchFields,
-  viewerPlayerId: string,
+  viewerPlayerId: string
 ): LorcanaMatch {
   const games: Game[] = [];
   for (let i = 0; i < r.gamesPlayed; i++) {
@@ -104,14 +104,14 @@ export function matchStageOrTournamentLabel(m: LorcanaMatch): string {
 }
 
 export function getLorcanaMatchPlayerId(
-  p: LorcanaMatchPlayer | string | undefined,
+  p: LorcanaMatchPlayer | string | undefined
 ): string | undefined {
   if (!p) return undefined;
   return typeof p === 'string' ? p : p._id;
 }
 
 export function getLorcanaMatchDeckId(
-  ref: LorcanaMatchDeckRef | string | undefined,
+  ref: LorcanaMatchDeckRef | string | undefined
 ): string | undefined {
   if (!ref) return undefined;
   return typeof ref === 'string' ? ref : ref._id;
@@ -170,7 +170,7 @@ export type MatchLineRowView = {
 
 export function getMatchLineRowView(
   match: LorcanaMatch,
-  perspective: MatchLineRowPerspective,
+  perspective: MatchLineRowPerspective
 ): MatchLineRowView {
   const stage = match.stage ?? '–';
   const playedAt = match.playedAt;

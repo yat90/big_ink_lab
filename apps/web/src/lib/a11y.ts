@@ -58,7 +58,7 @@ export function focusTrap(node: HTMLElement, opts: FocusTrapOptions = {}) {
     const target =
       opts.initialFocus && node.contains(opts.initialFocus)
         ? opts.initialFocus
-        : getFocusable(node)[0] ?? node;
+        : (getFocusable(node)[0] ?? node);
     if (!target.hasAttribute('tabindex') && target === node) {
       node.setAttribute('tabindex', '-1');
     }

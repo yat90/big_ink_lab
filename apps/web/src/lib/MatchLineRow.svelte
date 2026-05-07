@@ -17,10 +17,6 @@
 
   const row = $derived(getMatchLineRowView(match, perspective));
   const showBothDecks = $derived(perspective.matchupMode === 'dual');
-
-  function deckColorLabel(color: string): string {
-    return color !== '–' ? color : '';
-  }
 </script>
 
 <li class="match-line-row__item">

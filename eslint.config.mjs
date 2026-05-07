@@ -1,6 +1,7 @@
 // @ts-check
 import eslint from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import eslintPluginSvelte from 'eslint-plugin-svelte';
@@ -62,6 +63,35 @@ export default defineConfig(
       'svelte/require-each-key': 'warn',
     },
   },
+  /** SvelteKit web app: browser APIs (`fetch`, `URL`, DOM types, etc.) for `no-undef`. */
+  {
+    files: ['apps/web/**/*.{svelte,ts}'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+      },
+    },
+  },
+  /**
+   * Svelte 5 / Kit: expression statements and built-ins are intentional; prefer-* rules stay noisy
+   * until refactors. Unused `_` bindings are common in destructuring.
+   */
+  {
+    files: ['apps/web/**/*.svelte'],
+    rules: {
+      '@typescript-eslint/no-unused-expressions': 'off',
+      'svelte/prefer-svelte-reactivity': 'warn',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+  // Same stylistic rules as `.prettierrc` (incl. `apps/web/.prettierrc` → repo root).
   eslintConfigPrettier,
   {
     languageOptions: {
@@ -85,5 +115,5 @@ export default defineConfig(
         sourceType: 'module',
       },
     },
-  },
+  }
 );

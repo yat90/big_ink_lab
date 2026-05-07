@@ -78,7 +78,9 @@
     ></button>
     <div class="tournament-picker-modal__card card" use:focusTrap use:scrollLock>
       <h2 id="tournament-picker-title" class="tournament-picker-modal__title">{title}</h2>
-      <p class="tournament-picker-modal__hint muted">Optional — link this match to a tournament event.</p>
+      <p class="tournament-picker-modal__hint muted">
+        Optional — link this match to a tournament event.
+      </p>
 
       <label for="tournament-picker-filter" class="tournament-picker-modal__label">Search</label>
       <input
@@ -95,7 +97,9 @@
       {:else if error}
         <p class="alert" role="alert">{error}</p>
       {:else if filtered.length === 0}
-        <p class="muted">{tournaments.length === 0 ? 'No tournaments yet.' : 'No tournaments match the filter.'}</p>
+        <p class="muted">
+          {tournaments.length === 0 ? 'No tournaments yet.' : 'No tournaments match the filter.'}
+        </p>
       {:else}
         <ul class="tournament-picker-modal__list">
           <li class="tournament-picker-modal__item">

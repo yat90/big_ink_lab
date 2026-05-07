@@ -16,7 +16,9 @@
     <p class="hint">
       {#if resetIssueUrl}
         You can follow progress on
-        <a href={resetIssueUrl} class="auth-inline-link" rel="noopener noreferrer">GitHub issue #40</a>.
+        <a href={resetIssueUrl} class="auth-inline-link" rel="noopener noreferrer"
+          >GitHub issue #40</a
+        >.
       {:else}
         Progress is tracked as GitHub issue #40 in this project’s repository.
       {/if}

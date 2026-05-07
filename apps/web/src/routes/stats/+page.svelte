@@ -53,7 +53,7 @@
   async function fetchStats(
     stages: StageOption[],
     tournamentId?: string,
-    matrixMode: MatrixMode = 'matches',
+    matrixMode: MatrixMode = 'matches'
   ) {
     loading = true;
     error = '';
@@ -84,7 +84,7 @@
       if (stage === 'Tournament') selectedTournamentId = '';
     } else {
       selectedStages = [...selectedStages, stage].sort(
-        (a, b) => STAGE_OPTIONS.indexOf(a) - STAGE_OPTIONS.indexOf(b),
+        (a, b) => STAGE_OPTIONS.indexOf(a) - STAGE_OPTIONS.indexOf(b)
       );
     }
   }
@@ -131,15 +131,22 @@
 
     <div class="card match-stats__card match-stats__filter">
       <h3 class="match-stats__title">{$t('statistics.globalPage.filterByStage')}</h3>
-      <div class="match-stats__stage-chips" role="group" aria-label={$t('statistics.globalPage.stageFilterAria')}>
+      <div
+        class="match-stats__stage-chips"
+        role="group"
+        aria-label={$t('statistics.globalPage.stageFilterAria')}
+      >
         {#each STAGE_OPTIONS as stage}
-          <label class="match-stats__stage-chip" class:match-stats__stage-chip--active={selectedStages.includes(stage)}>
+          <label
+            class="match-stats__stage-chip"
+            class:match-stats__stage-chip--active={selectedStages.includes(stage)}
+          >
             <input
               type="checkbox"
               checked={selectedStages.includes(stage)}
               onchange={() => toggleStage(stage)}
               class="match-stats__stage-checkbox"
-              aria-label="{stage}"
+              aria-label={stage}
             />
             <span class="match-stats__stage-label">{stage}</span>
           </label>
@@ -221,7 +228,9 @@
           </div>
           <div class="match-stats__item">
             <span class="match-stats__value">{stats.starterWinRate}%</span>
-            <span class="match-stats__label muted">{$t('statistics.globalPage.starterWinRate')}</span>
+            <span class="match-stats__label muted"
+              >{$t('statistics.globalPage.starterWinRate')}</span
+            >
           </div>
         </div>
       </div>
@@ -287,7 +296,10 @@
     cursor: pointer;
     font-size: 0.9rem;
     font-weight: 600;
-    transition: background var(--transition), border-color var(--transition), color var(--transition);
+    transition:
+      background var(--transition),
+      border-color var(--transition),
+      color var(--transition);
   }
 
   .match-stats__stage-chip:hover {
@@ -355,5 +367,4 @@
     font-size: 0.85rem;
     font-weight: 500;
   }
-
 </style>

@@ -10,8 +10,7 @@
   const items = $derived.by(() => {
     const trail = breadcrumbTrail(pathname);
     const tail = $breadcrumbTail;
-    const tailLabel =
-      tail && tail.path === pathname ? tail.label.trim() : '';
+    const tailLabel = tail && tail.path === pathname ? tail.label.trim() : '';
     const mapped = trail.map((seg, i) => ({
       label: $t(seg.key),
       href: i === trail.length - 1 ? undefined : seg.href,
@@ -25,4 +24,4 @@
   });
 </script>
 
-<Breadcrumb items={items} />
+<Breadcrumb {items} />

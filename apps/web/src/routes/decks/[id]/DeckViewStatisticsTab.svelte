@@ -29,5 +29,5 @@
 </script>
 
 <div class="deck-view-statistics" role="tabpanel" aria-label="Deck statistics">
-  <DeckStatsContent stats={stats} loading={loading} error={error} />
+  <DeckStatsContent {stats} {loading} {error} />
 </div>

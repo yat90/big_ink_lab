@@ -1,6 +1,6 @@
 node_modules
 .vercel
-.svelte-kit
-build
-dist
+**/.svelte-kit
+**/build
+**/dist
 *.min.js

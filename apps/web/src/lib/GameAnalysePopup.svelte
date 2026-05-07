@@ -46,11 +46,7 @@
       aria-label="Close"
       onclick={handleClose}
     ></button>
-    <div
-      class="delete-game-modal__card card game-analyse-modal__card"
-      use:focusTrap
-      use:scrollLock
-    >
+    <div class="delete-game-modal__card card game-analyse-modal__card" use:focusTrap use:scrollLock>
       <h2 id="game-analyse-title" class="delete-game-modal__title">
         {title}
       </h2>

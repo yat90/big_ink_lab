@@ -28,9 +28,7 @@
     return id ? `${name} (${id})` : name;
   }
 
-  const totalInternalMatches = $derived.by(() =>
-    rows.reduce((sum, r) => sum + r.matches, 0),
-  );
+  const totalInternalMatches = $derived.by(() => rows.reduce((sum, r) => sum + r.matches, 0));
   const hasAnyInternalPlay = $derived(totalInternalMatches > 0);
 </script>
 
@@ -200,7 +198,9 @@
     background: transparent;
     color: var(--muted);
     cursor: pointer;
-    transition: background var(--transition), color var(--transition);
+    transition:
+      background var(--transition),
+      color var(--transition);
   }
 
   .ranking-view-toggle__btn:hover {
@@ -312,7 +312,9 @@
     top: 0;
     z-index: 3;
     background: var(--card);
-    box-shadow: 1px 0 0 var(--border), 0 1px 0 var(--border);
+    box-shadow:
+      1px 0 0 var(--border),
+      0 1px 0 var(--border);
     width: 7rem;
     min-width: 7rem;
   }

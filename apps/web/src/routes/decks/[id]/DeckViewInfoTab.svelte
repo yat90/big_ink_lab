@@ -1,5 +1,4 @@
 <script lang="ts">
-  import InkIcons from '$lib/InkIcons.svelte';
   import IconEye from '$lib/icons/IconEye.svelte';
   import { INK_IMAGE } from '$lib/matches';
   import type { Deck } from '$lib/decks';
@@ -322,13 +321,7 @@
         {#if hoveredIndex !== null && displayCards[hoveredIndex]}
           {@const c = displayCards[hoveredIndex]}
           {#if c.imgPreview}
-            <img
-              src={c.imgPreview}
-              alt=""
-              class="deck-cards__hover-img"
-              width="280"
-              height="391"
-            />
+            <img src={c.imgPreview} alt="" class="deck-cards__hover-img" width="280" height="391" />
           {:else}
             <span class="deck-cards__hover-placeholder">?</span>
           {/if}
@@ -356,21 +349,17 @@
     ></button>
     <div class="deck-preview-card">
       {#if c.imgPreview}
-        <img
-          src={c.imgPreview}
-          alt=""
-          class="deck-preview-card__img"
-          width="280"
-          height="391"
-        />
+        <img src={c.imgPreview} alt="" class="deck-preview-card__img" width="280" height="391" />
       {:else}
         <span class="deck-preview-card__placeholder">?</span>
       {/if}
       <p class="deck-preview-card__name">{c.name}</p>
       {#if c.version}<p class="deck-preview-card__version muted">{c.version}</p>{/if}
       <p class="deck-preview-card__meta muted">× {c.amount}</p>
-      <button type="button" class="btn deck-preview-card__close" onclick={() => (previewIndex = null)}
-        >Close</button
+      <button
+        type="button"
+        class="btn deck-preview-card__close"
+        onclick={() => (previewIndex = null)}>Close</button
       >
     </div>
   </div>
@@ -430,7 +419,9 @@
     background: transparent;
     color: var(--muted);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition:
+      background 0.15s,
+      color 0.15s;
   }
   :global(.deck-cards__view-btn:hover) {
     color: var(--fg);

@@ -83,7 +83,7 @@
 
   function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
     if (!p) return '–';
-    return typeof p === 'string' ? p : p.name ?? '–';
+    return typeof p === 'string' ? p : (p.name ?? '–');
   }
 
   function localCalendarDay(): string {
@@ -103,7 +103,9 @@
   function gameWinnerId(g: { winner?: unknown }): string | undefined {
     const w = g.winner;
     if (w == null) return undefined;
-    return typeof w === 'object' && w !== null && '_id' in w ? (w as { _id: string })._id : String(w);
+    return typeof w === 'object' && w !== null && '_id' in w
+      ? (w as { _id: string })._id
+      : String(w);
   }
 
   function gamesWon(match: LorcanaMatch, playerId: string): number {
@@ -200,7 +202,12 @@
 
 <div class="page">
   {#if loading}
-    <div class="dashboard dashboard--skeleton" aria-busy="true" aria-live="polite" aria-label="Loading dashboard">
+    <div
+      class="dashboard dashboard--skeleton"
+      aria-busy="true"
+      aria-live="polite"
+      aria-label="Loading dashboard"
+    >
       <div class="card stack dashboard__header">
         <div class="loading-skeleton">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>
@@ -219,7 +226,7 @@
       <div class="card stack dashboard__tournaments">
         <div class="row row--between">
           <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
-            <div class="row gap-sm">
+          <div class="row gap-sm">
             <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
             <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
           </div>
@@ -240,7 +247,9 @@
       </div>
 
       <div class="dashboard__summary card">
-        <div class="loading-skeleton__line loading-skeleton__line--section-title loading-skeleton__line--at-a-glance"></div>
+        <div
+          class="loading-skeleton__line loading-skeleton__line--section-title loading-skeleton__line--at-a-glance"
+        ></div>
         <div class="dashboard__summary-grid">
           {#each [0, 1, 2, 3] as i (i)}
             <div class="loading-skeleton__stat-block"></div>
@@ -286,7 +295,9 @@
           </div>
           <div class="dashboard__header-actions stack">
             <div class="row dashboard__header-actions-primary">
-              <a href="/matches/new" class="btn btn--primary dashboard__header-new-match">New match</a>
+              <a href="/matches/new" class="btn btn--primary dashboard__header-new-match"
+                >New match</a
+              >
             </div>
             <div class="row dashboard__header-actions-secondary">
               <button
@@ -327,7 +338,8 @@
                     <a href="/tournaments/{t._id}" class="dashboard__tournaments-link">
                       <span class="dashboard__tournaments-name">{t.name}</span>
                       <span class="muted dashboard__tournaments-date">
-                        {DateDisplay.formatDate(t.date)}{#if t.meta?.trim()} · {t.meta.trim()}{/if}
+                        {DateDisplay.formatDate(t.date)}{#if t.meta?.trim()}
+                          · {t.meta.trim()}{/if}
                       </span>
                     </a>
                   </li>
@@ -346,7 +358,8 @@
                     <a href="/tournaments/{t._id}" class="dashboard__tournaments-link">
                       <span class="dashboard__tournaments-name">{t.name}</span>
                       <span class="muted dashboard__tournaments-date">
-                        {DateDisplay.formatDate(t.date)}{#if t.meta?.trim()} · {t.meta.trim()}{/if}
+                        {DateDisplay.formatDate(t.date)}{#if t.meta?.trim()}
+                          · {t.meta.trim()}{/if}
                       </span>
                     </a>
                   </li>
@@ -402,14 +415,15 @@
               >
                 <div class="matchcard__top muted dashboard__match-top">
                   <span>
-                    {DateDisplay.formatRelative(match.playedAt)} · {matchStageOrTournamentLabel(match)}{#if getMatchRoundKey(match.round) != null}
-                    · {formatMatchRoundLabel(match.round)}{/if}
+                    {DateDisplay.formatRelative(match.playedAt)} · {matchStageOrTournamentLabel(
+                      match
+                    )}{#if getMatchRoundKey(match.round) != null}
+                      · {formatMatchRoundLabel(match.round)}{/if}
                   </span>
                   {#if idMatch}
                     <span
                       class="matchcard__pill--id"
-                      title="Intentional draw (not counted in win/loss statistics)"
-                      >ID</span
+                      title="Intentional draw (not counted in win/loss statistics)">ID</span
                     >
                   {:else if byeMatch}
                     <span class="matchcard__pill--bye" title="Bye (free win)">Bye</span>
@@ -423,7 +437,9 @@
                     <span class="matchcard__name">
                       {playerName(match.p1)}
                       {#if !idMatch && winnerId === p1Id}
-                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"><IconCrown size={16} /></span>
+                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"
+                          ><IconCrown size={16} /></span
+                        >
                       {/if}
                     </span>
                     {#if match.p1DeckColor}
@@ -431,14 +447,18 @@
                         ><InkIcons deckColor={match.p1DeckColor} /></span
                       >
                     {/if}
-                    <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p1Id ?? '')}</span>
+                    <span class="matchcard__wins muted" title="Games won"
+                      >{gamesWon(match, p1Id ?? '')}</span
+                    >
                   </div>
                   <div class="matchcard__vs" aria-hidden="true">VS.</div>
                   <div
                     class="matchcard__player matchcard__player--right"
                     class:matchcard__player--winner={!idMatch && winnerId === p2Id}
                   >
-                    <span class="matchcard__wins muted" title="Games won">{gamesWon(match, p2Id ?? '')}</span>
+                    <span class="matchcard__wins muted" title="Games won"
+                      >{gamesWon(match, p2Id ?? '')}</span
+                    >
                     {#if match.p2DeckColor}
                       <span class="matchcard__ink" title={match.p2DeckColor} aria-hidden="true"
                         ><InkIcons deckColor={match.p2DeckColor} /></span
@@ -447,7 +467,9 @@
                     <span class="matchcard__name">
                       {playerName(match.p2)}
                       {#if !idMatch && winnerId === p2Id}
-                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"><IconCrown size={16} /></span>
+                        <span class="matchcard__badge matchcard__badge--winner" aria-label="Winner"
+                          ><IconCrown size={16} /></span
+                        >
                       {/if}
                     </span>
                   </div>

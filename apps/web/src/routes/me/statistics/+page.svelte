@@ -217,7 +217,6 @@
     >
       <StatsPlayStyleTab {playStyle} />
     </div>
-    
   </div>
 {/if}
 
@@ -261,7 +260,6 @@
     min-width: 0;
     max-width: 100%;
     margin-bottom: var(--space-lg);
-
   }
 
   .stats-page__panel[hidden] {

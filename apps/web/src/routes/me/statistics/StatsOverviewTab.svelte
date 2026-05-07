@@ -111,13 +111,15 @@
         </div>
       {/if}
       {#if matchAnalysis && matchAnalysis.avgLoreInLostGames != null}
-      <div class="stats-overview-lore-card__metric">
-        <span class="stats-overview-lore-card__value"
-          >{matchAnalysis.avgLoreInLostGames.toFixed(1)}</span
-        >
-        <span class="stats-overview-lore-card__label muted">{$t('statistics.overview.avgLoreLosses')}</span>
-      </div>
-    {/if}
+        <div class="stats-overview-lore-card__metric">
+          <span class="stats-overview-lore-card__value"
+            >{matchAnalysis.avgLoreInLostGames.toFixed(1)}</span
+          >
+          <span class="stats-overview-lore-card__label muted"
+            >{$t('statistics.overview.avgLoreLosses')}</span
+          >
+        </div>
+      {/if}
     </div>
   </div>
 

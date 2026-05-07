@@ -102,14 +102,22 @@
 {#if !dismissed && (showChromiumInstall || showIosHint)}
   <div class="install-prompt" role="region" aria-label="Install app">
     {#if showChromiumInstall}
-      <p class="install-prompt__text">Install Big Ink Lab for quick access from your home screen.</p>
+      <p class="install-prompt__text">
+        Install Big Ink Lab for quick access from your home screen.
+      </p>
       <button type="button" class="btn btn--sm btn--primary" onclick={install}>Install</button>
     {:else}
       <p class="install-prompt__text">
-        Add Big Ink Lab to your home screen: tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>.
+        Add Big Ink Lab to your home screen: tap <strong>Share</strong>, then
+        <strong>Add to Home Screen</strong>.
       </p>
     {/if}
-    <button type="button" class="install-prompt__close btn btn--sm" onclick={dismiss} aria-label="Dismiss">
+    <button
+      type="button"
+      class="install-prompt__close btn btn--sm"
+      onclick={dismiss}
+      aria-label="Dismiss"
+    >
       Not now
     </button>
   </div>
