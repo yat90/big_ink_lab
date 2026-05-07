@@ -15,14 +15,14 @@ async function bootstrap(): Promise<void> {
     }),
   );
   /**
-   * Browser requests from the web app use JSON bodies + `Authorization` → preflight (OPTIONS).
-   * Reflect request origin (works with separate Vercel deployments); allow bearer auth header explicitly.
+   * Cross-origin browser calls trigger preflight (OPTIONS).
+   * Do not set `allowedHeaders`: the underlying `cors` package then mirrors
+   * `Access-Control-Request-Headers`. A fixed allowlist breaks preflight when the client
+   * (browser extensions, tracing, future fetch options) requests extra headers.
    */
   app.enableCors({
     origin: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-    /** Fewer preflight round-trips; reduces flaky "no ACAO" when OPTIONS intermittently fails at the edge. */
     maxAge: 86_400,
   });
   const port = Number(process.env.PORT) || DEFAULT_PORT;

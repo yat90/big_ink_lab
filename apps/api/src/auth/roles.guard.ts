@@ -26,12 +26,13 @@ export class RolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest<Request & { user?: JwtPayload }>();
+    if (req.method === 'OPTIONS') return true;
     const requiredRoles = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
     if (!requiredRoles?.length) return true;
-    const req = context.switchToHttp().getRequest<Request & { user?: JwtPayload }>();
     const userId = req.user?.sub;
     if (!userId || !Types.ObjectId.isValid(userId)) {
       throw new UnauthorizedException('Invalid token.');
