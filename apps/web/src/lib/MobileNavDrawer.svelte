@@ -13,6 +13,7 @@
   import IconClose from '$lib/icons/IconClose.svelte';
   import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconPenalties from '$lib/icons/IconPenalties.svelte';
+  import IconCloud from '$lib/icons/IconCloud.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { locale, setLocale, t } from '$lib/i18n';
   import type { Locale } from '$lib/i18n';
@@ -76,13 +77,19 @@
 
   const TEAM_TAB_ICON_MAP: Record<
     TeamTabId,
-    typeof IconUsers | typeof IconTrophy | typeof IconPenalties | typeof IconGavel | typeof IconBarChart
+    | typeof IconUsers
+    | typeof IconTrophy
+    | typeof IconPenalties
+    | typeof IconGavel
+    | typeof IconBarChart
+    | typeof IconCloud
   > = {
     members: IconUsers,
     ranking: IconTrophy,
     penalties: IconPenalties,
     court: IconGavel,
     finance: IconBarChart,
+    links: IconCloud,
   };
 
   const isMe = $derived($page.url.pathname === '/me');

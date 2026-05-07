@@ -13,6 +13,7 @@
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconPenalties from '$lib/icons/IconPenalties.svelte';
+  import IconCloud from '$lib/icons/IconCloud.svelte';
   import { authMe } from '$lib/me';
   import { locale, setLocale, t } from '$lib/i18n';
   import type { Locale } from '$lib/i18n';
@@ -45,6 +46,7 @@
     penalties: IconPenalties,
     court: IconGavel,
     finance: IconBarChart,
+    links: IconCloud,
   };
 
   const activeTeamTab = $derived(

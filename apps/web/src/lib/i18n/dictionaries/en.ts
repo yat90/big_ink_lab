@@ -87,6 +87,23 @@ export default {
       penalties: 'Penalties',
       court: 'Courtroom',
       finance: 'Finance',
+      links: 'Files',
+    },
+    dataLinks: {
+      heading: 'Shared folders',
+      intro: 'Google Drive folders for logos, merch, meeting notes, and more.',
+      openDrive: 'Drive',
+      items: {
+        logos: 'Logos',
+        wappen: 'Wappen',
+        merch: 'Merch',
+        meetings: 'Meetings',
+      },
+    },
+    quickLinks: {
+      meetingsTitle: 'Meetings',
+      meetingsHint: 'Open folder',
+      meetingsAria: 'Open the team Meetings folder in Google Drive (opens in a new tab)',
     },
     loadError: 'Could not load team.',
     noTeamTitle: 'No team yet',

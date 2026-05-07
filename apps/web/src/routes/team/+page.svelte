@@ -6,16 +6,19 @@
   import { fetchTeamOverview, formatMoney, type TeamOverview } from '$lib/team';
   import { getLocale, translate, t } from '$lib/i18n';
   import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
-  import TeamMembersTab from './TeamMembersTab.svelte';
-  import TeamRankingTab from './TeamRankingTab.svelte';
-  import TeamFinanceTab from './TeamFinanceTab.svelte';
-  import TeamPenaltiesTab from './TeamPenaltiesTab.svelte';
-  import TeamCourtRoomTab from './TeamCourtRoomTab.svelte';
+  import { TEAM_DRIVE_MEETINGS_URL } from '$lib/teamDriveLinks';
+  import TeamTabMembers from './TeamTabMembers.svelte';
+  import TeamTabRanking from './TeamTabRanking.svelte';
+  import TeamTabFinance from './TeamTabFinance.svelte';
+  import TeamTabPenalties from './TeamTabPenalties.svelte';
+  import TeamTabCourt from './TeamTabCourt.svelte';
+  import TeamTabLinks from './TeamTabLinks.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
   import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
+  import IconCloud from '$lib/icons/IconCloud.svelte';
   import IconChevronLeft from '$lib/icons/IconChevronLeft.svelte';
   import IconChevronRight from '$lib/icons/IconChevronRight.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
@@ -26,6 +29,7 @@
     penalties: IconPenalties,
     court: IconGavel,
     finance: IconBarChart,
+    links: IconCloud,
   } as const;
 
   let overview = $state<TeamOverview | null>(null);
@@ -181,6 +185,19 @@
             </div>
           </a>
         {/if}
+        <a
+          href={TEAM_DRIVE_MEETINGS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="team-metric team-metric--link team-metric--meetings-drive"
+          aria-label={$t('team.quickLinks.meetingsAria')}
+        >
+          <IconCloud size={22} className="team-metric__icon" />
+          <div class="team-metric__text">
+            <span class="team-metric__meetings-title">{$t('team.quickLinks.meetingsTitle')}</span>
+            <span class="team-metric__label">{$t('team.quickLinks.meetingsHint')}</span>
+          </div>
+        </a>
       </div>
     </div>
 
@@ -244,7 +261,7 @@
       hidden={activeTab !== 'members'}
     >
       {#if activeTab === 'members'}
-        <TeamMembersTab
+        <TeamTabMembers
           isAdmin={isAdmin}
           team={overview.team}
           currentPlayerId={overview.playerId}
@@ -261,7 +278,7 @@
       hidden={activeTab !== 'ranking'}
     >
       {#if activeTab === 'ranking' && overview.internalRanking && overview.internalHeadToHead}
-        <TeamRankingTab
+        <TeamTabRanking
           rows={overview.internalRanking}
           matrix={overview.internalHeadToHead}
           currentPlayerId={overview.playerId}
@@ -277,7 +294,7 @@
       hidden={activeTab !== 'penalties'}
     >
       {#if activeTab === 'penalties'}
-        <TeamPenaltiesTab isAdmin={isAdmin} />
+        <TeamTabPenalties isAdmin={isAdmin} />
       {/if}
     </div>
 
@@ -289,7 +306,7 @@
       hidden={activeTab !== 'court'}
     >
       {#if activeTab === 'court'}
-        <TeamCourtRoomTab isAdmin={isAdmin} currentPlayerId={overview.playerId} />
+        <TeamTabCourt isAdmin={isAdmin} currentPlayerId={overview.playerId} />
       {/if}
     </div>
 
@@ -301,12 +318,24 @@
       hidden={activeTab !== 'finance'}
     >
       {#if activeTab === 'finance'}
-        <TeamFinanceTab
+        <TeamTabFinance
           isAdmin={isAdmin}
           balance={overview.balance}
           authMeStore={authMe}
           onChange={handleTabRefresh}
         />
+      {/if}
+    </div>
+
+    <div
+      id="team-panel-links"
+      class="team-panel"
+      role="tabpanel"
+      aria-labelledby="team-tab-links"
+      hidden={activeTab !== 'links'}
+    >
+      {#if activeTab === 'links'}
+        <TeamTabLinks />
       {/if}
     </div>
   {/if}
@@ -431,6 +460,21 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--muted);
+  }
+
+  .team-metric__meetings-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  .team-metric--meetings-drive .team-metric__label {
+    text-transform: none;
+    letter-spacing: 0.01em;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.35;
   }
 
   .team-metric--alert .team-metric__value {

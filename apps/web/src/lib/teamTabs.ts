@@ -1,8 +1,11 @@
-/** Tab ids for `/team` — kept in sync with the team page panels. */
-export type TeamTabId = 'members' | 'ranking' | 'penalties' | 'court' | 'finance';
+/**
+ * Tab ids for `/team` (panels: `TeamTabMembers`, `TeamTabRanking`, `TeamTabPenalties`, `TeamTabCourt`, `TeamTabFinance`, `TeamTabLinks` in `routes/team/`).
+ */
+export type TeamTabId = 'members' | 'ranking' | 'penalties' | 'court' | 'finance' | 'links';
 
 export const TEAM_TAB_IDS: readonly TeamTabId[] = [
   'members',
+  'links',
   'ranking',
   'penalties',
   'court',
