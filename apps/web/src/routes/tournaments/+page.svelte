@@ -3,6 +3,7 @@
   import { config } from '$lib/config';
   import IconFilter from '$lib/icons/IconFilter.svelte';
   import Pagination from '$lib/Pagination.svelte';
+  import StatusStateCard from '$lib/StatusStateCard.svelte';
   import { translate, t, locale } from '$lib/i18n';
 
   type TournamentRow = {
@@ -240,36 +241,33 @@
       </p>
     {/if}
     {#if loading}
-      <div class="card">
-        <div class="loading-skeleton" aria-busy="true" aria-live="polite">
-          <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-          <div class="loading-skeleton__line"></div>
-          <div class="loading-skeleton__line"></div>
-        </div>
-        <p class="muted" style="margin-top: var(--space-md);">
-          {$t('tournaments.list.loadingList')}
-        </p>
-      </div>
+      <StatusStateCard kind="loading" message={$t('tournaments.list.loadingList')} />
     {:else if error}
-      <div class="card" role="alert">
-        <p class="alert">{error}</p>
-      </div>
+      <StatusStateCard kind="error" message={error} />
     {:else if rows.length === 0}
-      <div class="card stack">
-        <p class="card__sub" style="margin: 0;">
-          {#if hasActiveFilters}
-            {$t('tournaments.list.emptyFilteredBefore')}<button
-              type="button"
-              class="tournaments-page__linklike"
-              onclick={clearFilters}>{$t('tournaments.list.clearFiltersInline')}</button
-            >{$t('tournaments.list.emptyFilteredAfter')}
-          {:else}
-            {$t('tournaments.list.emptyHintBefore')}<strong
-              >{$t('tournaments.list.emptyHintStrong')}</strong
-            >{$t('tournaments.list.emptyHintAfter')}
-          {/if}
-        </p>
-      </div>
+      {#if hasActiveFilters}
+        <StatusStateCard
+          kind="empty"
+          message={`${$t('tournaments.list.emptyFilteredBefore')}${$t('tournaments.list.emptyFilteredAfter')}`}
+        >
+          {#snippet actions()}
+            <button type="button" class="btn" onclick={clearFilters}
+              >{$t('tournaments.list.clearFiltersInline')}</button
+            >
+          {/snippet}
+        </StatusStateCard>
+      {:else}
+        <StatusStateCard
+          kind="empty"
+          message={`${$t('tournaments.list.emptyHintBefore')}${$t('tournaments.list.emptyHintStrong')}${$t('tournaments.list.emptyHintAfter')}`}
+        >
+          {#snippet actions()}
+            <a href="/tournaments/new" class="btn btn--primary"
+              >{$t('tournaments.list.newTournament')}</a
+            >
+          {/snippet}
+        </StatusStateCard>
+      {/if}
     {:else}
       {#if !hasActiveFilters}
         <p class="muted tournaments-page__count">
@@ -413,26 +411,6 @@
   .tournaments-page__filter-active {
     margin: 0 0 var(--space-sm, 0.5rem) 0;
     font-size: 0.875rem;
-  }
-  .tournaments-page__linklike {
-    margin: 0;
-    padding: 0;
-    border: none;
-    background: none;
-    color: inherit;
-    font: inherit;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 2px;
-    cursor: pointer;
-  }
-  .tournaments-page__linklike:hover {
-    color: var(--fg);
-  }
-  .tournaments-page__actions {
-    margin-top: var(--space-md, 1rem);
-    gap: 0.75rem;
-    flex-wrap: wrap;
   }
   .tournaments-page__list {
     margin-top: var(--space-lg, 1.5rem);

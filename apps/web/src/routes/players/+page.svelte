@@ -7,6 +7,7 @@
   import FilterCard from '$lib/FilterCard.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
+  import StatusStateCard from '$lib/StatusStateCard.svelte';
 
   type GuestScope = 'roster' | 'guests' | 'all';
 
@@ -169,87 +170,56 @@
 
 <div class="page players-page">
   {#if loading}
-    <div
-      class="players-page players-page--skeleton"
-      aria-busy="true"
-      aria-live="polite"
-      aria-label="Loading players"
-    >
-      <div class="page-header">
-        <div class="players-page__header-main">
-          <div class="page-header__title-row">
-            <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-          </div>
-        </div>
-        <div
-          class="loading-skeleton__line loading-skeleton__line--primary-btn players-page__skel-new"
-        ></div>
-      </div>
-      <div class="card stack margin-bottom-md">
-        <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
-        <div class="filters__row filters__row--wrap">
-          <div class="loading-skeleton__field" aria-hidden="true"></div>
-          <div class="loading-skeleton__field" aria-hidden="true"></div>
-          <div class="loading-skeleton__field loading-skeleton__field--wide"></div>
-        </div>
-      </div>
-      <div class="stack">
-        {#each [0, 1, 2, 3] as i (i)}
-          <div class="loading-skeleton__match-block" aria-hidden="true"></div>
-        {/each}
-      </div>
-      <p class="muted margin-top-md">Loading players…</p>
-    </div>
+    <StatusStateCard kind="loading" message="Loading players..." />
   {:else if error}
-    <div class="card" role="alert" aria-live="assertive">
-      <p class="alert">{error}</p>
-    </div>
+    <StatusStateCard kind="error" message={error} />
   {:else if players.length === 0 && showRosterEmptyHint}
-    <div class="card stack">
-      <h2 class="card__title">No roster players</h2>
-      <p class="card__sub">
-        Roster view hides guests by default. Use <strong>Guests</strong> or <strong>All</strong> below
-        to list guest profiles (e.g. from tournament results), or add a roster player.
-      </p>
-      <div class="row margin-top-sm gap-sm">
-        <div class="players-page__segment" role="group" aria-label="Which players to list">
-          <button
-            type="button"
-            class="players-page__segment-btn"
-            class:players-page__segment-btn--active={guestScope === 'roster'}
-            onclick={() => {
-              guestScope = 'roster';
-              currentPage = 1;
-            }}
-          >
-            Roster
-          </button>
-          <button
-            type="button"
-            class="players-page__segment-btn"
-            class:players-page__segment-btn--active={guestScope === 'guests'}
-            onclick={() => {
-              guestScope = 'guests';
-              currentPage = 1;
-            }}
-          >
-            Guests
-          </button>
-          <button
-            type="button"
-            class="players-page__segment-btn"
-            class:players-page__segment-btn--active={guestScope === 'all'}
-            onclick={() => {
-              guestScope = 'all';
-              currentPage = 1;
-            }}
-          >
-            All
-          </button>
+    <StatusStateCard
+      kind="empty"
+      title="No roster players"
+      message="Roster view hides guests by default. Use Guests or All below to list guest profiles (for example from tournament results), or add a roster player."
+    >
+      {#snippet actions()}
+        <div class="row margin-top-sm gap-sm">
+          <div class="players-page__segment" role="group" aria-label="Which players to list">
+            <button
+              type="button"
+              class="players-page__segment-btn"
+              class:players-page__segment-btn--active={guestScope === 'roster'}
+              onclick={() => {
+                guestScope = 'roster';
+                currentPage = 1;
+              }}
+            >
+              Roster
+            </button>
+            <button
+              type="button"
+              class="players-page__segment-btn"
+              class:players-page__segment-btn--active={guestScope === 'guests'}
+              onclick={() => {
+                guestScope = 'guests';
+                currentPage = 1;
+              }}
+            >
+              Guests
+            </button>
+            <button
+              type="button"
+              class="players-page__segment-btn"
+              class:players-page__segment-btn--active={guestScope === 'all'}
+              onclick={() => {
+                guestScope = 'all';
+                currentPage = 1;
+              }}
+            >
+              All
+            </button>
+          </div>
+          <a href="/players/new" class="btn btn--primary">New player</a>
         </div>
-        <a href="/players/new" class="btn btn--primary">New player</a>
-      </div>
-    </div>
+      {/snippet}
+    </StatusStateCard>
   {:else}
     <div class="page-header">
       <div class="players-page__header-main">
@@ -356,10 +326,11 @@
     </FilterCard>
 
     {#if players.length === 0 && filterTeam.trim()}
-      <div class="card stack">
-        <p class="card__sub">No players in this team.</p>
-        <button type="button" class="btn" onclick={clearTeamFilter}> Clear filter </button>
-      </div>
+      <StatusStateCard kind="empty" message="No players in this team.">
+        {#snippet actions()}
+          <button type="button" class="btn" onclick={clearTeamFilter}>Clear filter</button>
+        {/snippet}
+      </StatusStateCard>
     {:else}
       <div class="stack">
         {#each players as player}
@@ -385,10 +356,6 @@
 <style>
   .players-page {
     max-width: 720px;
-  }
-
-  .players-page__skel-new {
-    max-width: 10rem;
   }
 
   .playercard__guest {

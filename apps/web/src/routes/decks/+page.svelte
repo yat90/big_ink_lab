@@ -12,6 +12,7 @@
   import { authMe } from '$lib/me';
   import Pagination from '$lib/Pagination.svelte';
   import Select from '$lib/Select.svelte';
+  import StatusStateCard from '$lib/StatusStateCard.svelte';
   import { SvelteURLSearchParams } from 'svelte/reactivity';
   import { get } from 'svelte/store';
 
@@ -134,47 +135,17 @@
 
 <div class="page">
   {#if loading}
-    <div
-      class="decks-page decks-page--skeleton"
-      aria-busy="true"
-      aria-live="polite"
-      aria-label={$t('decks.loadingAria')}
-    >
-      <div class="page-header">
-        <div class="page-header__title-row">
-          <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-        </div>
-        <div
-          class="loading-skeleton__line loading-skeleton__line--primary-btn decks-page__skel-new"
-        ></div>
-      </div>
-      <div class="card stack margin-bottom-md">
-        <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
-        <div class="filters__row">
-          <div class="loading-skeleton__field" aria-hidden="true"></div>
-          <div class="loading-skeleton__field" aria-hidden="true"></div>
-          <div class="loading-skeleton__field" aria-hidden="true"></div>
-        </div>
-      </div>
-      <div class="stack">
-        {#each [0, 1, 2, 3] as i (i)}
-          <div class="loading-skeleton__match-block" aria-hidden="true"></div>
-        {/each}
-      </div>
-      <p class="muted margin-top-md">{$t('decks.loadingText')}</p>
-    </div>
+    <StatusStateCard kind="loading" message={$t('decks.loadingText')} />
   {:else if error}
-    <div class="card" role="alert" aria-live="assertive">
-      <p class="alert">{error}</p>
-    </div>
+    <StatusStateCard kind="error" message={error} />
   {:else if decks.length === 0 && !filterColor && !filterPlayer}
-    <div class="card stack">
-      <h2 class="card__title">{$t('decks.emptyTitle')}</h2>
-      <p class="card__sub">{$t('decks.emptySub')}</p>
-      <a href="/decks/new" class="btn btn--primary margin-top-sm align-self-start">
-        {$t('decks.newDeck')}
-      </a>
-    </div>
+    <StatusStateCard kind="empty" title={$t('decks.emptyTitle')} message={$t('decks.emptySub')}>
+      {#snippet actions()}
+        <a href="/decks/new" class="btn btn--primary margin-top-sm align-self-start">
+          {$t('decks.newDeck')}
+        </a>
+      {/snippet}
+    </StatusStateCard>
   {:else}
     <div class="page-header">
       <div class="page-header__title-row">
@@ -249,14 +220,15 @@
 
     <div class="stack">
       {#if decks.length === 0 && (filterColor || filterPlayer)}
-        <div class="card stack decks-page__empty-filtered">
-          <p class="card__sub margin-0">{$t('decks.emptyFiltered')}</p>
-          {#if canClearDeckFilters}
-            <button type="button" class="btn" onclick={clearDeckFilters}
-              >{$t('common.clearFilters')}</button
-            >
-          {/if}
-        </div>
+        <StatusStateCard kind="empty" message={$t('decks.emptyFiltered')}>
+          {#snippet actions()}
+            {#if canClearDeckFilters}
+              <button type="button" class="btn" onclick={clearDeckFilters}
+                >{$t('common.clearFilters')}</button
+              >
+            {/if}
+          {/snippet}
+        </StatusStateCard>
       {:else}
         {#each decks as deck (deck._id)}
           <a href="/decks/{deck._id}" class="card deckcard link-inherit">
@@ -346,8 +318,5 @@
   .deckcard__win-chip--mid {
     color: var(--fg);
     border-color: var(--border-strong);
-  }
-  .decks-page__skel-new {
-    max-width: 9rem;
   }
 </style>

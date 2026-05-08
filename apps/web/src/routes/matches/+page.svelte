@@ -19,6 +19,7 @@
   import Select from '$lib/Select.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
+  import StatusStateCard from '$lib/StatusStateCard.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
   import { getLocale, translate, t, locale } from '$lib/i18n';
   import { get } from 'svelte/store';
@@ -363,80 +364,49 @@
     />
   {/if}
   {#if loading}
-    <div
-      class="matches-page matches-page--skeleton"
-      aria-busy="true"
-      aria-live="polite"
-      aria-label={$t('matches.list.loadingAria')}
-    >
-      <div class="row matches-header row--between">
-        <div class="page-header__title-row">
-          <div class="loading-skeleton__line loading-skeleton__line--title"></div>
-        </div>
-        <div class="row row--sm">
-          <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
-          <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
-          <div class="loading-skeleton__line loading-skeleton__line--primary-btn"></div>
-        </div>
-      </div>
-      <div class="card stack margin-bottom-md">
-        <div class="filters__row">
-          <div class="loading-skeleton__field" aria-hidden="true"></div>
-          <div class="loading-skeleton__field" aria-hidden="true"></div>
-          <div class="loading-skeleton__field" aria-hidden="true"></div>
-        </div>
-      </div>
-      <div class="stack">
-        {#each [0, 1, 2, 3] as i (i)}
-          <div class="loading-skeleton__match-block" aria-hidden="true"></div>
-        {/each}
-      </div>
-      <p class="muted margin-top-md">{$t('matches.list.loadingText')}</p>
-    </div>
+    <StatusStateCard kind="loading" message={$t('matches.list.loadingText')} />
   {:else if error}
-    <div class="card" role="alert" aria-live="assertive">
-      <p class="alert">{error}</p>
-    </div>
+    <StatusStateCard kind="error" message={error} />
   {:else if matches.length === 0 && !filterStage && !filterTime && !filterPlayerId && !filterTournamentId}
-    <div class="card stack">
-      <h2 class="card__title">{$t('matches.list.emptyTitle')}</h2>
-      <p class="card__sub">{$t('matches.list.emptySub')}</p>
-      <div class="row matches-page__empty-actions">
-        <a href="/matches/new" class="btn btn--primary">{$t('matches.list.newMatch')}</a>
-        {#if myPlayerId}
-          <button
-            type="button"
-            class="btn matches-page__duels-import-btn"
-            onclick={triggerDuelsImport}
-            disabled={importingDuels}
-            aria-busy={importingDuels}
-            aria-label={importingDuels
-              ? $t('matches.list.importing')
-              : $t('matches.list.importLabel')}
-            title={$t('matches.list.duelsImportTooltip')}
-          >
-            <IconUpload size={20} />
-            <span
-              >{importingDuels
+    <StatusStateCard kind="empty" title={$t('matches.list.emptyTitle')} message={$t('matches.list.emptySub')}>
+      {#snippet actions()}
+        <div class="row matches-page__empty-actions">
+          <a href="/matches/new" class="btn btn--primary">{$t('matches.list.newMatch')}</a>
+          {#if myPlayerId}
+            <button
+              type="button"
+              class="btn matches-page__duels-import-btn"
+              onclick={triggerDuelsImport}
+              disabled={importingDuels}
+              aria-busy={importingDuels}
+              aria-label={importingDuels
                 ? $t('matches.list.importing')
-                : $t('matches.list.importLabel')}</span
+                : $t('matches.list.importLabel')}
+              title={$t('matches.list.duelsImportTooltip')}
             >
-          </button>
-          <button
-            type="button"
-            class="btn btn--sm matches-page__duels-help-btn"
-            onclick={toggleDuelsHelp}
-            aria-expanded={duelsHelpOpen}
-            aria-controls="duels-import-help"
-            aria-label={duelsHelpOpen
-              ? $t('matches.list.duelsHelpCollapseAria')
-              : $t('matches.list.duelsHelpExpandAria')}
-            title={$t('matches.list.duelsHelpButtonTitle')}
-          >
-            ?
-          </button>
-        {/if}
-      </div>
+              <IconUpload size={20} />
+              <span
+                >{importingDuels
+                  ? $t('matches.list.importing')
+                  : $t('matches.list.importLabel')}</span
+              >
+            </button>
+            <button
+              type="button"
+              class="btn btn--sm matches-page__duels-help-btn"
+              onclick={toggleDuelsHelp}
+              aria-expanded={duelsHelpOpen}
+              aria-controls="duels-import-help"
+              aria-label={duelsHelpOpen
+                ? $t('matches.list.duelsHelpCollapseAria')
+                : $t('matches.list.duelsHelpExpandAria')}
+              title={$t('matches.list.duelsHelpButtonTitle')}
+            >
+              ?
+            </button>
+          {/if}
+        </div>
+      {/snippet}
       {#if myPlayerId && duelsHelpOpen}
         <div
           id="duels-import-help"
@@ -455,7 +425,7 @@
       {#if duelsImportError}
         <p class="alert" role="alert">{duelsImportError}</p>
       {/if}
-    </div>
+    </StatusStateCard>
   {:else}
     <div class="row matches-header row--between">
       <div class="page-header__title-row">
@@ -463,7 +433,6 @@
       </div>
       <div class="row row--sm">
         <a href="/matches/quick" class="btn">{$t('matches.list.quickMatch')}</a>
-        <a href="/tournaments" class="btn">{$t('matches.list.navTournaments')}</a>
         {#if myPlayerId}
           <button
             type="button"
@@ -555,14 +524,15 @@
     />
 
     {#if matches.length === 0}
-      <div class="card stack matches-page__empty-filtered">
-        <p class="card__sub">{$t('matches.list.emptyFiltered')}</p>
-        {#if canClearFilters}
-          <button type="button" class="btn" onclick={clearFilters}
-            >{$t('common.clearFilters')}</button
-          >
-        {/if}
-      </div>
+      <StatusStateCard kind="empty" message={$t('matches.list.emptyFiltered')}>
+        {#snippet actions()}
+          {#if canClearFilters}
+            <button type="button" class="btn" onclick={clearFilters}
+              >{$t('common.clearFilters')}</button
+            >
+          {/if}
+        {/snippet}
+      </StatusStateCard>
     {:else}
       <div class="stack">
         {#each matches as match (match._id)}
@@ -730,11 +700,6 @@
 
   .matches-page__duels-alert {
     margin: 0 0 var(--space-sm) 0;
-  }
-
-  .matches-page__empty-filtered .btn {
-    align-self: flex-start;
-    margin-top: var(--space-sm);
   }
 
   :global(.matchcard) .matchcard__top--with-pill {
