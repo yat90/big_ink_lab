@@ -67,9 +67,21 @@ export function initLocale(): void {
 
 export const locale = writable<Locale>('en');
 
+function syncDocumentLanguage(next: Locale): void {
+  if (!browser) return;
+  try {
+    document.documentElement.lang = next === 'de' ? 'de' : 'en';
+  } catch {
+    /* ignore */
+  }
+}
+
 if (browser) {
   const stored = readStoredLocale();
   locale.set(stored ?? browserDefaultLocale());
+  locale.subscribe((next) => {
+    syncDocumentLanguage(next);
+  });
 }
 
 export function setLocale(next: Locale): void {
@@ -77,11 +89,6 @@ export function setLocale(next: Locale): void {
   if (browser) {
     try {
       localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* ignore */
-    }
-    try {
-      document.documentElement.lang = next === 'de' ? 'de' : 'en';
     } catch {
       /* ignore */
     }
