@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import DeckStatsContent from './DeckStatsContent.svelte';
 
@@ -29,10 +30,10 @@
 </script>
 
 <div class="page">
-  <div class="card stack">
+  <AppCard className="stack">
     <h1 class="deck-stats__title">Deck statistics</h1>
     <DeckStatsContent {stats} {loading} {error} showBackLink={true} deckId={id} />
-  </div>
+  </AppCard>
 </div>
 
 <style>

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
   import { config } from '$lib/config';
   import { translate, t, locale } from '$lib/i18n';
 
@@ -96,14 +98,14 @@
     />
 
     {#if error}
-      <p class="alert" role="alert">{error}</p>
+      <AppBanner variant="danger" message={error} />
     {/if}
 
     <div class="row tournament-new__actions">
-      <button type="submit" class="btn btn--primary" disabled={loading}>
+      <AppButton type="submit" variant="primary" disabled={loading}>
         {loading ? $t('common.saving') : $t('tournaments.new.createTournament')}
-      </button>
-      <a href="/tournaments" class="btn">{$t('common.cancel')}</a>
+      </AppButton>
+      <AppButton href="/tournaments">{$t('common.cancel')}</AppButton>
     </div>
   </form>
 </div>

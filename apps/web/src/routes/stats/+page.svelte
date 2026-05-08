@@ -1,5 +1,8 @@
 <script lang="ts">
   import { get } from 'svelte/store';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { STAGE_OPTIONS } from '$lib/matches';
   import MatchupStatistics from '$lib/MatchupStatistics.svelte';
@@ -104,32 +107,32 @@
 
 <div class="page">
   {#if loading}
-    <div class="card">
+    <AppCard>
       <div class="loading-skeleton" aria-busy="true" aria-live="polite">
         <div class="loading-skeleton__line loading-skeleton__line--title"></div>
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         <div class="loading-skeleton__line"></div>
       </div>
       <p class="muted margin-top-md">{$t('statistics.globalPage.loading')}</p>
-    </div>
+    </AppCard>
   {:else if error}
-    <div class="card" role="alert">
-      <p class="alert">{error}</p>
+    <AppCard role="alert">
+      <AppBanner variant="danger" message={error} />
       <div class="row row--sm margin-top-md">
-        <a href="/me/statistics" class="btn">{$t('statistics.globalPage.myStatistics')}</a>
-        <a href="/" class="btn">{$t('statistics.globalPage.backHome')}</a>
+        <AppButton href="/me/statistics">{$t('statistics.globalPage.myStatistics')}</AppButton>
+        <AppButton href="/">{$t('statistics.globalPage.backHome')}</AppButton>
       </div>
-    </div>
+    </AppCard>
   {:else if stats}
     <div class="row row--between row--center-y gap-md margin-bottom-md">
       <h2 class="card__title card-title-reset">{$t('statistics.globalPage.heading')}</h2>
       <div class="row row--sm">
-        <a href="/me/statistics" class="btn">{$t('statistics.globalPage.myStatistics')}</a>
-        <a href="/" class="btn">{$t('statistics.globalPage.backHome')}</a>
+        <AppButton href="/me/statistics">{$t('statistics.globalPage.myStatistics')}</AppButton>
+        <AppButton href="/">{$t('statistics.globalPage.backHome')}</AppButton>
       </div>
     </div>
 
-    <div class="card match-stats__card match-stats__filter">
+    <AppCard className="match-stats__card match-stats__filter">
       <h3 class="match-stats__title">{$t('statistics.globalPage.filterByStage')}</h3>
       <div
         class="match-stats__stage-chips"
@@ -182,10 +185,10 @@
           {/if}
         </p>
       {/if}
-    </div>
+    </AppCard>
 
     <div class="match-stats">
-      <div class="card match-stats__card">
+      <AppCard className="match-stats__card">
         <h3 class="match-stats__title">{$t('statistics.globalPage.matchOverview')}</h3>
         <div class="match-stats__grid">
           <div class="match-stats__item">
@@ -197,9 +200,9 @@
             <span class="match-stats__label muted">{$t('statistics.globalPage.totalGames')}</span>
           </div>
         </div>
-      </div>
+      </AppCard>
 
-      <div class="card match-stats__card">
+      <AppCard className="match-stats__card">
         <h3 class="match-stats__title">{$t('statistics.globalPage.matchesByStage')}</h3>
         <div class="match-stats__grid">
           {#each Object.entries(stats.matchesByStage) as [stage, count]}
@@ -209,9 +212,9 @@
             </div>
           {/each}
         </div>
-      </div>
+      </AppCard>
 
-      <div class="card match-stats__card">
+      <AppCard className="match-stats__card">
         <h3 class="match-stats__title">{$t('statistics.globalPage.byStartingPlayer')}</h3>
         <div class="match-stats__grid">
           <div class="match-stats__item">
@@ -233,16 +236,16 @@
             >
           </div>
         </div>
-      </div>
+      </AppCard>
 
-      <div class="card match-stats__card match-stats__card--wide">
+      <AppCard className="match-stats__card match-stats__card--wide">
         <MatchupStatistics
           matrix={stats.deckColorMatrix}
           bind:analysisMode={selectedMatrixMode}
           title={$t('statistics.matrix.titleDefault')}
           emptyText={$t('statistics.globalPage.matrixEmpty')}
         />
-      </div>
+      </AppCard>
     </div>
   {/if}
 </div>
@@ -254,11 +257,11 @@
     gap: var(--space-lg);
   }
 
-  .match-stats__card {
+  :global(.match-stats__card) {
     padding: var(--space-lg);
   }
 
-  .match-stats__filter {
+  :global(.match-stats__filter) {
     margin-bottom: 0;
   }
 
@@ -334,7 +337,7 @@
     user-select: none;
   }
 
-  .match-stats__card--wide {
+  :global(.match-stats__card--wide) {
     overflow: hidden;
   }
 

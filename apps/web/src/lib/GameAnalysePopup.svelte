@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
 
   type Props = {
@@ -46,7 +48,8 @@
       aria-label="Close"
       onclick={handleClose}
     ></button>
-    <div class="delete-game-modal__card card game-analyse-modal__card" use:focusTrap use:scrollLock>
+    <div class="delete-game-modal__card game-analyse-modal__card" use:focusTrap use:scrollLock>
+      <AppCard>
       <h2 id="game-analyse-title" class="delete-game-modal__title">
         {title}
       </h2>
@@ -58,11 +61,12 @@
         <p class="game-analyse-modal__copied" role="status">Copied to clipboard!</p>
       {/if}
       <div class="delete-game-modal__actions row game-analyse-modal__actions">
-        <button type="button" class="btn btn--primary" onclick={copyToClipboard}>
+        <AppButton type="button" variant="primary" onclick={copyToClipboard}>
           Copy Prompt
-        </button>
-        <button type="button" class="btn" onclick={handleClose}>Close</button>
+        </AppButton>
+        <AppButton type="button" onclick={handleClose}>Close</AppButton>
       </div>
+      </AppCard>
     </div>
   </div>
 {/if}

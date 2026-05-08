@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { onMount } from 'svelte';
   import { getAuthToken } from '$lib/auth';
@@ -114,13 +117,13 @@
 </svelte:head>
 
 <div class="page">
-  <div class="card stack">
+  <AppCard className="stack">
     <h1 class="card__title">My account</h1>
 
     {#if loading}
       <p class="muted">Loading…</p>
     {:else if error && !user}
-      <p class="alert" role="alert">{error}</p>
+      <AppBanner variant="danger" message={error} />
     {:else if user}
       <dl class="stack me-dl">
         <div class="dl-row">
@@ -144,14 +147,14 @@
                   aria-label="Player name"
                   autocomplete="name"
                 />
-                <button
+                <AppButton
                   type="button"
-                  class="btn btn--primary"
+                  variant="primary"
                   disabled={savingPlayerName}
                   onclick={savePlayerName}
                 >
                   {savingPlayerName ? 'Saving…' : 'Save'}
-                </button>
+                </AppButton>
               </div>
             </dd>
           </div>
@@ -166,14 +169,14 @@
                   placeholder="Team name"
                   aria-label="Team name"
                 />
-                <button
+                <AppButton
                   type="button"
-                  class="btn btn--primary"
+                  variant="primary"
                   disabled={savingTeam}
                   onclick={saveTeam}
                 >
                   {savingTeam ? 'Saving…' : 'Save'}
-                </button>
+                </AppButton>
               </div>
             </dd>
           </div>
@@ -181,10 +184,10 @@
       </dl>
 
       {#if error}
-        <p class="alert" role="alert">{error}</p>
+        <AppBanner variant="danger" message={error} />
       {/if}
     {/if}
-  </div>
+  </AppCard>
   {#if player}
     <div class="me-stats-cta">
       <a href="/me/statistics" class="me-stats-cta__link"> View all my statistics </a>

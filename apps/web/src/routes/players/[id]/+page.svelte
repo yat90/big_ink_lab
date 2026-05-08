@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
@@ -69,21 +72,21 @@
 
 <div class="page page--player">
   {#if loading}
-    <div class="card">
+    <AppCard>
       <div class="loading-skeleton" aria-busy="true" aria-live="polite">
         <div class="loading-skeleton__line loading-skeleton__line--title"></div>
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         <div class="loading-skeleton__line"></div>
       </div>
       <p class="muted" style="margin-top: var(--space-md);">Loading player…</p>
-    </div>
+    </AppCard>
   {:else if error || !player}
-    <div class="card" role="alert">
-      <p class="alert">{error || 'Player not found'}</p>
-    </div>
+    <AppCard role="alert">
+      <AppBanner variant="danger" message={error || 'Player not found'} />
+    </AppCard>
   {:else}
     <div class="player-overview">
-      <div class="card stack player-overview__header">
+      <AppCard className="stack player-overview__header">
         <div
           class="row"
           style="justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md);"
@@ -104,13 +107,13 @@
             {/if}
           </div>
           <div class="row" style="gap: var(--space-sm);">
-            <a href="/players/{player._id}/edit" class="btn">
+            <AppButton href="/players/{player._id}/edit" icon={true}>
               <IconEdit size={16} className="icon-inline" />
               <span style="margin-left: var(--space-xs);">Edit</span>
-            </a>
+            </AppButton>
           </div>
         </div>
-      </div>
+      </AppCard>
 
       {#if player.stats}
         <PlayerStatsOverview
@@ -124,9 +127,9 @@
           emptyText={$t('statistics.playerPublic.emptyMatchupFilter')}
         />
       {:else}
-        <div class="card">
+        <AppCard>
           <p class="card__sub muted">{$t('statistics.playerPublic.noMatchDataYet')}</p>
-        </div>
+        </AppCard>
       {/if}
     </div>
   {/if}

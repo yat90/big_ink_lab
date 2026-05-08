@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
   import { translate, t, locale } from '$lib/i18n';
@@ -131,7 +133,7 @@
 </svelte:head>
 
 <div class="page stats-page">
-  <div class="card stack stats-page__card">
+  <AppCard className="stack stats-page__card">
     <h1 class="stats-page__title">{$t('statistics.myPage.title')}</h1>
     <p class="stats-page__intro muted">
       {$t('statistics.myPage.intro')}
@@ -140,13 +142,13 @@
     {#if loading}
       <p class="muted">{$t('statistics.myPage.loading')}</p>
     {:else if error && !player}
-      <p class="alert" role="alert">{error}</p>
+      <AppBanner variant="danger" message={error} />
     {:else if !player}
       <p class="muted">{$t('statistics.myPage.linkPlayerHint')}</p>
     {:else if !hasAnyStats}
       <p class="muted">{$t('statistics.myPage.noMatchDataYet')}</p>
     {/if}
-  </div>
+  </AppCard>
 </div>
 
 {#if !loading && !error && player && hasAnyStats}
@@ -232,7 +234,7 @@
     }
   }
 
-  .stats-page__card {
+  :global(.stats-page__card) {
     width: 100%;
     min-width: 0;
     max-width: 100%;

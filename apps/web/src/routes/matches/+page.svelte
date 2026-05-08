@@ -15,6 +15,9 @@
   import InkIcons from '$lib/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import IconUpload from '$lib/icons/IconUpload.svelte';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import FilterCard from '$lib/FilterCard.svelte';
   import Select from '$lib/Select.svelte';
   import Pagination from '$lib/Pagination.svelte';
@@ -367,76 +370,17 @@
     <StatusStateCard kind="loading" message={$t('matches.list.loadingText')} />
   {:else if error}
     <StatusStateCard kind="error" message={error} />
-  {:else if matches.length === 0 && !filterStage && !filterTime && !filterPlayerId && !filterTournamentId}
-    <StatusStateCard kind="empty" title={$t('matches.list.emptyTitle')} message={$t('matches.list.emptySub')}>
-      {#snippet actions()}
-        <div class="row matches-page__empty-actions">
-          <a href="/matches/new" class="btn btn--primary">{$t('matches.list.newMatch')}</a>
-          {#if myPlayerId}
-            <button
-              type="button"
-              class="btn matches-page__duels-import-btn"
-              onclick={triggerDuelsImport}
-              disabled={importingDuels}
-              aria-busy={importingDuels}
-              aria-label={importingDuels
-                ? $t('matches.list.importing')
-                : $t('matches.list.importLabel')}
-              title={$t('matches.list.duelsImportTooltip')}
-            >
-              <IconUpload size={20} />
-              <span
-                >{importingDuels
-                  ? $t('matches.list.importing')
-                  : $t('matches.list.importLabel')}</span
-              >
-            </button>
-            <button
-              type="button"
-              class="btn btn--sm matches-page__duels-help-btn"
-              onclick={toggleDuelsHelp}
-              aria-expanded={duelsHelpOpen}
-              aria-controls="duels-import-help"
-              aria-label={duelsHelpOpen
-                ? $t('matches.list.duelsHelpCollapseAria')
-                : $t('matches.list.duelsHelpExpandAria')}
-              title={$t('matches.list.duelsHelpButtonTitle')}
-            >
-              ?
-            </button>
-          {/if}
-        </div>
-      {/snippet}
-      {#if myPlayerId && duelsHelpOpen}
-        <div
-          id="duels-import-help"
-          class="matches-page__duels-help-panel"
-          role="region"
-          aria-label={$t('matches.list.duelsHelpRegionAria')}
-        >
-          <p class="muted matches-page__duels-hint">
-            {$t('matches.list.duelsHelp1')}
-          </p>
-          <p class="muted matches-page__duels-hint matches-page__duels-hint--bulk">
-            {$t('matches.list.duelsHelpBulk')}
-          </p>
-        </div>
-      {/if}
-      {#if duelsImportError}
-        <p class="alert" role="alert">{duelsImportError}</p>
-      {/if}
-    </StatusStateCard>
   {:else}
     <div class="row matches-header row--between">
       <div class="page-header__title-row">
         <h2 class="card__title card-title-reset">{$t('matches.list.heading')}</h2>
       </div>
       <div class="row row--sm">
-        <a href="/matches/quick" class="btn">{$t('matches.list.quickMatch')}</a>
+        <AppButton href="/matches/quick">{$t('matches.list.quickMatch')}</AppButton>
         {#if myPlayerId}
-          <button
+          <AppButton
             type="button"
-            class="btn matches-page__duels-import-btn"
+            icon={true}
             onclick={triggerDuelsImport}
             disabled={importingDuels}
             aria-busy={importingDuels}
@@ -451,13 +395,15 @@
                 ? $t('matches.list.importing')
                 : $t('matches.list.importLabel')}</span
             >
-          </button>
+          </AppButton>
         {/if}
-        <a href="/matches/new" class="btn btn--primary">{$t('matches.list.newMatch')}</a>
+        <AppButton href="/matches/new" variant="primary">{$t('matches.list.newMatch')}</AppButton>
       </div>
     </div>
     {#if myPlayerId && duelsImportError}
-      <p class="alert matches-page__duels-alert" role="alert">{duelsImportError}</p>
+      <div class="matches-page__duels-alert">
+        <AppBanner variant="danger" message={duelsImportError} />
+      </div>
     {/if}
 
     <FilterCard
@@ -509,9 +455,7 @@
       </div>
       <div class="filters__footer">
         <p class="filters__count muted">{filterSummary}</p>
-        <button type="button" class="btn" onclick={clearFilters} disabled={!canClearFilters}>
-          {$t('common.clearFilters')}
-        </button>
+        <AppButton onclick={clearFilters} disabled={!canClearFilters}>{$t('common.clearFilters')}</AppButton>
       </div>
     </FilterCard>
 
@@ -527,9 +471,7 @@
       <StatusStateCard kind="empty" message={$t('matches.list.emptyFiltered')}>
         {#snippet actions()}
           {#if canClearFilters}
-            <button type="button" class="btn" onclick={clearFilters}
-              >{$t('common.clearFilters')}</button
-            >
+            <AppButton onclick={clearFilters}>{$t('common.clearFilters')}</AppButton>
           {/if}
         {/snippet}
       </StatusStateCard>
@@ -543,7 +485,7 @@
           {@const byeMatch = isByeMatch(match)}
           {@const stagePill = matchStagePillLabel(match)}
           {@const tournamentLink = matchTournamentChip(match)}
-          <div class="card playercard matchcard">
+          <AppCard className="playercard matchcard">
             <div class="matchcard__top muted matchcard__top--with-pill">
               {#if stagePill}
                 <span class="matchcard__stage-pill">{stagePill}</span>
@@ -628,7 +570,7 @@
                 </span>
               </div>
             </a>
-          </div>
+          </AppCard>
         {/each}
       </div>
 
@@ -667,22 +609,6 @@
 
   .matches-page__duels-hint--bulk {
     margin-top: var(--space-sm);
-  }
-
-  .matches-page__duels-import-btn {
-    gap: var(--space-xs);
-  }
-
-  .matches-page__duels-import-btn :global(svg) {
-    display: block;
-    flex-shrink: 0;
-  }
-
-  .matches-page__duels-help-btn {
-    min-width: 2.25rem;
-    padding-inline: 0;
-    font-weight: 700;
-    line-height: 1;
   }
 
   .matches-page__duels-help-panel {

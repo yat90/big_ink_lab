@@ -1,5 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { portal } from '$lib/portal';
   import {
@@ -102,11 +105,12 @@
 <div use:portal>
   <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
     <button type="button" class="modal-backdrop" aria-label="Close" onclick={onClose}></button>
-    <div class="card modal-card" use:focusTrap use:scrollLock>
+    <div class="modal-card" use:focusTrap use:scrollLock>
+      <AppCard>
       <h2 id="tx-modal-title" class="card__title">
         {isEdit ? 'Edit transaction' : 'New transaction'}
       </h2>
-      <form class="stack" onsubmit={submit}>
+        <form class="stack" onsubmit={submit}>
         <label class="label">
           Type
           <select class="input" bind:value={type}>
@@ -170,16 +174,17 @@
         </label>
 
         {#if error}
-          <p class="alert" role="alert">{error}</p>
+          <AppBanner variant="danger" message={error} />
         {/if}
 
         <div class="row" style="gap: 12px; margin-top: 8px;">
-          <button type="submit" class="btn btn--primary" disabled={saving}>
+          <AppButton type="submit" variant="primary" disabled={saving}>
             {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create transaction'}
-          </button>
-          <button type="button" class="btn" onclick={onClose} disabled={saving}>Cancel</button>
+          </AppButton>
+          <AppButton type="button" onclick={onClose} disabled={saving}>Cancel</AppButton>
         </div>
-      </form>
+        </form>
+      </AppCard>
     </div>
   </div>
 </div>

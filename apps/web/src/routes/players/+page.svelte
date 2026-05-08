@@ -7,6 +7,7 @@
   import FilterCard from '$lib/FilterCard.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
+  import AppButton from '$lib/AppButton.svelte';
   import StatusStateCard from '$lib/StatusStateCard.svelte';
 
   type GuestScope = 'roster' | 'guests' | 'all';
@@ -216,7 +217,7 @@
               All
             </button>
           </div>
-          <a href="/players/new" class="btn btn--primary">New player</a>
+          <AppButton href="/players/new" variant="primary">New player</AppButton>
         </div>
       {/snippet}
     </StatusStateCard>
@@ -240,7 +241,7 @@
           </div>
         {/if}
       </div>
-      <a href="/players/new" class="btn btn--primary">New player</a>
+      <AppButton href="/players/new" variant="primary">New player</AppButton>
     </div>
 
     <FilterCard
@@ -328,7 +329,7 @@
     {#if players.length === 0 && filterTeam.trim()}
       <StatusStateCard kind="empty" message="No players in this team.">
         {#snippet actions()}
-          <button type="button" class="btn" onclick={clearTeamFilter}>Clear filter</button>
+          <AppButton onclick={clearTeamFilter}>Clear filter</AppButton>
         {/snippet}
       </StatusStateCard>
     {:else}

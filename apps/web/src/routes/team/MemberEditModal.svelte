@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { portal } from '$lib/portal';
   import {
@@ -52,12 +55,13 @@
 <div use:portal>
   <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="edit-member-title">
     <button type="button" class="modal-backdrop" aria-label="Close" onclick={onClose}></button>
-    <div class="card modal-card" use:focusTrap={{ focusRoot: true }} use:scrollLock>
+    <div class="modal-card" use:focusTrap={{ focusRoot: true }} use:scrollLock>
+      <AppCard>
       <h2 id="edit-member-title" class="card__title">Edit {member.name}</h2>
       <p class="card__sub muted" style="margin-top: 0;">
         Monthly dues are configured team-wide on the Finance tab.
       </p>
-      <form class="stack" onsubmit={save}>
+        <form class="stack" onsubmit={save}>
         <label class="label">
           Joined on
           <input type="date" class="input" bind:value={joinedAt} />
@@ -104,16 +108,17 @@
         </label>
 
         {#if error}
-          <p class="alert" role="alert">{error}</p>
+          <AppBanner variant="danger" message={error} />
         {/if}
 
         <div class="row" style="gap: 12px; margin-top: 8px;">
-          <button type="submit" class="btn btn--primary" disabled={saving}>
+          <AppButton type="submit" variant="primary" disabled={saving}>
             {saving ? 'Saving…' : 'Save changes'}
-          </button>
-          <button type="button" class="btn" onclick={onClose} disabled={saving}>Cancel</button>
+          </AppButton>
+          <AppButton type="button" onclick={onClose} disabled={saving}>Cancel</AppButton>
         </div>
-      </form>
+        </form>
+      </AppCard>
     </div>
   </div>
 </div>

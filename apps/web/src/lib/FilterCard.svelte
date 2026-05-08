@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import IconFilter from '$lib/icons/IconFilter.svelte';
 
   interface Props {
@@ -47,7 +49,7 @@
 </script>
 
 <div class="filter-card-wrap">
-  <div class="card stack filter-card">
+  <AppCard className="stack filter-card">
     <button
       type="button"
       class="filter-card__toggle"
@@ -74,21 +76,16 @@
         {/if}
       </div>
     {/if}
-  </div>
+  </AppCard>
   {#if !expanded && (summary || onClear)}
     <div class="filter-card__collapsed-row">
       {#if summary}
         <p class="muted filter-card__summary filter-card__summary--inline">{summary}</p>
       {/if}
       {#if onClear}
-        <button
-          type="button"
-          class="btn filter-card__clear"
-          onclick={() => onClear?.()}
-          disabled={!canClear}
-        >
+        <AppButton className="filter-card__clear" onclick={() => onClear?.()} disabled={!canClear}>
           {clearLabel}
-        </button>
+        </AppButton>
       {/if}
     </div>
   {/if}

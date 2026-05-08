@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppCard from '$lib/AppCard.svelte';
   import MatchLineRow from '$lib/MatchLineRow.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
   import { t } from '$lib/i18n';
@@ -22,7 +23,7 @@
 </script>
 
 <div class="stats-overview-tab">
-  <div class="stats-overview-hero card stack stats-page__card">
+  <AppCard className="stats-overview-hero stack stats-page__card">
     <div class="stats-page__glance">
       {#if matchAnalysis && matchAnalysis.totals.matchesPlayed > 0}
         <div class="stats-page__glance-item stats-page__glance-item--highlight">
@@ -121,9 +122,9 @@
         </div>
       {/if}
     </div>
-  </div>
+  </AppCard>
 
-  <div class="card stack stats-page__card">
+  <AppCard className="stack stats-page__card">
     {#if matchAnalysis && matchAnalysis.totals.matchesPlayed > 0}
       {#if matchAnalysis.byStage?.length > 0}
         <div class="stats-page__block">
@@ -187,7 +188,7 @@
     {:else}
       <p class="muted">{$t('statistics.overview.noResultsYet')}</p>
     {/if}
-  </div>
+  </AppCard>
 </div>
 
 <style>
@@ -199,7 +200,7 @@
     min-width: 0;
   }
 
-  .stats-overview-hero {
+  :global(.stats-overview-hero) {
     position: relative;
     overflow: hidden;
     padding: var(--space-xl);
@@ -213,7 +214,7 @@
     box-shadow: var(--shadow-card);
   }
 
-  .stats-overview-hero::before {
+  :global(.stats-overview-hero)::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -225,30 +226,30 @@
     pointer-events: none;
   }
 
-  .stats-overview-hero > :global(.stats-page__glance) {
+  :global(.stats-overview-hero > .stats-page__glance) {
     position: relative;
     z-index: 1;
   }
 
-  .stats-overview-hero :global(.stats-page__glance) {
+  :global(.stats-overview-hero .stats-page__glance) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-sm);
   }
 
   @media (min-width: 520px) {
-    .stats-overview-hero :global(.stats-page__glance) {
+    :global(.stats-overview-hero .stats-page__glance) {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
 
   @media (min-width: 768px) {
-    .stats-overview-hero :global(.stats-page__glance) {
+    :global(.stats-overview-hero .stats-page__glance) {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
   }
 
-  .stats-overview-hero :global(.stats-page__glance-item) {
+  :global(.stats-overview-hero .stats-page__glance-item) {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -263,13 +264,13 @@
       border-color var(--transition);
   }
 
-  .stats-overview-hero :global(.stats-page__glance-item--highlight) {
+  :global(.stats-overview-hero .stats-page__glance-item--highlight) {
     background: rgba(168, 85, 247, 0.1);
     border-color: rgba(168, 85, 247, 0.35);
     box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.12);
   }
 
-  .stats-overview-hero :global(.stats-page__glance-value) {
+  :global(.stats-overview-hero .stats-page__glance-value) {
     font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.03em;
@@ -278,18 +279,18 @@
     line-height: 1.1;
   }
 
-  .stats-overview-hero :global(.stats-page__glance-item--highlight .stats-page__glance-value) {
+  :global(.stats-overview-hero .stats-page__glance-item--highlight .stats-page__glance-value) {
     font-size: 1.85rem;
     color: var(--ink);
     text-shadow: 0 0 28px var(--ink-glow);
   }
 
-  .stats-overview-hero :global(.stats-page__glance-value--fraction) {
+  :global(.stats-overview-hero .stats-page__glance-value--fraction) {
     font-size: 1.35rem;
     letter-spacing: -0.02em;
   }
 
-  .stats-overview-hero :global(.stats-page__glance-value--deck) {
+  :global(.stats-overview-hero .stats-page__glance-value--deck) {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
@@ -299,7 +300,7 @@
     line-height: 1.25;
   }
 
-  .stats-overview-hero :global(.stats-page__glance-deck-name) {
+  :global(.stats-overview-hero .stats-page__glance-deck-name) {
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -307,7 +308,7 @@
     overflow: hidden;
   }
 
-  .stats-overview-hero :global(.stats-page__glance-label) {
+  :global(.stats-overview-hero .stats-page__glance-label) {
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -316,7 +317,7 @@
     line-height: 1.3;
   }
 
-  .stats-overview-hero :global(.stats-page__glance-label--wrap) {
+  :global(.stats-overview-hero .stats-page__glance-label--wrap) {
     text-transform: none;
     letter-spacing: 0.02em;
     font-weight: 500;
@@ -324,12 +325,12 @@
     max-width: 11rem;
   }
 
-  .stats-overview-hero :global(.stats-page__form-wins) {
+  :global(.stats-overview-hero .stats-page__form-wins) {
     color: var(--ok);
     font-weight: 800;
   }
 
-  .stats-overview-hero :global(.stats-page__form-losses) {
+  :global(.stats-overview-hero .stats-page__form-losses) {
     color: var(--danger);
     font-weight: 800;
     margin-left: 0.35rem;

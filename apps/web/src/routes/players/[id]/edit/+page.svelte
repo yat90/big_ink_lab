@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -72,20 +75,20 @@
 
 <div class="page">
   {#if loading}
-    <div class="card">
+    <AppCard>
       <div class="loading-skeleton" aria-busy="true" aria-live="polite">
         <div class="loading-skeleton__line loading-skeleton__line--title"></div>
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
       </div>
       <p class="muted" style="margin-top: var(--space-md);">Loading…</p>
-    </div>
+    </AppCard>
   {:else if error && !name && !team}
-    <div class="card" role="alert">
-      <p class="alert">{error}</p>
-      <a href="/players" class="btn">Back to players</a>
-    </div>
+    <AppCard role="alert">
+      <AppBanner variant="danger" message={error} />
+      <AppButton href="/players">Back to players</AppButton>
+    </AppCard>
   {:else}
-    <div class="card stack">
+    <AppCard className="stack">
       <h2 class="card__title">Edit player</h2>
       <p class="card__sub">Change name and team.</p>
 
@@ -137,16 +140,16 @@
         </div>
 
         {#if error}
-          <p class="alert" role="alert" aria-live="assertive">{error}</p>
+          <AppBanner variant="danger" message={error} />
         {/if}
 
         <div class="row" style="margin-top: 8px; gap: 12px;">
-          <button type="submit" class="btn btn--primary" disabled={saving}>
+          <AppButton type="submit" variant="primary" disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
-          </button>
-          <a href="/players/{id}" class="btn">Cancel</a>
+          </AppButton>
+          <AppButton href="/players/{id}">Cancel</AppButton>
         </div>
       </form>
-    </div>
+    </AppCard>
   {/if}
 </div>

@@ -10,6 +10,7 @@
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
   import InkIcons from '$lib/InkIcons.svelte';
   import { authMe } from '$lib/me';
+  import AppButton from '$lib/AppButton.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import Select from '$lib/Select.svelte';
   import StatusStateCard from '$lib/StatusStateCard.svelte';
@@ -141,9 +142,9 @@
   {:else if decks.length === 0 && !filterColor && !filterPlayer}
     <StatusStateCard kind="empty" title={$t('decks.emptyTitle')} message={$t('decks.emptySub')}>
       {#snippet actions()}
-        <a href="/decks/new" class="btn btn--primary margin-top-sm align-self-start">
+        <AppButton href="/decks/new" variant="primary" className="margin-top-sm align-self-start">
           {$t('decks.newDeck')}
-        </a>
+        </AppButton>
       {/snippet}
     </StatusStateCard>
   {:else}
@@ -151,7 +152,7 @@
       <div class="page-header__title-row">
         <h2 class="card__title card-title-reset">{$t('decks.heading')}</h2>
       </div>
-      <a href="/decks/new" class="btn btn--primary">{$t('decks.newDeck')}</a>
+      <AppButton href="/decks/new" variant="primary">{$t('decks.newDeck')}</AppButton>
     </div>
 
     <FilterCard
@@ -223,9 +224,7 @@
         <StatusStateCard kind="empty" message={$t('decks.emptyFiltered')}>
           {#snippet actions()}
             {#if canClearDeckFilters}
-              <button type="button" class="btn" onclick={clearDeckFilters}
-                >{$t('common.clearFilters')}</button
-              >
+              <AppButton onclick={clearDeckFilters}>{$t('common.clearFilters')}</AppButton>
             {/if}
           {/snippet}
         </StatusStateCard>

@@ -3,6 +3,9 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { getAuthToken } from '$lib/auth';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { translate, t, locale } from '$lib/i18n';
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
@@ -553,7 +556,7 @@
   <h1 class="page-title">{$t('tournaments.results.title')}</h1>
 
   {#if !tournamentIdFromUrl}
-    <div class="card stack">
+    <AppCard className="stack">
       <p class="card__sub" style="margin: 0;">
         {$t('tournaments.results.noTournamentBefore')}<strong
           >{$t('tournaments.results.noTournamentStrong')}</strong
@@ -564,19 +567,19 @@
       <p class="card__sub" style="margin: 0;">
         <a href="/tournaments">{$t('tournaments.results.browseLink')}</a>
       </p>
-    </div>
+    </AppCard>
   {:else}
     {#if tournamentInfo === null}
-      <div class="card stack tournament-results__tournament-card" aria-busy="true">
+      <AppCard className="stack tournament-results__tournament-card" aria-busy="true">
         <div class="loading-skeleton" aria-hidden="true">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>
           <div class="loading-skeleton__line"></div>
         </div>
         <p class="card__sub muted" style="margin: 0;">{$t('common.loadingTournament')}</p>
-      </div>
+      </AppCard>
     {:else}
-      <section
-        class="card stack tournament-results__tournament-card"
+      <AppCard
+        className="stack tournament-results__tournament-card"
         aria-labelledby="tr-tournament-heading"
       >
         <div class="tournament-results__tournament-head row">
@@ -623,18 +626,18 @@
             </li>
           {/if}
         </ul>
-      </section>
+      </AppCard>
     {/if}
 
     <form class="stack tournament-results__form" onsubmit={onSubmit}>
       <div class="row tournament-results__actions tournament-results__actions--top">
-        <button type="submit" class="btn btn--primary" disabled={loading}>
+        <AppButton type="submit" variant="primary" disabled={loading}>
           {loading ? $t('common.saving') : $t('tournaments.results.save')}
-        </button>
-        <a href="/tournaments/{tournamentIdFromUrl}" class="btn">{$t('common.cancel')}</a>
+        </AppButton>
+        <AppButton href="/tournaments/{tournamentIdFromUrl}">{$t('common.cancel')}</AppButton>
       </div>
 
-      <section class="card stack">
+      <AppCard className="stack">
         <h3 class="card__title" style="margin: 0;">{$t('tournaments.results.youSection')}</h3>
         {#if eventP1}
           <p class="card__sub muted" style="margin: 0;">
@@ -670,9 +673,11 @@
           </p>
         {/if}
         {#if error}
-          <p class="alert tournament-results__error" role="alert">{error}</p>
+          <div class="tournament-results__error" role="alert">
+            <AppBanner variant="danger" message={error} />
+          </div>
         {/if}
-      </section>
+      </AppCard>
 
       <div class="stack tournament-results__rounds-wrap">
         <div class="tournament-results__tabs-bar">
@@ -698,9 +703,9 @@
               {/each}
             </div>
           </div>
-          <button
+          <AppButton
             type="button"
-            class="btn tournament-results__add-round-tab"
+            className="tournament-results__add-round-tab"
             disabled={rounds.length >= MAX_ROUNDS}
             title={rounds.length >= MAX_ROUNDS
               ? $t('tournaments.results.addRoundMaxTitle', { max: String(MAX_ROUNDS) })
@@ -708,12 +713,12 @@
             onclick={addRound}
           >
             + {$t('tournaments.results.addRound')}
-          </button>
+          </AppButton>
         </div>
 
-        <div
+        <AppCard
           id="panel-tournament-results-round"
-          class="card stack tournament-results__round"
+          className="stack tournament-results__round"
           role="tabpanel"
           tabindex="0"
           aria-labelledby="tab-tournament-results-round-{activeRoundIndex}"
@@ -738,15 +743,16 @@
                 />
               </h2>
               {#if rounds.length > 1}
-                <button
+                <AppButton
                   type="button"
-                  class="btn btn--sm btn--danger-outline"
+                  size="sm"
+                  variant="dangerOutline"
                   onclick={() => removeRound(roundIndex)}
                 >
                   <IconTrash size={18} className="game-line__icon icon-trash" />&nbsp;{$t(
                     'tournaments.results.remove'
                   )}
-                </button>
+                </AppButton>
               {/if}
             </div>
 
@@ -871,13 +877,13 @@
                 <h3 class="tournament-results__games-title">
                   {$t('tournaments.results.gamesTitle')}
                 </h3>
-                <button
+                <AppButton
                   type="button"
-                  class="btn tournament-results__add-game-btn"
+                  className="tournament-results__add-game-btn"
                   onclick={() => addGame(roundIndex)}
                 >
                   + {$t('tournaments.results.addGame')}
-                </button>
+                </AppButton>
               </div>
               {#each r.games as g, gi (`${roundIndex}-${gi}`)}
                 <div class="tournament-results__game stack">
@@ -1013,40 +1019,42 @@
                     placeholder={$t('tournaments.results.gameNotesPlaceholder')}
                   ></textarea>
                   {#if r.games.length > 1}
-                    <button
+                    <AppButton
                       type="button"
-                      class="btn btn--sm btn--danger-outline tournament-results__remove-game-btn"
+                      size="sm"
+                      variant="dangerOutline"
+                      className="tournament-results__remove-game-btn"
                       onclick={() => removeGame(roundIndex, gi)}
                     >
                       <IconTrash size={18} className="game-line__icon icon-trash" />&nbsp;{$t(
                         'tournaments.results.removeGame'
                       )}
-                    </button>
+                    </AppButton>
                   {/if}
                 </div>
               {/each}
-              <button
+              <AppButton
                 type="button"
-                class="btn tournament-results__add-game-btn tournament-results__add-game-btn--footer"
+                className="tournament-results__add-game-btn tournament-results__add-game-btn--footer"
                 onclick={() => addGame(roundIndex)}
               >
                 + {$t('tournaments.results.addGame')}
-              </button>
+              </AppButton>
             {:else if r.resultMode === 'intentionalDraw'}
-              <div class="tournament-results__id-games-skip card stack">
+              <AppCard className="tournament-results__id-games-skip stack">
                 <p class="card__sub muted" style="margin: 0;">
                   {$t('tournaments.results.skipIdGames')}
                 </p>
-              </div>
+              </AppCard>
             {:else if r.resultMode === 'bye'}
-              <div class="tournament-results__id-games-skip card stack">
+              <AppCard className="tournament-results__id-games-skip stack">
                 <p class="card__sub muted" style="margin: 0;">
                   {$t('tournaments.results.skipByeGames')}
                 </p>
-              </div>
+              </AppCard>
             {/if}
           {/each}
-        </div>
+        </AppCard>
       </div>
 
       {#if resultMessage}

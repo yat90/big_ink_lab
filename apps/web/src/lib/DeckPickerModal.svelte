@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { authMe } from '$lib/me';
   import { get } from 'svelte/store';
@@ -188,11 +191,12 @@
     <button type="button" class="deck-picker-modal__backdrop" aria-label="Close" onclick={onClose}
     ></button>
     <div
-      class="deck-picker-modal__card card"
+      class="deck-picker-modal__card"
       tabindex="-1"
       use:focusTrap={{ focusRoot: true }}
       use:scrollLock
     >
+      <AppCard>
       <h2 id="deck-picker-title" class="deck-picker-modal__title">{title}</h2>
       {#if forLabel}
         <p class="deck-picker-modal__for muted">Selecting deck for <strong>{forLabel}</strong></p>
@@ -257,16 +261,16 @@
       {#if loading}
         <p class="muted">Loading decks…</p>
       {:else if error}
-        <p class="alert" role="alert">{error}</p>
+        <AppBanner variant="danger" message={error} />
       {:else if decks.length === 0}
         <p class="muted">No decks match the filters.</p>
       {:else}
         <ul class="deck-picker-modal__list">
           <li class="deck-picker-modal__item">
             <span class="deck-picker-modal__item-name muted">No deck</span>
-            <button type="button" class="btn btn--sm" onclick={() => selectDeck('')}>
+            <AppButton type="button" size="sm" onclick={() => selectDeck('')}>
               Select
-            </button>
+            </AppButton>
           </li>
           {#each decks as deck (deck._id)}
             <li class="deck-picker-modal__item">
@@ -276,22 +280,24 @@
                 {/if}
                 {deck.name}
               </span>
-              <button
+              <AppButton
                 type="button"
-                class="btn btn--primary btn--sm"
+                variant="primary"
+                size="sm"
                 onclick={() => selectDeck(deck._id)}
               >
                 Select
-              </button>
+              </AppButton>
             </li>
           {/each}
         </ul>
         <Pagination {currentPage} {totalPages} {onPageChange} />
       {/if}
 
-      <div class="deck-picker-modal__actions">
-        <button type="button" class="btn" onclick={onClose}>Cancel</button>
-      </div>
+        <div class="deck-picker-modal__actions">
+          <AppButton type="button" onclick={onClose}>Cancel</AppButton>
+        </div>
+      </AppCard>
     </div>
   </div>
 {/if}

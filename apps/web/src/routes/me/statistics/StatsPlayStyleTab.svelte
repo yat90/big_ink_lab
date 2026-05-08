@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppCard from '$lib/AppCard.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
   import { t } from '$lib/i18n';
   import type { PlayStyleSummary } from './stats-types';
@@ -6,7 +7,7 @@
   let { playStyle }: { playStyle: PlayStyleSummary | null } = $props();
 </script>
 
-<div class="stats-play-style card stack stats-page__card">
+<AppCard className="stats-play-style stack stats-page__card">
   {#if playStyle && (playStyle.matchesAnalyzed > 0 || playStyle.gamesAnalyzed > 0)}
     <p class="muted stats-page__hint">
       {$t('statistics.playStyle.basedOn', {
@@ -153,10 +154,10 @@
   {:else}
     <p class="stats-play-style__empty muted">{$t('statistics.playStyle.empty')}</p>
   {/if}
-</div>
+</AppCard>
 
 <style>
-  .stats-play-style {
+  :global(.stats-play-style) {
     position: relative;
     overflow: hidden;
     padding: var(--space-xl);
@@ -170,7 +171,7 @@
     box-shadow: var(--shadow-card);
   }
 
-  .stats-play-style::before {
+  :global(.stats-play-style)::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -182,12 +183,12 @@
     pointer-events: none;
   }
 
-  .stats-play-style > :global(*) {
+  :global(.stats-play-style > *) {
     position: relative;
     z-index: 1;
   }
 
-  .stats-play-style .stats-page__hint {
+  :global(.stats-play-style .stats-page__hint) {
     margin: 0 0 var(--space-lg) 0;
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-sm);
@@ -199,7 +200,7 @@
     color: var(--muted);
   }
 
-  .stats-play-style .stats-page__row {
+  :global(.stats-play-style .stats-page__row) {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-md);
@@ -207,12 +208,12 @@
   }
 
   @media (min-width: 520px) {
-    .stats-play-style .stats-page__row {
+    :global(.stats-play-style .stats-page__row) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  .stats-play-style .stats-page__item {
+  :global(.stats-play-style .stats-page__item) {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -228,13 +229,13 @@
   }
 
   @media (hover: hover) {
-    .stats-play-style .stats-page__item:hover {
+    :global(.stats-play-style .stats-page__item:hover) {
       background: var(--glass-bg-strong);
       border-color: rgba(168, 85, 247, 0.22);
     }
   }
 
-  .stats-play-style .stats-page__value {
+  :global(.stats-play-style .stats-page__value) {
     font-size: 1.125rem;
     font-weight: 800;
     letter-spacing: -0.025em;
@@ -242,7 +243,7 @@
     color: var(--fg);
   }
 
-  .stats-play-style .stats-page__label {
+  :global(.stats-play-style .stats-page__label) {
     font-size: 0.68rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -250,25 +251,25 @@
     line-height: 1.35;
   }
 
-  .stats-play-style .stats-page__row + .stats-page__block,
-  .stats-play-style .stats-page__hint + .stats-page__block {
+  :global(.stats-play-style .stats-page__row + .stats-page__block),
+  :global(.stats-play-style .stats-page__hint + .stats-page__block) {
     padding-top: var(--space-lg);
     margin-top: 0;
     border-top: 1px solid var(--border);
   }
 
-  .stats-play-style .stats-page__description {
+  :global(.stats-play-style .stats-page__description) {
     margin: 0 0 var(--space-md) 0;
     font-size: 0.875rem;
     line-height: 1.55;
   }
 
-  .stats-play-style .stats-page__description strong {
+  :global(.stats-play-style .stats-page__description strong) {
     color: var(--fg);
     font-weight: 700;
   }
 
-  .stats-play-style .stats-page__delta {
+  :global(.stats-play-style .stats-page__delta) {
     margin: var(--space-md) 0 0 0;
     padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius-sm);
@@ -296,19 +297,19 @@
     border: 0;
   }
 
-  .stats-play-style .stats-play-style__deck-col-head {
+  :global(.stats-play-style .stats-play-style__deck-col-head) {
     width: 1%;
     text-align: center;
     vertical-align: middle;
   }
 
-  .stats-play-style .stats-play-style__deck-cell {
+  :global(.stats-play-style .stats-play-style__deck-cell) {
     position: relative;
     text-align: center;
     vertical-align: middle;
   }
 
-  .stats-play-style .stats-play-style__deck-cell :global(.ink-icons) {
+  :global(.stats-play-style .stats-play-style__deck-cell .ink-icons) {
     vertical-align: middle;
   }
 </style>

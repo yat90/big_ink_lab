@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { config } from '$lib/config';
@@ -55,12 +58,12 @@
 </svelte:head>
 
 <div class="page">
-  <div class="card stack">
+  <AppCard className="stack">
     {#if loading && !error}
       <p class="muted">{$t('matches.quick.creating')}</p>
     {:else if error}
-      <p class="alert" role="alert">{error}</p>
-      <a href="/" class="btn btn--primary">{$t('matches.quick.backHome')}</a>
+      <AppBanner variant="danger" message={error} />
+      <AppButton href="/" variant="primary">{$t('matches.quick.backHome')}</AppButton>
     {/if}
-  </div>
+  </AppCard>
 </div>

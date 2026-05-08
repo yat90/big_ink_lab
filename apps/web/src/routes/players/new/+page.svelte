@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
 
@@ -41,7 +44,7 @@
 </script>
 
 <div class="page">
-  <div class="card stack">
+  <AppCard className="stack">
     <h2 class="card__title">Create player</h2>
     <p class="card__sub">Add a new player with name and team.</p>
 
@@ -87,15 +90,15 @@
       </div>
 
       {#if error}
-        <p class="alert" role="alert" aria-live="assertive">{error}</p>
+        <AppBanner variant="danger" message={error} />
       {/if}
 
       <div class="row" style="margin-top: 8px; gap: 12px;">
-        <button type="submit" class="btn btn--primary" disabled={loading}>
+        <AppButton type="submit" variant="primary" disabled={loading}>
           {loading ? 'Creating…' : 'Create player'}
-        </button>
-        <a href="/players" class="btn">Cancel</a>
+        </AppButton>
+        <AppButton href="/players">Cancel</AppButton>
       </div>
     </form>
-  </div>
+  </AppCard>
 </div>

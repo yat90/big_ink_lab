@@ -1,5 +1,8 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { page } from '$app/stores';
   import { setAuthSession } from '$lib/auth';
@@ -159,7 +162,7 @@
 </svelte:head>
 
 <div class="page auth-page">
-  <div class="card auth-card">
+  <AppCard className="auth-card">
     <h1 class="card__title">{title}</h1>
     <p class="card__sub">Use your account to access the app.</p>
 
@@ -239,31 +242,31 @@
       {/if}
 
       {#if error}
-        <p class="alert" role="alert">{error}</p>
+        <AppBanner variant="danger" message={error} />
       {/if}
 
-      <button type="submit" class="btn btn--primary" disabled={loading}>
+      <AppButton type="submit" variant="primary" disabled={loading}>
         {#if loading}
           <span class="spinner" aria-hidden="true" style="margin-right: 8px;"></span>
           Please wait…
         {:else}
           {mode === 'login' ? 'Login' : 'Create account'}
         {/if}
-      </button>
+      </AppButton>
     </form>
 
     <div class="auth-card__switch row">
       <span class="muted">
         {mode === 'login' ? 'No account yet?' : 'Already have an account?'}
       </span>
-      <button type="button" class="btn" onclick={switchMode}>
+      <AppButton type="button" onclick={switchMode}>
         {mode === 'login' ? 'Create account' : 'Back to login'}
-      </button>
+      </AppButton>
     </div>
     <p class="hint auth-switch-note">
       The password field is cleared when you switch between login and sign up.
     </p>
-  </div>
+  </AppCard>
 </div>
 
 <style>

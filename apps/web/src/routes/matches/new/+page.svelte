@@ -4,6 +4,8 @@
   import { config } from '$lib/config';
   import DeckColorSelect from '$lib/DeckColorSelect.svelte';
   import DeckPickerModal from '$lib/DeckPickerModal.svelte';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
   import TournamentPickerModal from '$lib/TournamentPickerModal.svelte';
@@ -470,7 +472,7 @@
           {tournamentButtonLabel}
         </button>
         {#if tournamentsError}
-          <p class="alert" role="alert">{tournamentsError}</p>
+          <AppBanner variant="danger" message={tournamentsError} />
         {/if}
         <label class="label" for="round">{$t('matches.new.roundLabel')}</label>
         <input
@@ -561,21 +563,21 @@
       {/if}
       {#if p2OfferGuestCreate}
         <div class="new-match__guest-create">
-          <button
+          <AppButton
             type="button"
-            class="btn btn--primary"
+            variant="primary"
             disabled={createGuestLoading || !p2SearchText.trim()}
             onclick={createGuestOpponent}
           >
             {createGuestLoading
               ? $t('matches.new.createGuestCreating')
               : $t('matches.new.createGuest')}
-          </button>
+          </AppButton>
           <p class="card__sub muted new-match__guest-create-help">
             {$t('matches.new.createGuestHelp', { name: p2SearchText.trim() })}
           </p>
           {#if createGuestError}
-            <p class="alert" role="alert">{createGuestError}</p>
+            <AppBanner variant="danger" message={createGuestError} />
           {/if}
         </div>
       {/if}
@@ -601,14 +603,14 @@
     </section>
 
     {#if error}
-      <p class="alert" role="alert" aria-live="assertive">{error}</p>
+      <AppBanner variant="danger" message={error} />
     {/if}
 
     <div class="row new-match__actions">
-      <button type="submit" class="btn btn--primary" disabled={loading}>
+      <AppButton type="submit" variant="primary" disabled={loading}>
         {loading ? $t('common.creating') : $t('matches.new.submit')}
-      </button>
-      <a href="/matches" class="btn">{$t('common.cancel')}</a>
+      </AppButton>
+      <AppButton href="/matches">{$t('common.cancel')}</AppButton>
     </div>
   </form>
 
@@ -679,7 +681,6 @@
     .new-match__form .new-match__card:first-of-type {
       grid-column: 1 / -1;
     }
-    .new-match__form .alert,
     .new-match__form .new-match__actions {
       grid-column: 1 / -1;
     }

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { get } from 'svelte/store';
   import { config } from '$lib/config';
+  import AppButton from '$lib/AppButton.svelte';
   import IconFilter from '$lib/icons/IconFilter.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import StatusStateCard from '$lib/StatusStateCard.svelte';
@@ -142,7 +143,7 @@
     style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;"
   >
     <h1 class="page-title">{$t('tournaments.list.heading')}</h1>
-    <a href="/tournaments/new" class="btn btn--primary">{$t('tournaments.list.newTournament')}</a>
+    <AppButton href="/tournaments/new" variant="primary">{$t('tournaments.list.newTournament')}</AppButton>
   </div>
   <div class="card stack tournaments-page__filters">
     <button
@@ -213,11 +214,11 @@
           {$t('tournaments.list.filtersHint')}
         </p>
         <div class="row tournaments-page__filters-actions">
-          <button type="button" class="btn btn--primary" onclick={applyFilters}
-            >{$t('tournaments.list.applyFilters')}</button
+          <AppButton variant="primary" onclick={applyFilters}
+            >{$t('tournaments.list.applyFilters')}</AppButton
           >
-          <button type="button" class="btn" onclick={clearFilters} disabled={!canClearFilters}
-            >{$t('tournaments.list.clear')}</button
+          <AppButton onclick={clearFilters} disabled={!canClearFilters}
+            >{$t('tournaments.list.clear')}</AppButton
           >
         </div>
       </div>
@@ -251,9 +252,7 @@
           message={`${$t('tournaments.list.emptyFilteredBefore')}${$t('tournaments.list.emptyFilteredAfter')}`}
         >
           {#snippet actions()}
-            <button type="button" class="btn" onclick={clearFilters}
-              >{$t('tournaments.list.clearFiltersInline')}</button
-            >
+            <AppButton onclick={clearFilters}>{$t('tournaments.list.clearFiltersInline')}</AppButton>
           {/snippet}
         </StatusStateCard>
       {:else}
@@ -262,8 +261,8 @@
           message={`${$t('tournaments.list.emptyHintBefore')}${$t('tournaments.list.emptyHintStrong')}${$t('tournaments.list.emptyHintAfter')}`}
         >
           {#snippet actions()}
-            <a href="/tournaments/new" class="btn btn--primary"
-              >{$t('tournaments.list.newTournament')}</a
+            <AppButton href="/tournaments/new" variant="primary"
+              >{$t('tournaments.list.newTournament')}</AppButton
             >
           {/snippet}
         </StatusStateCard>

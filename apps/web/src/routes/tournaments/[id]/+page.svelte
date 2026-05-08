@@ -4,6 +4,9 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { config } from '$lib/config';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { breadcrumbTail } from '$lib/breadcrumbTail';
   import { translate, t, locale } from '$lib/i18n';
   import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
@@ -17,6 +20,8 @@
   } from '$lib/lorcana-match';
   import FilterCard from '$lib/FilterCard.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
+  import IconEdit from '$lib/icons/IconEdit.svelte';
+  import IconTrash from '$lib/icons/IconTrash.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
 
   type Player = { _id: string; name: string; team?: string };
@@ -450,20 +455,20 @@
 
 <div class="page">
   {#if loading}
-    <div class="card">
+    <AppCard>
       <div class="loading-skeleton" aria-busy="true" aria-live="polite">
         <div class="loading-skeleton__line loading-skeleton__line--title"></div>
         <div class="loading-skeleton__line"></div>
       </div>
       <p class="muted" style="margin-top: var(--space-md);">{$t('tournaments.detail.loading')}</p>
-    </div>
+    </AppCard>
   {:else if detailError}
-    <div class="card" role="alert">
-      <p class="alert">{detailError}</p>
-      <a href="/tournaments" class="btn" style="margin-top: var(--space-sm);"
-        >{$t('tournaments.detail.backToList')}</a
+    <AppCard role="alert">
+      <AppBanner variant="danger" message={detailError} />
+      <AppButton href="/tournaments" className="margin-top-sm"
+        >{$t('tournaments.detail.backToList')}</AppButton
       >
-    </div>
+    </AppCard>
   {:else if tournament}
     <section
       class="card stack tournament-detail__summary"
@@ -513,15 +518,15 @@
           />
 
           {#if saveError}
-            <p class="alert" role="alert">{saveError}</p>
+            <AppBanner variant="danger" message={saveError} />
           {/if}
 
           <div class="row tournament-detail__edit-actions">
-            <button type="submit" class="btn btn--primary" disabled={saving}>
+            <AppButton type="submit" variant="primary" disabled={saving}>
               {saving ? $t('common.saving') : $t('tournaments.detail.saveChanges')}
-            </button>
-            <button type="button" class="btn" onclick={cancelEdit} disabled={saving}
-              >{$t('common.cancel')}</button
+            </AppButton>
+            <AppButton type="button" onclick={cancelEdit} disabled={saving}
+              >{$t('common.cancel')}</AppButton
             >
           </div>
         </form>
@@ -565,39 +570,42 @@
     </section>
 
     <div class="row tournament-detail__actions">
-      <a href="/tournaments/results?tournamentId={tournamentId}" class="btn btn--primary"
-        >{$t('tournaments.detail.addResults')}</a
+      <AppButton href="/tournaments/results?tournamentId={tournamentId}" variant="primary"
+        >{$t('tournaments.detail.addResults')}</AppButton
       >
-      <a href="/matches?tournamentId={tournamentId}&stage=Tournament" class="btn"
-        >{$t('tournaments.detail.openInMatches')}</a
+      <AppButton href="/matches?tournamentId={tournamentId}&stage=Tournament"
+        >{$t('tournaments.detail.openInMatches')}</AppButton
       >
       {#if !editing}
-        <button type="button" class="btn" onclick={beginEdit}
-          >{$t('tournaments.detail.edit')}</button
+        <AppButton type="button" icon={true} onclick={beginEdit}
+          ><IconEdit size={18} />{$t('tournaments.detail.edit')}</AppButton
         >
-        <button
+        <AppButton
           type="button"
-          class="btn btn--danger"
+          icon={true}
+          variant="danger"
           onclick={openDeleteConfirm}
           disabled={deleting || showDeleteConfirm}
         >
-          {$t('tournaments.detail.delete')}
-        </button>
+          <IconTrash size={18} />{$t('tournaments.detail.delete')}
+        </AppButton>
       {/if}
     </div>
 
     {#if deleteError}
-      <p class="alert tournament-detail__delete-error" role="alert">{deleteError}</p>
+      <div class="tournament-detail__delete-error">
+        <AppBanner variant="danger" message={deleteError} />
+      </div>
     {/if}
 
     {#if matchesError}
-      <div class="card" role="alert">
-        <p class="alert">{matchesError}</p>
-      </div>
+      <AppCard role="alert">
+        <AppBanner variant="danger" message={matchesError} />
+      </AppCard>
     {:else if matches.length === 0}
-      <div class="card stack">
+      <AppCard className="stack">
         <p class="card__sub" style="margin: 0;">{$t('tournaments.detail.noMatchesYet')}</p>
-      </div>
+      </AppCard>
     {:else}
       {#if listTruncated}
         <p class="muted tournament-detail__truncated" role="status">
@@ -688,14 +696,10 @@
                 </div>
               </div>
               <div class="filters__footer">
-                <button
-                  type="button"
-                  class="btn"
+                <AppButton
                   onclick={clearTournamentViewFilters}
-                  disabled={!canClearTournamentFilters}
+                  disabled={!canClearTournamentFilters}>{$t('common.clearFilters')}</AppButton
                 >
-                  {$t('common.clearFilters')}
-                </button>
               </div>
             </FilterCard>
           </div>
@@ -726,14 +730,10 @@
                 {/each}
               </select>
               <div class="filters__footer">
-                <button
-                  type="button"
-                  class="btn"
+                <AppButton
                   onclick={clearTournamentViewFilters}
-                  disabled={!canClearTournamentFilters}
+                  disabled={!canClearTournamentFilters}>{$t('common.clearFilters')}</AppButton
                 >
-                  {$t('common.clearFilters')}
-                </button>
               </div>
             </FilterCard>
           </div>
@@ -741,11 +741,11 @@
       {/if}
 
       {#if displayedMatches.length === 0}
-        <div class="card stack">
+        <AppCard className="stack">
           <p class="card__sub" style="margin: 0;">
             {$t('tournaments.detail.emptyFilterHint')}
           </p>
-        </div>
+        </AppCard>
       {:else}
         <div class="stack">
           {#each displayedMatches as match (match._id)}
@@ -754,11 +754,7 @@
             {@const winnerId = matchWinnerId(match)}
             {@const idMatch = isIntentionalDrawMatch(match)}
             {@const byeMatch = isByeMatch(match)}
-            <a
-              href="/matches/{match._id}"
-              class="card playercard matchcard"
-              style="text-decoration: none; color: inherit;"
-            >
+            <AppCard href="/matches/{match._id}" className="playercard matchcard">
               <div class="matchcard__top muted tournament-detail__match-top">
                 <span>
                   {formatDate(match.playedAt)} · {matchStageOrTournamentLabel(
@@ -827,7 +823,7 @@
                   </span>
                 </div>
               </div>
-            </a>
+            </AppCard>
           {/each}
         </div>
       {/if}
@@ -848,7 +844,7 @@
         onclick={closeDeleteConfirm}
         disabled={deleting}
       ></button>
-      <div class="tournament-detail__delete-modal-card card">
+      <AppCard className="tournament-detail__delete-modal-card">
         <h2 id="tournament-delete-title" class="tournament-detail__delete-modal-title">
           {$t('tournaments.detail.deleteTitle')}
         </h2>
@@ -858,19 +854,22 @@
           >{$t('tournaments.detail.deleteBodyAfter')}
         </p>
         <div class="tournament-detail__delete-modal-actions row">
-          <button
+          <AppButton
             type="button"
-            class="btn btn--danger"
+            icon={true}
+            variant="danger"
             onclick={confirmDeleteTournament}
             disabled={deleting}
           >
-            {deleting ? $t('common.deleting') : $t('tournaments.detail.deleteConfirm')}
-          </button>
-          <button type="button" class="btn" onclick={closeDeleteConfirm} disabled={deleting}
-            >{$t('common.cancel')}</button
+            <IconTrash size={18} />{deleting
+              ? $t('common.deleting')
+              : $t('tournaments.detail.deleteConfirm')}
+          </AppButton>
+          <AppButton type="button" onclick={closeDeleteConfirm} disabled={deleting}
+            >{$t('common.cancel')}</AppButton
           >
         </div>
-      </div>
+      </AppCard>
     </div>
   {/if}
 </div>

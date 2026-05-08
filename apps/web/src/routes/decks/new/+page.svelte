@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -99,7 +102,7 @@
 </svelte:head>
 
 <div class="page">
-  <div class="card stack">
+  <AppCard className="stack">
     <h2 class="card__title">{$t('decks.createTitle')}</h2>
     <p class="card__sub">
       {$t('decks.createIntro')}
@@ -119,14 +122,15 @@
             placeholder={$t('decks.placeholderDeckName')}
             autocomplete="off"
           />
-          <button
+          <AppButton
             type="button"
-            class="btn btn--sm deck-new__suggest-btn"
+            size="sm"
+            className="deck-new__suggest-btn"
             onclick={() => loadSuggestedName()}
             disabled={loading}
           >
             {$t('decks.anotherName')}
-          </button>
+          </AppButton>
         </div>
       </div>
       <label class="label" for="deckList">
@@ -176,17 +180,17 @@
       </label>
 
       {#if error}
-        <p class="alert" role="alert" aria-live="assertive">{error}</p>
+        <AppBanner variant="danger" message={error} />
       {/if}
 
       <div class="row margin-top-sm gap-12">
-        <button type="submit" class="btn btn--primary" disabled={loading}>
+        <AppButton type="submit" variant="primary" disabled={loading}>
           {loading ? $t('common.creating') : $t('decks.createSubmit')}
-        </button>
-        <a href="/decks" class="btn">{$t('common.cancel')}</a>
+        </AppButton>
+        <AppButton href="/decks">{$t('common.cancel')}</AppButton>
       </div>
     </form>
-  </div>
+  </AppCard>
 </div>
 
 <style>

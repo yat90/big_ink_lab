@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -208,7 +211,7 @@
       aria-live="polite"
       aria-label="Loading dashboard"
     >
-      <div class="card stack dashboard__header">
+      <AppCard className="stack dashboard__header">
         <div class="loading-skeleton">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>
           <div class="loading-skeleton__line loading-skeleton__line--short"></div>
@@ -221,9 +224,9 @@
           <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
           <div class="loading-skeleton__line loading-skeleton__line--btn"></div>
         </div>
-      </div>
+      </AppCard>
 
-      <div class="card stack dashboard__tournaments">
+      <AppCard className="stack dashboard__tournaments">
         <div class="row row--between">
           <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
           <div class="row gap-sm">
@@ -244,9 +247,9 @@
             <div class="loading-skeleton__line loading-skeleton__line--short"></div>
           </div>
         </div>
-      </div>
+      </AppCard>
 
-      <div class="dashboard__summary card">
+      <AppCard className="dashboard__summary">
         <div
           class="loading-skeleton__line loading-skeleton__line--section-title loading-skeleton__line--at-a-glance"
         ></div>
@@ -255,9 +258,9 @@
             <div class="loading-skeleton__stat-block"></div>
           {/each}
         </div>
-      </div>
+      </AppCard>
 
-      <div class="card stack">
+      <AppCard className="stack">
         <div class="row row--between">
           <div class="loading-skeleton__line loading-skeleton__line--section-title"></div>
           <div class="loading-skeleton__line loading-skeleton__line--btn-sm"></div>
@@ -267,27 +270,27 @@
             <div class="loading-skeleton__match-block"></div>
           {/each}
         </div>
-      </div>
+      </AppCard>
     </div>
   {:else if error}
-    <div class="card" role="alert">
-      <p class="alert">{error}</p>
+    <AppCard role="alert">
+      <AppBanner variant="danger" message={error} />
       <div class="row gap-12 margin-top-md">
-        <button type="button" class="btn btn--primary" onclick={retry} disabled={retrying}>
+        <AppButton type="button" variant="primary" onclick={retry} disabled={retrying}>
           {#if retrying}
             <span class="spinner margin-right-sm" aria-hidden="true"></span>
             Retrying…
           {:else}
             Try again
           {/if}
-        </button>
-        <a href="/matches" class="btn">Matches</a>
-        <a href="/players" class="btn">Players</a>
+        </AppButton>
+        <AppButton href="/matches">Matches</AppButton>
+        <AppButton href="/players">Players</AppButton>
       </div>
-    </div>
+    </AppCard>
   {:else}
     <div class="dashboard">
-      <div class="card stack dashboard__header">
+      <AppCard className="stack dashboard__header">
         <div class="row dashboard__header-top row--between row--start gap-12">
           <div class="stack stack--xs">
             <h2 class="card__title">Big Ink Lab</h2>
@@ -295,32 +298,27 @@
           </div>
           <div class="dashboard__header-actions stack">
             <div class="row dashboard__header-actions-primary">
-              <a href="/matches/new" class="btn btn--primary dashboard__header-new-match"
-                >New match</a
+              <AppButton href="/matches/new" variant="primary" className="dashboard__header-new-match"
+                >New match</AppButton
               >
             </div>
             <div class="row dashboard__header-actions-secondary">
-              <button
-                type="button"
-                class="btn btn--sm"
-                disabled={loreTrackerLoading}
-                onclick={startLoreTracker}
-              >
+              <AppButton type="button" size="sm" disabled={loreTrackerLoading} onclick={startLoreTracker}>
                 {loreTrackerLoading ? 'Creating…' : 'Quick Match'}
-              </button>
-              <a href="/tournaments" class="btn btn--sm">Tournaments</a>
-              <a href="/tournaments/new" class="btn btn--sm">New tournament</a>
+              </AppButton>
+              <AppButton href="/tournaments" size="sm">Tournaments</AppButton>
+              <AppButton href="/tournaments/new" size="sm">New tournament</AppButton>
             </div>
           </div>
         </div>
-      </div>
+      </AppCard>
 
-      <div class="card stack dashboard__tournaments">
+      <AppCard className="stack dashboard__tournaments">
         <div class="row row--between row--center-y gap-sm">
           <h3 class="dashboard__section-title margin-0">Tournaments</h3>
           <div class="row gap-sm">
-            <a href="/tournaments/new" class="btn btn--sm text-90">New</a>
-            <a href="/tournaments" class="btn btn--sm text-90">All</a>
+            <AppButton href="/tournaments/new" size="sm" className="text-90">New</AppButton>
+            <AppButton href="/tournaments" size="sm" className="text-90">All</AppButton>
           </div>
         </div>
         <p class="card__sub muted margin-0 margin-bottom-sm">
@@ -368,10 +366,10 @@
             {/if}
           </div>
         </div>
-      </div>
+      </AppCard>
 
       {#if stats || playerCount > 0 || deckCount > 0}
-        <div class="dashboard__summary card">
+        <AppCard className="dashboard__summary">
           <h3 class="dashboard__summary-title">At a glance</h3>
           <div class="dashboard__summary-grid">
             {#if stats}
@@ -393,14 +391,14 @@
               <span class="dashboard__stat-label muted">Players</span>
             </a>
           </div>
-        </div>
+        </AppCard>
       {/if}
 
       {#if recentMatches.length > 0}
-        <div class="card stack">
+        <AppCard className="stack">
           <div class="row row--between row--center-y">
             <h3 class="dashboard__section-title">Recent matches</h3>
-            <a href="/matches" class="btn btn--sm text-90">View all</a>
+            <AppButton href="/matches" size="sm" className="text-90">View all</AppButton>
           </div>
           <div class="stack">
             {#each recentMatches as match}
@@ -409,9 +407,9 @@
               {@const winnerId = matchWinnerId(match)}
               {@const idMatch = isIntentionalDrawMatch(match)}
               {@const byeMatch = isByeMatch(match)}
-              <a
+              <AppCard
                 href="/matches/{match._id}"
-                class="card playercard matchcard dashboard__match link-inherit"
+                className="playercard matchcard dashboard__match link-inherit"
               >
                 <div class="matchcard__top muted dashboard__match-top">
                   <span>
@@ -474,15 +472,17 @@
                     </span>
                   </div>
                 </div>
-              </a>
+              </AppCard>
             {/each}
           </div>
-        </div>
+        </AppCard>
       {:else}
-        <div class="card stack">
+        <AppCard className="stack">
           <p class="card__sub muted">No matches yet. Create your first match to get started.</p>
-          <a href="/matches/new" class="btn btn--primary align-self-start">New match</a>
-        </div>
+          <AppButton href="/matches/new" variant="primary" className="align-self-start"
+            >New match</AppButton
+          >
+        </AppCard>
       {/if}
     </div>
   {/if}

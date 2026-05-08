@@ -1,6 +1,9 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import InkIcons from '$lib/InkIcons.svelte';
   import { config } from '$lib/config';
   import type { Deck } from '$lib/decks';
@@ -93,31 +96,31 @@
 
 <div class="page">
   {#if loading}
-    <div class="card">
+    <AppCard>
       <div class="loading-skeleton" aria-busy="true" aria-live="polite">
         <div class="loading-skeleton__line loading-skeleton__line--title"></div>
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         <div class="loading-skeleton__line"></div>
       </div>
       <p class="muted" style="margin-top: var(--space-md);">Loading deck…</p>
-    </div>
+    </AppCard>
   {:else if error && !deck}
-    <div class="card" role="alert">
-      <p class="alert">{error}</p>
-      <a href="/decks" class="btn">Back to decks</a>
-    </div>
+    <AppCard role="alert">
+      <AppBanner variant="danger" message={error} />
+      <AppButton href="/decks">Back to decks</AppButton>
+    </AppCard>
   {:else if deck}
-    <div class="card stack">
+    <AppCard className="stack">
       <div class="deck-display__header">
         <h2 class="deck-header">{deck.name}</h2>
         <div class="deck-display__actions">
-          <a href="/decks/{id}/edit" class="btn btn--primary">
+          <AppButton href="/decks/{id}/edit" variant="primary" icon={true}>
             <IconEdit size={18} className="icon-inline" />
             <span style="margin-left: var(--space-xs);">Edit</span>
-          </a>
-          <button type="button" class="btn btn--danger" onclick={() => (showDeletePrompt = true)}>
+          </AppButton>
+          <AppButton type="button" variant="danger" onclick={() => (showDeletePrompt = true)}>
             Delete
-          </button>
+          </AppButton>
         </div>
       </div>
       {#if deck.deckColor}
@@ -206,7 +209,7 @@
           <DeckViewStatisticsTab deckId={id!} />
         {/if}
       </div>
-    </div>
+    </AppCard>
 
     {#if showDeletePrompt}
       <div
@@ -221,28 +224,23 @@
           aria-label="Close"
           onclick={() => (showDeletePrompt = false)}
         ></button>
-        <div class="card modal-card">
+        <AppCard className="modal-card">
           <h2 id="delete-deck-title" class="card__title">Delete deck?</h2>
           <p class="muted">This cannot be undone.</p>
           <div class="row" style="gap: 12px; margin-top: var(--space-lg);">
-            <button
+            <AppButton
               type="button"
-              class="btn btn--danger"
+              variant="danger"
               disabled={deleting}
               onclick={confirmDelete}
             >
               {deleting ? 'Deleting…' : 'Delete'}
-            </button>
-            <button
-              type="button"
-              class="btn"
-              onclick={() => (showDeletePrompt = false)}
-              disabled={deleting}
-            >
+            </AppButton>
+            <AppButton type="button" onclick={() => (showDeletePrompt = false)} disabled={deleting}>
               Cancel
-            </button>
+            </AppButton>
           </div>
-        </div>
+        </AppCard>
       </div>
     {/if}
   {/if}

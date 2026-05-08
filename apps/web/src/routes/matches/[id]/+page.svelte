@@ -5,6 +5,9 @@
   import { onMount } from 'svelte';
   import { getLocale, translate, t, locale } from '$lib/i18n';
   import { get } from 'svelte/store';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { type Game, type GameStatus, STAGE_OPTIONS } from '$lib/matches';
   import type { LorcanaMatch, LorcanaMatchDeckRef, LorcanaMatchPlayer } from '$lib/lorcana-match';
   import {
@@ -716,21 +719,21 @@
 
 <div class="page">
   {#if loading}
-    <div class="card">
+    <AppCard>
       <div class="loading-skeleton" aria-busy="true" aria-live="polite">
         <div class="loading-skeleton__line loading-skeleton__line--title"></div>
         <div class="loading-skeleton__line loading-skeleton__line--short"></div>
         <div class="loading-skeleton__line"></div>
       </div>
       <p class="muted match-page__loading-text">{$t('matches.detail.loading')}</p>
-    </div>
+    </AppCard>
   {:else if error && !match}
-    <div class="card" role="alert">
-      <p class="alert">{error}</p>
-      <a href="/matches" class="btn">{$t('matches.detail.backToList')}</a>
-    </div>
+    <AppCard>
+      <AppBanner variant="danger" message={error} />
+      <AppButton href="/matches">{$t('matches.detail.backToList')}</AppButton>
+    </AppCard>
   {:else if match}
-    <div class="card stack">
+    <AppCard className="stack">
       <div class="matchcard tack">
         <div class="matchcard__top matchcard__top--row muted">
           <span class="matchcard__top-inner">{formatDate(match.playedAt)} ·</span>
@@ -751,29 +754,29 @@
           {#if canEditMatch}
             <div class="matchcard__top-actions">
               {#if editingMatchCard}
-                <button
+                <AppButton
                   type="button"
-                  class="matchcard__edit-done btn btn--sm"
                   onclick={() => (editingMatchCard = false)}
                   aria-label={$t('matches.detail.doneEditingAria')}
                 >
                   {$t('matches.detail.done')}
-                </button>
+                </AppButton>
               {:else}
-                <button
+                <AppButton
                   type="button"
-                  class="matchcard__edit-done btn btn--sm"
+                  icon={true}
                   onclick={() => (editingMatchCard = true)}
                   aria-label={$t('matches.detail.editMatchAria')}
                 >
-                  <IconEdit size={18} className="matchcard__edit-icon" />
+                  <IconEdit size={18} />
                   {$t('matches.detail.editLabel')}
-                </button>
+                </AppButton>
               {/if}
 
-              <button
+              <AppButton
                 type="button"
-                class="btn btn--danger btn--icon"
+                variant="danger"
+                icon={true}
                 onclick={openDeleteMatchModal}
                 disabled={deleting}
                 aria-label={$t('matches.detail.deleteMatchAria')}
@@ -782,10 +785,10 @@
                 {#if deleting}
                   {$t('matches.detail.deleting')}
                 {:else}
-                  <IconTrash size={18} className="icon-trash" />
+                  <IconTrash size={18} />
                   {$t('matches.detail.deleteLabel')}
                 {/if}
-              </button>
+              </AppButton>
             </div>
           {/if}
         </div>
@@ -1008,38 +1011,40 @@
           </div>
         </dl>
       {/if}
-    </div>
+    </AppCard>
 
     <div class="stack match-page__games-stack">
       <div class="row match-page__games-header">
         <h3 class="match-page__games-title">{$t('matches.detail.gamesTitle')}</h3>
         {#if canEditMatch}
           {#if editingGames}
-            <button
+            <AppButton
               type="button"
-              class="btn btn--sm"
+              size="sm"
               onclick={() => (editingGames = false)}
               aria-label={$t('matches.detail.doneEditingAria')}
             >
               {$t('matches.detail.done')}
-            </button>
+            </AppButton>
           {:else}
-            <button
+            <AppButton
               type="button"
-              class="btn btn--sm"
+              size="sm"
+              icon={true}
               onclick={() => (editingGames = true)}
               aria-label={$t('matches.detail.editStarterWinnerAria')}
               title={$t('matches.detail.editStarterWinnerTitle')}
             >
-              <IconEdit size={16} className="icon-inline" />
-              <span class="match-page__btn-icon-label">{$t('matches.detail.editLabel')}</span>
-            </button>
+              <IconEdit size={16} />
+              {$t('matches.detail.editLabel')}
+            </AppButton>
           {/if}
         {/if}
         {#if match.games?.length}
-          <button
+          <AppButton
             type="button"
-            class="btn btn--sm btn--icon"
+            size="sm"
+            icon={true}
             onclick={() => {
               analysePopupGameIndex = null;
               analyseMatchPopupOpen = true;
@@ -1047,9 +1052,9 @@
             aria-label={$t('matches.detail.analyseMatchAria')}
             title={$t('matches.detail.analyseMatchTitle')}
           >
-            <IconSparkle size={16} className="icon-inline" />
-            <span class="match-page__btn-icon-label">{$t('matches.detail.analyseLabel')}</span>
-          </button>
+            <IconSparkle size={16} />
+            {$t('matches.detail.analyseLabel')}
+          </AppButton>
         {/if}
       </div>
       <div class="player_header-sentinel" aria-hidden="true" use:playerHeaderSentinel></div>
@@ -1076,23 +1081,19 @@
           {onDeleteGame}
           onEditDone={() => (editingGames = false)}
           onShowEvents={(idx: number) => (eventsPopupGameIndex = idx)}
-          onAnalyse={(idx: number) => {
-            analyseMatchPopupOpen = false;
-            analysePopupGameIndex = idx;
-          }}
         />
       {/each}
     {/if}
 
     {#if canEditMatch && match.games != null}
       <div class="row match-page__add-game-row">
-        <button type="button" class="btn" disabled={addingGame} onclick={onAddGame}>
+        <AppButton type="button" disabled={addingGame} onclick={onAddGame}>
           {addingGame ? $t('matches.detail.addingGame') : $t('matches.detail.addGame')}
-        </button>
+        </AppButton>
       </div>
     {/if}
     {#if error}
-      <p class="alert" role="alert" aria-live="assertive">{error}</p>
+      <AppBanner variant="danger" message={error} />
     {/if}
 
     <!-- Delete match confirmation -->
@@ -1109,21 +1110,21 @@
           aria-label={$t('common.cancel')}
           onclick={closeDeleteMatchModal}
         ></button>
-        <div class="delete-game-modal__card card">
+        <AppCard className="delete-game-modal__card">
           <h2 id="delete-match-title" class="delete-game-modal__title">
             {$t('matches.detail.deleteMatchHeading')}
           </h2>
           <p class="delete-game-modal__text muted">{$t('matches.detail.deleteMatchBody')}</p>
           <div class="delete-game-modal__actions row">
-            <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteMatch}>
-              <IconTrash size={18} className="icon-trash" />
+            <AppButton type="button" variant="danger" icon={true} onclick={confirmDeleteMatch}>
+              <IconTrash size={18} />
               {$t('matches.detail.deleteLabel')}
-            </button>
-            <button type="button" class="btn" onclick={closeDeleteMatchModal}
-              >{$t('common.cancel')}</button
+            </AppButton>
+            <AppButton type="button" onclick={closeDeleteMatchModal}
+              >{$t('common.cancel')}</AppButton
             >
           </div>
-        </div>
+        </AppCard>
       </div>
     {/if}
 
@@ -1141,21 +1142,20 @@
           aria-label={$t('common.cancel')}
           onclick={closeDeleteGameModal}
         ></button>
-        <div class="delete-game-modal__card card">
+        <AppCard className="delete-game-modal__card">
           <h2 id="delete-game-title" class="delete-game-modal__title">
             {$t('matches.detail.deleteGameHeading')}
           </h2>
           <p class="delete-game-modal__text muted">{$t('matches.detail.deleteGameBody')}</p>
           <div class="delete-game-modal__actions row">
-            <button type="button" class="btn btn--danger btn--icon" onclick={confirmDeleteGame}>
-              <IconTrash size={18} className="icon-trash" />
+            <AppButton type="button" variant="danger" icon={true} onclick={confirmDeleteGame}>
+              <IconTrash size={18} />
               {$t('matches.detail.deleteLabel')}
-            </button>
-            <button type="button" class="btn" onclick={closeDeleteGameModal}
-              >{$t('common.cancel')}</button
+            </AppButton>
+            <AppButton type="button" onclick={closeDeleteGameModal}>{$t('common.cancel')}</AppButton
             >
           </div>
-        </div>
+        </AppCard>
       </div>
     {/if}
 
@@ -1173,7 +1173,7 @@
           aria-label={$t('matches.detail.close')}
           onclick={() => (eventsPopupGameIndex = null)}
         ></button>
-        <div class="delete-game-modal__card card game-events-modal__card">
+        <AppCard className="delete-game-modal__card game-events-modal__card">
           <h2 id="game-events-title" class="delete-game-modal__title">
             {$t('matches.detail.gameEventsTitle', { n: String(eventsPopupGameIndex + 1) })}
           </h2>
@@ -1189,11 +1189,11 @@
             {/each}
           </div>
           <div class="delete-game-modal__actions row">
-            <button type="button" class="btn" onclick={() => (eventsPopupGameIndex = null)}
-              >{$t('matches.detail.close')}</button
+            <AppButton type="button" onclick={() => (eventsPopupGameIndex = null)}
+              >{$t('matches.detail.close')}</AppButton
             >
           </div>
-        </div>
+        </AppCard>
       </div>
     {/if}
 
@@ -1220,12 +1220,6 @@
 </div>
 
 <style>
-  .matchcard__edit-done {
-    margin-left: auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
   .matchcard__edit-icon {
     flex-shrink: 0;
   }
@@ -1360,10 +1354,6 @@
     gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
-  }
-
-  .btn--icon .icon-trash {
-    flex-shrink: 0;
   }
 
   .game-events-modal__card {

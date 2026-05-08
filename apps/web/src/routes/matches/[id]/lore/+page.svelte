@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
@@ -793,14 +796,14 @@
 
 <div class="lore-page">
   {#if loading}
-    <div class="lore-page__loading card">
+    <AppCard className="lore-page__loading">
       <p class="muted">{$t('matches.lore.loading')}</p>
-    </div>
+    </AppCard>
   {:else if error && !match}
-    <div class="lore-page__loading card" role="alert">
-      <p class="alert">{error}</p>
-      <a href="/matches/{id}" class="btn">{$t('matches.lore.backToMatch')}</a>
-    </div>
+    <AppCard className="lore-page__loading" role="alert">
+      <AppBanner variant="danger" message={error} />
+      <AppButton href="/matches/{id}">{$t('matches.lore.backToMatch')}</AppButton>
+    </AppCard>
   {:else if match && games.length > 0}
     <div class="lore-split">
       <!-- Vertical game counter: half in top, half in bottom -->
@@ -923,13 +926,13 @@
     </div>
 
     {#if error}
-      <p class="alert" role="alert" aria-live="assertive">{error}</p>
+      <AppBanner variant="danger" message={error} />
     {/if}
   {:else}
-    <div class="card">
+    <AppCard>
       <p class="muted">{$t('matches.lore.noGamesYet')}</p>
-      <a href="/matches/{id}" class="btn">{$t('matches.lore.backToMatch')}</a>
-    </div>
+      <AppButton href="/matches/{id}">{$t('matches.lore.backToMatch')}</AppButton>
+    </AppCard>
   {/if}
 
   <!-- Game events list popup -->
@@ -941,7 +944,7 @@
         aria-label={$t('matches.lore.close')}
         onclick={() => (showEventsPopup = false)}
       ></button>
-      <div class="lore-modal__card card lore-events-popup">
+      <AppCard className="lore-modal__card lore-events-popup">
         <h2 id="events-popup-title" class="lore-modal__title">
           {$t('matches.lore.eventsTitle', { n: String(gameIndex + 1) })}
         </h2>
@@ -963,11 +966,11 @@
           {/each}
         </div>
         <div class="lore-modal__actions">
-          <button type="button" class="btn" onclick={() => (showEventsPopup = false)}
-            >{$t('matches.lore.close')}</button
+          <AppButton type="button" onclick={() => (showEventsPopup = false)}
+            >{$t('matches.lore.close')}</AppButton
           >
         </div>
-      </div>
+      </AppCard>
     </div>
   {/if}
 
@@ -980,18 +983,18 @@
         aria-label={$t('matches.lore.close')}
         onclick={() => (showCloseGamePrompt = false)}
       ></button>
-      <div class="lore-modal__card card">
+      <AppCard className="lore-modal__card">
         <h2 id="close-game-title" class="lore-modal__title">{$t('matches.lore.leaveGameTitle')}</h2>
         <p class="lore-modal__text muted">{$t('matches.lore.leaveGameBody')}</p>
         <div class="lore-modal__actions">
-          <button type="button" class="btn btn--primary" onclick={closeGameAndLeave}
-            >{$t('matches.lore.leave')}</button
+          <AppButton type="button" variant="primary" onclick={closeGameAndLeave}
+            >{$t('matches.lore.leave')}</AppButton
           >
-          <button type="button" class="btn" onclick={() => (showCloseGamePrompt = false)}
-            >{$t('common.cancel')}</button
+          <AppButton type="button" onclick={() => (showCloseGamePrompt = false)}
+            >{$t('common.cancel')}</AppButton
           >
         </div>
-      </div>
+      </AppCard>
     </div>
   {/if}
 
@@ -1004,7 +1007,7 @@
         aria-label={$t('matches.lore.close')}
         onclick={dismissStarterPrompt}
       ></button>
-      <div class="lore-modal__card card lore-starter-choice">
+      <AppCard className="lore-modal__card lore-starter-choice">
         <h2 id="starter-choice-title" class="lore-starter-choice__title">
           {$t('matches.lore.starterTitle')}
         </h2>
@@ -1028,7 +1031,7 @@
             {starterSaving ? $t('matches.lore.saving') : p1Name}
           </button>
         </div>
-      </div>
+      </AppCard>
     </div>
   {/if}
 
@@ -1036,20 +1039,20 @@
   {#if showGameOverPrompt}
     <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
       <div class="lore-modal__backdrop"></div>
-      <div class="lore-modal__card card">
+      <AppCard className="lore-modal__card">
         <h2 id="game-over-title" class="lore-modal__title lore-game-over__title">
           {$t('matches.lore.winsExclaim', { name: gameOverWinnerName })}
         </h2>
         <p class="lore-modal__text muted">{$t('matches.lore.nextGamePrompt')}</p>
         <div class="lore-modal__actions">
-          <a href="/matches/{id}" class="btn btn--primary">{$t('matches.lore.backToMatch')}</a>
+          <AppButton href="/matches/{id}" variant="primary">{$t('matches.lore.backToMatch')}</AppButton>
           {#if canEditMatch}
-            <button type="button" class="btn" onclick={() => goToNextGame()}
-              >{$t('matches.lore.nextGame')}</button
+            <AppButton type="button" onclick={() => goToNextGame()}
+              >{$t('matches.lore.nextGame')}</AppButton
             >
           {/if}
         </div>
-      </div>
+      </AppCard>
     </div>
   {/if}
 </div>

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
 
   /** Move the modal root to document.body so it covers the full viewport. */
@@ -76,7 +79,8 @@
       aria-label="Close"
       onclick={onClose}
     ></button>
-    <div class="tournament-picker-modal__card card" use:focusTrap use:scrollLock>
+    <div class="tournament-picker-modal__card" use:focusTrap use:scrollLock>
+      <AppCard>
       <h2 id="tournament-picker-title" class="tournament-picker-modal__title">{title}</h2>
       <p class="tournament-picker-modal__hint muted">
         Optional — link this match to a tournament event.
@@ -95,7 +99,7 @@
       {#if loading}
         <p class="muted">Loading tournaments…</p>
       {:else if error}
-        <p class="alert" role="alert">{error}</p>
+        <AppBanner variant="danger" message={error} />
       {:else if filtered.length === 0}
         <p class="muted">
           {tournaments.length === 0 ? 'No tournaments yet.' : 'No tournaments match the filter.'}
@@ -106,7 +110,7 @@
             <div class="tournament-picker-modal__item-text">
               <span class="tournament-picker-modal__item-name muted">No tournament</span>
             </div>
-            <button type="button" class="btn btn--sm" onclick={() => pick('')}> Select </button>
+            <AppButton type="button" size="sm" onclick={() => pick('')}> Select </AppButton>
           </li>
           {#each filtered as t (t._id)}
             {@const subtitle = formatRowSubtitle(t.date)}
@@ -120,17 +124,18 @@
                   <span class="tournament-picker-modal__item-date muted">{subtitle}</span>
                 {/if}
               </div>
-              <button type="button" class="btn btn--primary btn--sm" onclick={() => pick(t._id)}>
+              <AppButton type="button" variant="primary" size="sm" onclick={() => pick(t._id)}>
                 Select
-              </button>
+              </AppButton>
             </li>
           {/each}
         </ul>
       {/if}
 
-      <div class="tournament-picker-modal__actions">
-        <button type="button" class="btn" onclick={onClose}>Cancel</button>
-      </div>
+        <div class="tournament-picker-modal__actions">
+          <AppButton type="button" onclick={onClose}>Cancel</AppButton>
+        </div>
+      </AppCard>
     </div>
   </div>
 {/if}

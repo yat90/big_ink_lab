@@ -1,4 +1,6 @@
 <script lang="ts">
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   /** When set (e.g. in Vercel), links "issue #40" to your repo’s GitHub issue. */
   const resetIssueUrl = import.meta.env.VITE_GITHUB_ISSUE_40_URL as string | undefined;
 </script>
@@ -8,25 +10,16 @@
 </svelte:head>
 
 <div class="page auth-page">
-  <div class="card auth-card">
+  <AppCard className="auth-card">
     <h1 class="card__title">Forgot password</h1>
     <p class="card__sub">
       Password reset by email is not available yet. We will add it here when it is ready.
     </p>
-    <p class="hint">
-      {#if resetIssueUrl}
-        You can follow progress on
-        <a href={resetIssueUrl} class="auth-inline-link" rel="noopener noreferrer"
-          >GitHub issue #40</a
-        >.
-      {:else}
-        Progress is tracked as GitHub issue #40 in this project’s repository.
-      {/if}
-    </p>
+    
     <p class="auth-card__actions">
-      <a href="/login" class="btn btn--primary">Back to login</a>
+      <AppButton href="/login" variant="primary">Back to login</AppButton>
     </p>
-  </div>
+  </AppCard>
 </div>
 
 <style>

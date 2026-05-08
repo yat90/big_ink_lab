@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { ERR, messageFromFailedResponse } from '$lib/errors';
   import Pagination from '$lib/Pagination.svelte';
@@ -123,7 +126,8 @@
   >
     <button type="button" class="player-picker-modal__backdrop" aria-label="Close" onclick={onClose}
     ></button>
-    <div class="player-picker-modal__card card" use:focusTrap use:scrollLock>
+    <div class="player-picker-modal__card" use:focusTrap use:scrollLock>
+      <AppCard>
       <h2 id="player-picker-title" class="player-picker-modal__title">{title}</h2>
       {#if forLabel}
         <p class="player-picker-modal__for muted">
@@ -157,16 +161,14 @@
       {#if loading}
         <p class="muted">Loading players…</p>
       {:else if error}
-        <p class="alert" role="alert">{error}</p>
+        <AppBanner variant="danger" message={error} />
       {:else if players.length === 0}
         <p class="muted">No players match the filters.</p>
       {:else}
         <ul class="player-picker-modal__list">
           <li class="player-picker-modal__item">
             <span class="player-picker-modal__item-name muted">No player</span>
-            <button type="button" class="btn btn--sm" onclick={() => selectPlayer('', undefined)}>
-              Select
-            </button>
+            <AppButton type="button" size="sm" onclick={() => selectPlayer('', undefined)}>Select</AppButton>
           </li>
           {#each players as player (player._id)}
             <li class="player-picker-modal__item">
@@ -176,24 +178,26 @@
                   <span class="muted">({player.team})</span>
                 {/if}
               </span>
-              <button
+              <AppButton
                 type="button"
-                class="btn btn--primary btn--sm"
+                variant="primary"
+                size="sm"
                 disabled={excludePlayerId === player._id}
                 onclick={() => selectPlayer(player._id, { name: player.name, team: player.team })}
                 title={excludePlayerId === player._id ? 'Already selected as other player' : ''}
               >
                 Select
-              </button>
+              </AppButton>
             </li>
           {/each}
         </ul>
         <Pagination {currentPage} {totalPages} {onPageChange} />
       {/if}
 
-      <div class="player-picker-modal__actions">
-        <button type="button" class="btn" onclick={onClose}>Cancel</button>
-      </div>
+        <div class="player-picker-modal__actions">
+          <AppButton type="button" onclick={onClose}>Cancel</AppButton>
+        </div>
+      </AppCard>
     </div>
   </div>
 {/if}

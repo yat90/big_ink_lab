@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -117,27 +120,25 @@
 
 <div class="page page--team">
   {#if loading && !overview}
-    <div class="card team-skeleton" aria-busy="true" aria-live="polite">
+    <AppCard className="team-skeleton" aria-busy="true" aria-live="polite">
       <div class="loading-skeleton__line loading-skeleton__line--title"></div>
       <div class="loading-skeleton__line loading-skeleton__line--short"></div>
       <div class="loading-skeleton__line"></div>
-    </div>
+    </AppCard>
   {:else if error}
-    <div class="card" role="alert">
-      <p class="alert">{error}</p>
-      <button type="button" class="btn" onclick={() => void loadOverview()}
-        >{$t('common.retry')}</button
-      >
-    </div>
+    <AppCard role="alert">
+      <AppBanner variant="danger" message={error} />
+      <AppButton type="button" onclick={() => void loadOverview()}>{$t('common.retry')}</AppButton>
+    </AppCard>
   {:else if overview && !overview.hasTeam}
-    <div class="card stack">
+    <AppCard className="stack">
       <h1 class="card__title">{$t('team.noTeamTitle')}</h1>
       <p class="card__sub">
         {$t('team.noTeamBefore')}<a href="/me">{$t('team.noTeamLink')}</a>{$t('team.noTeamAfter')}
       </p>
-    </div>
+    </AppCard>
   {:else if overview}
-    <div class="team-header card">
+    <AppCard className="team-header">
       <div class="team-header__hero">
         <div class="team-header__identity">
           <h1 class="team-header__title">{overview.team}</h1>
@@ -205,7 +206,7 @@
           </div>
         </a>
       </div>
-    </div>
+    </AppCard>
 
     <div
       class="team-tabs-wrap"

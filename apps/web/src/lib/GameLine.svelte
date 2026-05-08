@@ -1,8 +1,8 @@
 <script lang="ts">
+  import AppButton from '$lib/AppButton.svelte';
   import IconClock from '$lib/icons/IconClock.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import IconPlay from '$lib/icons/IconPlay.svelte';
-  import IconSparkle from '$lib/icons/IconSparkle.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
   import { type Game, type GameStatus } from '$lib/matches';
   import { t } from '$lib/i18n';
@@ -26,7 +26,6 @@
     onEditStart?: () => void;
     onEditDone: () => void;
     onShowEvents?: (index: number) => void;
-    onAnalyse?: (index: number) => void;
   };
 
   let {
@@ -43,7 +42,6 @@
     onGameChange,
     onDeleteGame,
     onShowEvents,
-    onAnalyse,
   }: Props = $props();
 
   function gameWinnerId(g: Game): string | undefined {
@@ -108,37 +106,24 @@
 
   <div class="game-line__actions">
     {#if onShowEvents}
-      <button
+      <AppButton
         type="button"
-        class="btn btn--primary btn--sm game-line__events-btn"
+        variant="primary"
+        size="sm"
+        icon={true}
         onclick={() => onShowEvents(index)}
         aria-label={$t('matches.gameLine.viewEventsAria', { n: String(index + 1) })}
         title={$t('matches.gameLine.viewEventsTitle')}
       >
-        <IconClock size={18} className="game-line__icon icon-clock" />
-        <span class="game-line__icon-label">{$t('matches.gameLine.eventsLabel')}</span>
-      </button>
+        <IconClock size={18} />
+        {$t('matches.gameLine.eventsLabel')}
+      </AppButton>
     {/if}
     {#if !gameWinnerId(game)}
-      <a
-        href="/matches/{matchId}/lore?game={index}"
-        class="btn btn--primary btn--sm game-line__continue-btn"
-      >
-        <IconPlay size={24} className="game-line__icon icon-play" />
-        <span class="game-line__icon-label">{$t('matches.gameLine.continueLabel')}</span>
-      </a>
-    {/if}
-    {#if onAnalyse}
-      <button
-        type="button"
-        class="btn btn--primary btn--sm game-line__analyse-btn"
-        onclick={() => onAnalyse(index)}
-        aria-label={$t('matches.gameLine.analyseAiAria', { n: String(index + 1) })}
-        title={$t('matches.gameLine.analyseAiTitle')}
-      >
-        <IconSparkle size={18} className="game-line__icon icon-sparkle" />
-        <span class="game-line__icon-label">{$t('matches.detail.analyseLabel')}</span>
-      </button>
+      <AppButton href="/matches/{matchId}/lore?game={index}" variant="primary" size="sm" icon={true}>
+        <IconPlay size={24} />
+        {$t('matches.gameLine.continueLabel')}
+      </AppButton>
     {/if}
   </div>
 
@@ -158,7 +143,7 @@
         aria-label={$t('matches.gameLine.starterGroupAria')}
       >
         <div class="game-line__meta-title">
-          <IconPlay size={14} className="game-line__meta-icon" />
+          <IconPlay size={14} />
           <span class="muted">{$t('matches.gameLine.starter')}</span>
         </div>
         <div
@@ -211,7 +196,7 @@
         aria-label={$t('matches.gameLine.winnerGroupAria')}
       >
         <div class="game-line__meta-title">
-          <IconCrown size={14} className="game-line__meta-icon" />
+          <IconCrown size={14} />
           <span class="muted">{$t('matches.gameLine.winner')}</span>
         </div>
         <div
@@ -263,9 +248,11 @@
   {/if}
 
   {#if isEditing}
-    <button
+    <AppButton
       type="button"
-      class="btn btn--danger btn--icon game-line__delete-btn"
+      variant="danger"
+      icon={true}
+      className="game-line__delete-btn"
       disabled={isDeleting}
       onclick={() => onDeleteGame(index)}
       aria-label={$t('matches.gameLine.deleteGameAria', { n: String(index + 1) })}
@@ -274,10 +261,11 @@
       {#if isDeleting}
         {$t('matches.gameLine.removing')}
       {:else}
-        <IconTrash size={18} className="game-line__icon icon-trash" />
-        <span class="game-line__icon-label">{$t('matches.detail.deleteLabel')}</span>
+        <IconTrash size={18} />
+
+        {$t('matches.detail.deleteLabel')}
       {/if}
-    </button>
+    </AppButton>
   {/if}
 </div>
 
@@ -322,8 +310,7 @@
     padding: 0;
     margin: 0;
   }
-  .game-line__actions .btn,
-  .game-line__actions a.btn {
+  .game-line__actions :global(.btn) {
     font-size: 0.85rem;
     padding: 2px 20px;
     color: var(--fg);
@@ -331,19 +318,14 @@
     border-radius: var(--radius);
     opacity: 1;
   }
-  .game-line__delete-btn {
+  :global(.game-line__delete-btn) {
     margin-top: 24px;
     width: 100%;
   }
 
-  .game-line__icon-label {
+  :global(.game-line__icon-label) {
     font-size: 0.9rem;
     padding-left: 6px;
-  }
-
-  .game-line__meta-icon {
-    flex-shrink: 0;
-    color: var(--muted);
   }
 
   .game-line__meta-row {
@@ -411,10 +393,10 @@
   }
 
   @media (max-width: 639px) {
-    .game-line__actions .game-line__icon-label {
+    .game-line__actions :global(.game-line__icon-label) {
       display: none;
     }
-    .game-line__actions .btn--icon {
+    .game-line__actions :global(.btn--icon) {
       padding-left: 8px;
       padding-right: 8px;
     }

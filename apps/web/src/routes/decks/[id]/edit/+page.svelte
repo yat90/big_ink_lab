@@ -1,4 +1,7 @@
 <script lang="ts">
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -93,16 +96,16 @@
 
 <div class="page">
   {#if loading}
-    <div class="card">
+    <AppCard>
       <p class="muted">Loading deck…</p>
-    </div>
+    </AppCard>
   {:else if error && !name && !deckList}
-    <div class="card" role="alert">
-      <p class="alert">{error}</p>
-      <a href="/decks/{id}" class="btn">Back to deck</a>
-    </div>
+    <AppCard role="alert">
+      <AppBanner variant="danger" message={error} />
+      <AppButton href="/decks/{id}">Back to deck</AppButton>
+    </AppCard>
   {:else}
-    <div class="card stack">
+    <AppCard className="stack">
       <h2 class="card__title">Edit deck</h2>
       <p class="card__sub">Change the deck name, player, or card list.</p>
 
@@ -161,17 +164,17 @@
         </label>
 
         {#if error}
-          <p class="alert" role="alert" aria-live="assertive">{error}</p>
+          <AppBanner variant="danger" message={error} />
         {/if}
 
         <div class="row" style="margin-top: 8px; gap: 12px;">
-          <button type="submit" class="btn btn--primary" disabled={saving}>
+          <AppButton type="submit" variant="primary" disabled={saving}>
             {saving ? 'Saving…' : 'Save'}
-          </button>
-          <a href="/decks/{id}" class="btn">Cancel</a>
+          </AppButton>
+          <AppButton href="/decks/{id}">Cancel</AppButton>
         </div>
       </form>
-    </div>
+    </AppCard>
   {/if}
 </div>
 

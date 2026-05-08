@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import AppCard from '$lib/AppCard.svelte';
 
   type StatusStateKind = 'loading' | 'error' | 'empty';
   type StatusStateAlign = 'left' | 'center';
@@ -17,30 +18,40 @@
 
   const role = $derived(kind === 'error' ? 'alert' : 'status');
   const live = $derived(kind === 'error' ? 'assertive' : 'polite');
+  const cardClassName = $derived(
+    [
+      'stack',
+      'status-state-card',
+      align === 'center' ? 'status-state-card--center' : '',
+      kind === 'error' ? 'status-state-card--error' : '',
+    ]
+      .filter(Boolean)
+      .join(' ')
+  );
 </script>
 
-<div
-  class="card stack status-state-card"
-  class:status-state-card--center={align === 'center'}
-  class:status-state-card--error={kind === 'error'}
+<AppCard
+  className="stack"
   role={role}
   aria-live={live}
   aria-busy={kind === 'loading'}
 >
-  {#if kind === 'loading'}
-    <span class="spinner status-state-card__spinner" aria-hidden="true"></span>
-  {/if}
-  {#if title}
-    <h2 class="card__title">{title}</h2>
-  {/if}
-  <p class="card__sub">{message}</p>
-  {#if actions}
-    {@render actions()}
-  {/if}
-  {#if children}
-    {@render children()}
-  {/if}
-</div>
+  <div class={cardClassName}>
+    {#if kind === 'loading'}
+      <span class="spinner status-state-card__spinner" aria-hidden="true"></span>
+    {/if}
+    {#if title}
+      <h2 class="card__title">{title}</h2>
+    {/if}
+    <p class="card__sub">{message}</p>
+    {#if actions}
+      {@render actions()}
+    {/if}
+    {#if children}
+      {@render children()}
+    {/if}
+  </div>
+</AppCard>
 
 <style>
   .status-state-card {

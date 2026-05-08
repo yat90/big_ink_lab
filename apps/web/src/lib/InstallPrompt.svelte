@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AppButton from '$lib/AppButton.svelte';
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
 
@@ -105,20 +106,21 @@
       <p class="install-prompt__text">
         Install Big Ink Lab for quick access from your home screen.
       </p>
-      <button type="button" class="btn btn--sm btn--primary" onclick={install}>Install</button>
+      <AppButton type="button" size="sm" variant="primary" onclick={install}>Install</AppButton>
     {:else}
       <p class="install-prompt__text">
         Add Big Ink Lab to your home screen: tap <strong>Share</strong>, then
         <strong>Add to Home Screen</strong>.
       </p>
     {/if}
-    <button
+    <AppButton
       type="button"
-      class="install-prompt__close btn btn--sm"
+      size="sm"
+      className="install-prompt__close"
       onclick={dismiss}
       aria-label="Dismiss"
     >
       Not now
-    </button>
+    </AppButton>
   </div>
 {/if}

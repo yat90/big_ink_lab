@@ -1,5 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
+  import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { portal } from '$lib/portal';
@@ -85,14 +88,15 @@
 <div use:portal>
   <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="add-member-title">
     <button type="button" class="modal-backdrop" aria-label="Close" onclick={onClose}></button>
-    <div class="card modal-card" use:focusTrap use:scrollLock>
+    <div class="modal-card" use:focusTrap use:scrollLock>
+      <AppCard>
       <h2 id="add-member-title" class="card__title">Add member to {team}</h2>
       <p class="card__sub muted">
         Pick a roster player to add to your team. Monthly dues are configured team-wide on the
         Finance tab.
       </p>
 
-      <form class="stack" onsubmit={submit}>
+        <form class="stack" onsubmit={submit}>
         <label class="label">
           Search player
           <input
@@ -108,7 +112,7 @@
           {#if loading}
             <p class="muted">Searching…</p>
           {:else if error}
-            <p class="alert">{error}</p>
+            <AppBanner variant="danger" message={error} />
           {:else if eligiblePlayers.length === 0}
             <p class="muted">
               {#if search.trim()}
@@ -141,16 +145,17 @@
         </div>
 
         {#if saveError}
-          <p class="alert" role="alert">{saveError}</p>
+          <AppBanner variant="danger" message={saveError} />
         {/if}
 
         <div class="row" style="gap: 12px; margin-top: 8px;">
-          <button type="submit" class="btn btn--primary" disabled={saving || !selectedId}>
+          <AppButton type="submit" variant="primary" disabled={saving || !selectedId}>
             {saving ? 'Adding…' : 'Add to team'}
-          </button>
-          <button type="button" class="btn" onclick={onClose} disabled={saving}>Cancel</button>
+          </AppButton>
+          <AppButton type="button" onclick={onClose} disabled={saving}>Cancel</AppButton>
         </div>
-      </form>
+        </form>
+      </AppCard>
     </div>
   </div>
 </div>

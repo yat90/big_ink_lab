@@ -1,5 +1,7 @@
 <script lang="ts">
   import { INK_CHART_COLORS, INKS } from 'deck-ink';
+  import AppBanner from '$lib/AppBanner.svelte';
+  import AppButton from '$lib/AppButton.svelte';
   import DeckStatsCardTab from './DeckStatsCardTab.svelte';
   import DeckStatsMatchesTab from './DeckStatsMatchesTab.svelte';
   import DeckStatsMulliganTab from './DeckStatsMulliganTab.svelte';
@@ -185,7 +187,7 @@
 {#if loading}
   <p class="muted">Loading…</p>
 {:else if error}
-  <p class="deck-stats__error">{error}</p>
+  <AppBanner variant="danger" message={error} />
 {:else if stats}
   <div class="deck-stats__tabs" role="tablist" aria-label="Deck statistics sections">
     <button
@@ -251,13 +253,10 @@
 {/if}
 
 {#if showBackLink && deckId}
-  <a href="/decks/{deckId}" class="btn btn--primary">Back to deck</a>
+  <AppButton href="/decks/{deckId}" variant="primary">Back to deck</AppButton>
 {/if}
 
 <style>
-  .deck-stats__error {
-    color: var(--danger);
-  }
   .deck-stats__tabs {
     display: flex;
     gap: 0;
