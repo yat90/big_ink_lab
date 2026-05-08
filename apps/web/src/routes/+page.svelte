@@ -293,37 +293,47 @@
       <AppCard className="stack dashboard__header">
         <div class="row dashboard__header-top row--between row--start gap-12">
           <div class="stack stack--xs">
-            <h2 class="card__title">Big Ink Lab</h2>
-            <p class="card__sub">Track matches, players, and Lorcana stats.</p>
+            <h2 class="card__title">Dashboard</h2>
           </div>
           <div class="dashboard__header-actions stack">
             <div class="row dashboard__header-actions-primary">
-              <AppButton href="/matches/new" variant="primary" className="dashboard__header-new-match"
-                >New match</AppButton
+              <AppButton
+                href="/matches/new"
+                variant="primary"
+                className="dashboard__header-new-match">New match</AppButton
               >
-            </div>
-            <div class="row dashboard__header-actions-secondary">
-              <AppButton type="button" size="sm" disabled={loreTrackerLoading} onclick={startLoreTracker}>
+              <AppButton
+                type="button"
+                size="sm"
+                disabled={loreTrackerLoading}
+                onclick={startLoreTracker}
+              >
                 {loreTrackerLoading ? 'Creating…' : 'Quick Match'}
               </AppButton>
               <AppButton href="/tournaments" size="sm">Tournaments</AppButton>
-              <AppButton href="/tournaments/new" size="sm">New tournament</AppButton>
             </div>
           </div>
         </div>
+        {#if stats || playerCount > 0 || deckCount > 0}
+          <div class="row dashboard__summary-grid">
+            {#if stats}
+              <a href="/matches" class="dashboard__stat dashboard__stat--link">
+                <span class="dashboard__stat-value">{stats.totalMatches}</span>
+                <span class="dashboard__stat-label muted">Matches</span>
+              </a>
+              <a href="/matches" class="dashboard__stat dashboard__stat--link">
+                <span class="dashboard__stat-value">{stats.totalGames}</span>
+                <span class="dashboard__stat-label muted">Games</span>
+              </a>
+            {/if}
+          </div>
+        {/if}
       </AppCard>
 
       <AppCard className="stack dashboard__tournaments">
         <div class="row row--between row--center-y gap-sm">
           <h3 class="dashboard__section-title margin-0">Tournaments</h3>
-          <div class="row gap-sm">
-            <AppButton href="/tournaments/new" size="sm" className="text-90">New</AppButton>
-            <AppButton href="/tournaments" size="sm" className="text-90">All</AppButton>
-          </div>
         </div>
-        <p class="card__sub muted margin-0 margin-bottom-sm">
-          Recent tournaments and what&apos;s coming up.
-        </p>
         <div class="dashboard__tournaments-grid">
           <div class="dashboard__tournaments-col">
             <h4 class="dashboard__tournaments-col-title muted">Earlier</h4>
@@ -367,32 +377,6 @@
           </div>
         </div>
       </AppCard>
-
-      {#if stats || playerCount > 0 || deckCount > 0}
-        <AppCard className="dashboard__summary">
-          <h3 class="dashboard__summary-title">At a glance</h3>
-          <div class="dashboard__summary-grid">
-            {#if stats}
-              <a href="/matches" class="dashboard__stat dashboard__stat--link">
-                <span class="dashboard__stat-value">{stats.totalMatches}</span>
-                <span class="dashboard__stat-label muted">Matches</span>
-              </a>
-              <a href="/matches" class="dashboard__stat dashboard__stat--link">
-                <span class="dashboard__stat-value">{stats.totalGames}</span>
-                <span class="dashboard__stat-label muted">Games</span>
-              </a>
-            {/if}
-            <a href="/decks" class="dashboard__stat dashboard__stat--link">
-              <span class="dashboard__stat-value">{deckCount}</span>
-              <span class="dashboard__stat-label muted">Decks</span>
-            </a>
-            <a href="/players" class="dashboard__stat dashboard__stat--link">
-              <span class="dashboard__stat-value">{playerCount}</span>
-              <span class="dashboard__stat-label muted">Players</span>
-            </a>
-          </div>
-        </AppCard>
-      {/if}
 
       {#if recentMatches.length > 0}
         <AppCard className="stack">
@@ -475,13 +459,6 @@
               </AppCard>
             {/each}
           </div>
-        </AppCard>
-      {:else}
-        <AppCard className="stack">
-          <p class="card__sub muted">No matches yet. Create your first match to get started.</p>
-          <AppButton href="/matches/new" variant="primary" className="align-self-start"
-            >New match</AppButton
-          >
         </AppCard>
       {/if}
     </div>
