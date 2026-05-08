@@ -18,6 +18,7 @@
   import { locale, setLocale, t } from '$lib/i18n';
   import type { Locale } from '$lib/i18n';
   import { TEAM_TAB_IDS, teamTabFromSearchParams } from '$lib/teamTabs';
+  import { PRIMARY_NAV, isPrimaryNavActive } from '$lib/navConfig';
 
   interface Props {
     authDisplayName: string;
@@ -53,18 +54,12 @@
     $page.url.pathname.startsWith('/team') ? teamTabFromSearchParams($page.url.searchParams) : null
   );
 
-  const isHome = $derived($page.url.pathname === '/');
-  const isMatches = $derived(
-    $page.url.pathname.startsWith('/matches') && $page.url.pathname !== '/matches/new'
-  );
-  const isTournaments = $derived($page.url.pathname.startsWith('/tournaments'));
-  const isPlayers = $derived(
-    $page.url.pathname === '/players' || $page.url.pathname.startsWith('/players/')
-  );
-  const isTeam = $derived($page.url.pathname.startsWith('/team'));
-  const isDecks = $derived(
-    $page.url.pathname === '/decks' || $page.url.pathname.startsWith('/decks/')
-  );
+  const isHome = $derived(isPrimaryNavActive('home', $page.url.pathname));
+  const isMatches = $derived(isPrimaryNavActive('matches', $page.url.pathname));
+  const isTournaments = $derived(isPrimaryNavActive('tournaments', $page.url.pathname));
+  const isPlayers = $derived(isPrimaryNavActive('players', $page.url.pathname));
+  const isTeam = $derived(isPrimaryNavActive('team', $page.url.pathname));
+  const isDecks = $derived(isPrimaryNavActive('decks', $page.url.pathname));
   const isStats = $derived($page.url.pathname === '/stats');
   const isMe = $derived($page.url.pathname === '/me');
   const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
@@ -104,7 +99,7 @@
 
 <nav class="desktop-nav" aria-label="Primary">
   <a
-    href="/"
+    href={PRIMARY_NAV.home.href}
     class="desktop-nav__link"
     class:desktop-nav__link--active={isHome}
     aria-current={isHome ? 'page' : undefined}
@@ -114,7 +109,7 @@
     </span>
   </a>
   <a
-    href="/matches"
+    href={PRIMARY_NAV.matches.href}
     class="desktop-nav__link"
     class:desktop-nav__link--active={isMatches}
     aria-current={isMatches ? 'page' : undefined}
@@ -122,10 +117,10 @@
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconTrophy size={28} />
     </span>
-    <span class="desktop-nav__link-label">{$t('nav.matches')}</span>
+    <span class="desktop-nav__link-label">{$t(PRIMARY_NAV.matches.labelKey)}</span>
   </a>
   <a
-    href="/tournaments"
+    href={PRIMARY_NAV.tournaments.href}
     class="desktop-nav__link"
     class:desktop-nav__link--active={isTournaments}
     aria-current={isTournaments ? 'page' : undefined}
@@ -133,7 +128,7 @@
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconCrownOutline size={28} />
     </span>
-    <span class="desktop-nav__link-label">{$t('nav.tournaments')}</span>
+    <span class="desktop-nav__link-label">{$t(PRIMARY_NAV.tournaments.labelKey)}</span>
   </a>
   <div
     class="desktop-nav__dropdown"
@@ -196,7 +191,7 @@
     </div>
   </div>
   <a
-    href="/decks"
+    href={PRIMARY_NAV.decks.href}
     class="desktop-nav__link"
     class:desktop-nav__link--active={isDecks}
     aria-current={isDecks ? 'page' : undefined}
@@ -204,7 +199,7 @@
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconDecks size={28} />
     </span>
-    <span class="desktop-nav__link-label">{$t('nav.decks')}</span>
+    <span class="desktop-nav__link-label">{$t(PRIMARY_NAV.decks.labelKey)}</span>
   </a>
   <div
     class="desktop-nav__dropdown desktop-nav__dropdown--team"
@@ -213,14 +208,14 @@
   >
     <div class="desktop-nav__dropdown-inner">
       <a
-        href="/team"
+        href={PRIMARY_NAV.team.href}
         class="desktop-nav__link desktop-nav__link--dropdown-main"
         class:desktop-nav__link--active={isTeam}
       >
         <span class="desktop-nav__link-icon" aria-hidden="true">
           <IconTeam size={28} />
         </span>
-        <span class="desktop-nav__link-label">{$t('nav.team')}</span>
+        <span class="desktop-nav__link-label">{$t(PRIMARY_NAV.team.labelKey)}</span>
       </a>
       <button
         type="button"
@@ -270,7 +265,7 @@
   </div>
 
   <a
-    href="/players"
+    href={PRIMARY_NAV.players.href}
     class="desktop-nav__link desktop-nav__link--push-end"
     class:desktop-nav__link--active={isPlayers}
     aria-current={isPlayers ? 'page' : undefined}
@@ -278,7 +273,7 @@
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconCircleUser size={28} />
     </span>
-    <span class="desktop-nav__link-label">{$t('nav.players')}</span>
+    <span class="desktop-nav__link-label">{$t(PRIMARY_NAV.players.labelKey)}</span>
   </a>
 
   <div

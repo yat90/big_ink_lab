@@ -4,6 +4,8 @@
   import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
   import IconSparkle from '$lib/icons/IconSparkle.svelte';
   import IconMore from '$lib/icons/IconMore.svelte';
+  import { t } from '$lib/i18n';
+  import { PRIMARY_NAV, isPrimaryNavActive } from '$lib/navConfig';
 
   interface Props {
     menuOpen: boolean;
@@ -11,20 +13,16 @@
   }
   let { menuOpen = false, onMoreClick }: Props = $props();
 
-  const isDashboard = $derived($page.url.pathname === '/');
-  const isMatches = $derived(
-    $page.url.pathname.startsWith('/matches') &&
-      $page.url.pathname !== '/matches/new' &&
-      $page.url.pathname !== '/matches/quick'
-  );
-  const isTournaments = $derived($page.url.pathname.startsWith('/tournaments'));
+  const isDashboard = $derived(isPrimaryNavActive('home', $page.url.pathname));
+  const isMatches = $derived(isPrimaryNavActive('matches', $page.url.pathname));
+  const isTournaments = $derived(isPrimaryNavActive('tournaments', $page.url.pathname));
 </script>
 
 <div class="mobile-nav">
   <div class="mobile-nav__bar">
     <nav class="mobile-nav__pill" aria-label="Primary">
       <a
-        href="/"
+        href={PRIMARY_NAV.home.href}
         class="mobile-nav__item"
         class:mobile-nav__item--active={isDashboard}
         aria-current={isDashboard ? 'page' : undefined}
@@ -32,10 +30,10 @@
         <span class="mobile-nav__item-icon" aria-hidden="true">
           <IconSparkle size={24} />
         </span>
-        <span class="mobile-nav__item-label">Dashboard</span>
+        <span class="mobile-nav__item-label">{$t(PRIMARY_NAV.home.labelKey)}</span>
       </a>
       <a
-        href="/matches"
+        href={PRIMARY_NAV.matches.href}
         class="mobile-nav__item"
         class:mobile-nav__item--active={isMatches}
         aria-current={isMatches ? 'page' : undefined}
@@ -43,10 +41,10 @@
         <span class="mobile-nav__item-icon" aria-hidden="true">
           <IconTrophy size={24} />
         </span>
-        <span class="mobile-nav__item-label">Matches</span>
+        <span class="mobile-nav__item-label">{$t(PRIMARY_NAV.matches.labelKey)}</span>
       </a>
       <a
-        href="/tournaments"
+        href={PRIMARY_NAV.tournaments.href}
         class="mobile-nav__item"
         class:mobile-nav__item--active={isTournaments}
         aria-current={isTournaments ? 'page' : undefined}
@@ -54,7 +52,7 @@
         <span class="mobile-nav__item-icon" aria-hidden="true">
           <IconCrownOutline size={24} />
         </span>
-        <span class="mobile-nav__item-label">Tournaments</span>
+        <span class="mobile-nav__item-label">{$t(PRIMARY_NAV.tournaments.labelKey)}</span>
       </a>
       <button
         type="button"
