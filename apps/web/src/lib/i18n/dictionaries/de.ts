@@ -56,6 +56,10 @@ export default {
     requiredNameDate: 'Name und Datum sind Pflichtfelder.',
     tournamentDetailsAria: 'Turnierdetails',
     gamesWonTitle: 'Gewonnene Spiele',
+    toastPlayerCreated: 'Spieler erstellt',
+    toastPlayerSaved: 'Spieler gespeichert',
+    toastDeckSaved: 'Deck gespeichert',
+    toastDismiss: 'Benachrichtigung schließen',
   },
   breadcrumb: {
     home: 'Start',

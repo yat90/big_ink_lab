@@ -9,6 +9,8 @@
   import { getAuthToken } from '$lib/auth';
   import { getDeckPlayerId } from '$lib/decks';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
+  import { toast } from '$lib/toast';
+  import { translate, getLocale } from '$lib/i18n';
 
   const id = $page.params.id;
   let name = $state('');
@@ -81,6 +83,7 @@
         saving = false;
         return;
       }
+      toast.schedule(translate(getLocale(), 'common.toastDeckSaved'), 'success');
       await goto(`/decks/${id}`);
     } catch {
       error = 'Could not reach API.';

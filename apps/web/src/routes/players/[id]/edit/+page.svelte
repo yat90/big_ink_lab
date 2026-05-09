@@ -6,6 +6,8 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { toast } from '$lib/toast';
+  import { translate, getLocale } from '$lib/i18n';
 
   const id = $page.params.id;
   let name = $state('');
@@ -60,6 +62,7 @@
         saving = false;
         return;
       }
+      toast.schedule(translate(getLocale(), 'common.toastPlayerSaved'), 'success');
       await goto(`/players/${id}`);
     } catch {
       error = 'Could not reach API.';

@@ -4,6 +4,8 @@
   import AppCard from '$lib/AppCard.svelte';
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
+  import { toast } from '$lib/toast';
+  import { translate, getLocale } from '$lib/i18n';
 
   let name = $state('');
   let team = $state('');
@@ -34,6 +36,7 @@
         loading = false;
         return;
       }
+      toast.schedule(translate(getLocale(), 'common.toastPlayerCreated'), 'success');
       await goto('/players');
     } catch {
       error = 'Could not reach API.';

@@ -17,6 +17,7 @@
   import { pullToRefresh } from '$lib/pullToRefresh';
   import { initLocale } from '$lib/i18n';
   import AppBreadcrumb from '$lib/AppBreadcrumb.svelte';
+  import AppToast from '$lib/AppToast.svelte';
 
   let { children = undefined }: { children?: Snippet } = $props();
 
@@ -175,6 +176,7 @@
     <InstallPrompt />
   {/if}
   <PullToRefreshIndicator />
+  <AppToast />
   <main
     id="main"
     class="main"

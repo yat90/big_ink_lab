@@ -56,6 +56,10 @@ export default {
     requiredNameDate: 'Name and date are required.',
     tournamentDetailsAria: 'Tournament details',
     gamesWonTitle: 'Games won',
+    toastPlayerCreated: 'Player created',
+    toastPlayerSaved: 'Player saved',
+    toastDeckSaved: 'Deck saved',
+    toastDismiss: 'Dismiss notification',
   },
   breadcrumb: {
     home: 'Home',
