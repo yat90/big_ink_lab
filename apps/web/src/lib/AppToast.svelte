@@ -1,7 +1,7 @@
 <script lang="ts">
   import { afterNavigate } from '$app/navigation';
   import { toast, consumePendingToast } from '$lib/toast';
-  import { t } from '$lib/i18n';
+  import { getLocale, translate, t } from '$lib/i18n';
 
   /**
    * Render this once inside +layout.svelte.
@@ -16,7 +16,8 @@
     else if (variant === 'danger') toast.danger(message);
     else if (variant === 'warning') toast.warning(message);
     else toast.info(message);
-  });
+  }); 
+
 </script>
 
 {#if $toast.length > 0}
@@ -38,7 +39,7 @@
               type="button"
               class="toast__dismiss"
               onclick={() => toast.dismiss(t.id)}
-              aria-label={$t('common.toastDismiss')}
+              aria-label={translate(getLocale(), 'common.toastDismiss')}
             >
               <span aria-hidden="true">✕</span>
             </button>
