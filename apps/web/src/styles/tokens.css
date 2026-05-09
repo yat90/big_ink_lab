@@ -9,6 +9,9 @@
   --card: #141414;
   --border: rgba(255, 255, 255, 0.1);
   --border-strong: rgba(255, 255, 255, 0.18);
+  /* Meets WCAG 1.4.11 (3:1) for UI component boundaries (inputs, selects) against --bg.
+     Glass-only borders (cards, nav) stay at --glass-border (decorative, not identifying). */
+  --border-ui: rgba(255, 255, 255, 0.35);
 
   --ink: #a855f7;
   --ink-hover: #9333ea;
