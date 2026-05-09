@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
+
+/* The Big Ink Theory – dark, purple (INK), red (BIG), gold, white. Mobile-first. */
+:root {
+  --bg: #0d0d0d;
+  --bg2: #1a1a1a;
+  --fg: #fafafa;
+  --muted: #a1a1aa;
+  --card: #141414;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --ink: #a855f7;
+  --ink-hover: #9333ea;
+  --ink-glow: rgba(168, 85, 247, 0.4);
+  --big: #dc2626;
+  --big-hover: #ef4444;
+  --gold: #eab308;
+  --gold-dim: rgba(234, 179, 8, 0.25);
+
+  --primary: var(--ink);
+  --primary-hover: var(--ink-hover);
+  --primary-glow: var(--ink-glow);
+  --danger: var(--big);
+  --danger-hover: var(--big-hover);
+  --danger-deep: #991b1b;
+  --danger-soft: rgba(220, 38, 38, 0.14);
+  --danger-border: rgba(248, 113, 113, 0.4);
+  --danger-glow: rgba(220, 38, 38, 0.42);
+  --danger-focus-ring: #f87171;
+  --ok: #22c55e;
+  --ok-glow: rgba(34, 197, 94, 0.25);
+
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.3);
+  --tap: 56px;
+  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition: 0.2s var(--ease);
+
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-strong: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: 20px;
+  --glass-saturate: 180%;
+
+  /* Dark glass (navigation) */
+  --glass-dark-bg: rgba(15, 15, 18, 0.82);
+  --glass-dark-border: rgba(255, 255, 255, 0.1);
+  --glass-dark-blur: 24px;
+  --glass-dark-saturate: 160%;
+  --glass-dark-shadow: 0 4px 24px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --glass-dark-active-bg: rgba(255, 255, 255, 0.12);
+}
