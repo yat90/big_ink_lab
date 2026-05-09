@@ -5,6 +5,7 @@
   import { get } from 'svelte/store';
   import { ERR, messageFromFailedResponse } from '$lib/errors';
   import FilterCard from '$lib/FilterCard.svelte';
+  import PageHeader from '$lib/PageHeader.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
   import AppButton from '$lib/AppButton.svelte';
@@ -222,31 +223,18 @@
       {/snippet}
     </StatusStateCard>
   {:else}
-    <div class="page-header">
-      <div class="players-page__header-main">
-        <div class="page-header__title-row">
-          <h2 class="card__title card-title-reset">Players</h2>
-        </div>
-        {#if filterTeam.trim()}
-          <div class="players-page__chip-row" aria-label="Active filters">
-            <button
-              type="button"
-              class="players-page__filter-chip"
-              onclick={clearTeamFilter}
-              aria-label="Remove team filter: {filterTeam.trim()}"
-            >
-              <span>Team: {filterTeam.trim()}</span>
-              <span class="players-page__filter-chip-dismiss" aria-hidden="true">✕</span>
-            </button>
-          </div>
-        {/if}
-      </div>
-      <AppButton href="/players/new" variant="primary">New player</AppButton>
-    </div>
+    <PageHeader
+      title="Players"
+      resultSummary={filterSummary}
+      chips={filterTeam.trim() ? [{ label: `Team: ${filterTeam.trim()}`, onRemove: clearTeamFilter }] : []}
+    >
+      {#snippet actions()}
+        <AppButton href="/players/new" variant="primary">New player</AppButton>
+      {/snippet}
+    </PageHeader>
 
     <FilterCard
       bind:expanded={filtersExpanded}
-      summary={filterSummary}
       badges={filterBadges}
       panelId="players-filters-panel"
       onClear={clearPlayerFilters}
@@ -365,14 +353,6 @@
     margin-left: 0.35rem;
   }
 
-  .players-page__header-main {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-  }
-
   .filters__row--wrap {
     flex-wrap: wrap;
     align-items: flex-end;
@@ -384,40 +364,6 @@
     flex-direction: column;
     gap: 0.35rem;
     min-width: min(100%, 16rem);
-  }
-
-  .players-page__chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .players-page__filter-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.35rem 0.65rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--fg);
-    background: var(--glass-bg-strong);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-full);
-    cursor: pointer;
-    transition:
-      background var(--transition),
-      border-color var(--transition);
-  }
-
-  .players-page__filter-chip:hover {
-    background: var(--glass-dark-active-bg);
-    border-color: var(--border-strong);
-  }
-
-  .players-page__filter-chip-dismiss {
-    font-size: 0.9rem;
-    line-height: 1;
-    opacity: 0.75;
   }
 
   .players-page__segment {

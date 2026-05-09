@@ -1120,19 +1120,6 @@ button.desktop-nav__dropdown-link {
   margin: 0;
 }
 
-.matches-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-md);
-  margin-bottom: var(--space-md);
-}
-@media (min-width: 640px) {
-  .matches-header {
-    margin-bottom: var(--space-lg);
-  }
-}
 
 .page-header {
   display: flex;

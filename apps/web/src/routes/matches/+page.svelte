@@ -19,6 +19,7 @@
   import AppButton from '$lib/AppButton.svelte';
   import AppCard from '$lib/AppCard.svelte';
   import FilterCard from '$lib/FilterCard.svelte';
+  import PageHeader from '$lib/PageHeader.svelte';
   import Select from '$lib/Select.svelte';
   import Pagination from '$lib/Pagination.svelte';
   import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
@@ -371,11 +372,8 @@
   {:else if error}
     <StatusStateCard kind="error" message={error} />
   {:else}
-    <div class="row matches-header row--between">
-      <div class="page-header__title-row">
-        <h2 class="card__title card-title-reset">{$t('matches.list.heading')}</h2>
-      </div>
-      <div class="row row--sm">
+    <PageHeader title={$t('matches.list.heading')} resultSummary={filterSummary}>
+      {#snippet actions()}
         <AppButton href="/matches/quick">{$t('matches.list.quickMatch')}</AppButton>
         {#if myPlayerId}
           <AppButton
@@ -398,8 +396,8 @@
           </AppButton>
         {/if}
         <AppButton href="/matches/new" variant="primary">{$t('matches.list.newMatch')}</AppButton>
-      </div>
-    </div>
+      {/snippet}
+    </PageHeader>
     {#if myPlayerId && duelsImportError}
       <div class="matches-page__duels-alert">
         <AppBanner variant="danger" message={duelsImportError} />
@@ -409,13 +407,11 @@
     <FilterCard
       bind:expanded={filtersExpanded}
       title={$t('common.filters')}
-      summary={filterSummary}
       badges={filterBadges}
       panelId="matches-filters-panel"
       onClear={clearFilters}
       canClear={canClearFilters}
       clearLabel={$t('common.clearFilters')}
-      showSummaryInExpandedPanel={false}
     >
       <div class="filters__row">
         <label class="filters__label" for="filter-player-btn">
@@ -454,7 +450,6 @@
         </label>
       </div>
       <div class="filters__footer">
-        <p class="filters__count muted">{filterSummary}</p>
         <AppButton onclick={clearFilters} disabled={!canClearFilters}>{$t('common.clearFilters')}</AppButton>
       </div>
     </FilterCard>

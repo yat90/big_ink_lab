@@ -1301,6 +1301,64 @@ a[class*='playercard']:active {
   flex-wrap: wrap;
 }
 
+/* Left column: title row + optional chips */
+.page-header__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Result count shown inline after the title */
+.page-header__count {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Active-filter chip row (below title) */
+.page-header__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Individual dismissible chip */
+.page-header__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    border-color var(--transition);
+}
+.page-header__chip:hover {
+  background: var(--glass-dark-active-bg);
+  border-color: var(--border-strong);
+}
+
+.page-header__chip-dismiss {
+  font-size: 0.9rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+/* Right column: action buttons */
+.page-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
 /* PWA install hint (above mobile bottom nav) */
 .install-prompt {
   position: fixed;
