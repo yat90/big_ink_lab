@@ -120,6 +120,13 @@ a {
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 }
+@media (min-width: 768px) {
+  .topbar {
+    padding-left: 24px;
+    padding-right: 24px;
+    gap: 18px;
+  }
+}
 
 /* Desktop nav: visible only on 640px+ */
 .topbar__desktop-only {
@@ -1068,6 +1075,14 @@ button.desktop-nav__dropdown-link {
   /* Space for fixed bottom navbar on mobile so content scrolls fully above it */
   padding-bottom: calc(110px + env(safe-area-inset-bottom));
 }
+@media (min-width: 768px) {
+  .main {
+    padding-top: calc(20px + env(safe-area-inset-top));
+    padding-left: calc(24px + env(safe-area-inset-left));
+    padding-right: calc(24px + env(safe-area-inset-right));
+    padding-bottom: 40px;
+  }
+}
 
 /* Lore Page: */
 .main--full {
@@ -1098,12 +1113,22 @@ button.desktop-nav__dropdown-link {
   font-weight: 700;
   word-break: break-word;
 }
+@media (min-width: 768px) {
+  .page-title {
+    font-size: 1.875rem;
+  }
+}
 
 .page-sub {
   margin: 0 0 1.25rem;
   color: var(--muted);
   font-size: 0.9375rem;
   line-height: 1.45;
+}
+@media (min-width: 768px) {
+  .page-sub {
+    font-size: 1rem;
+  }
 }
 
 .page-sub a {
