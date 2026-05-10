@@ -56,7 +56,7 @@
               type="button"
               class="toast__dismiss"
               onclick={() => toast.dismiss(t.id)}
-              aria-label={$t('common.toastDismiss')}
+              aria-label={translate(getLocale(), 'common.toastDismiss')}
             >
               <span aria-hidden="true">✕</span>
             </button>

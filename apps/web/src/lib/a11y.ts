@@ -3,7 +3,8 @@
  *
  * - `focusTrap` keeps Tab/Shift+Tab inside the dialog, focuses an initial
  *   element on mount, and restores focus to the previously focused element
- *   on destroy.
+ *   on destroy. Fires `onEscape` when the user presses Escape (e.g. to close
+ *   the dialog).
  * - `scrollLock` prevents the page underneath the dialog from scrolling.
  *   Reference-counted so multiple stacked dialogs unlock correctly.
  */
@@ -37,6 +38,8 @@ export interface FocusTrapOptions {
    * focusable child (e.g. a search field) does not steal focus on open (mobile keyboard).
    */
   focusRoot?: boolean;
+  /** Called when the user presses Escape inside the trap. Typically closes the dialog. */
+  onEscape?: () => void;
 }
 
 /**
@@ -69,6 +72,13 @@ export function focusTrap(node: HTMLElement, opts: FocusTrapOptions = {}) {
   Promise.resolve().then(focusInitial);
 
   const onKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      if (opts.onEscape) {
+        event.preventDefault();
+        opts.onEscape();
+      }
+      return;
+    }
     if (event.key !== 'Tab') return;
     const focusable = getFocusable(node);
     if (focusable.length === 0) {
@@ -77,7 +87,7 @@ export function focusTrap(node: HTMLElement, opts: FocusTrapOptions = {}) {
       return;
     }
     const first = focusable[0];
-    const last = focusable[focusable.length - 1];
+    const last = focusable.at(-1) ?? first;
     const active = document.activeElement as HTMLElement | null;
     const goingBackward = event.shiftKey;
     if (!goingBackward && active === last) {
@@ -108,10 +118,7 @@ let savedBodyOverflow = '';
  * Svelte action: lock body scroll while `node` is mounted.
  * Reference-counted so multiple concurrent dialogs unlock correctly.
  */
-export function scrollLock(node: HTMLElement) {
-  // The node arg is required by the Svelte action signature; the lock is
-  // applied globally to <body>, not to `node` itself.
-  void node;
+export function scrollLock(_node: HTMLElement) {
   if (scrollLockCount === 0) {
     savedBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
