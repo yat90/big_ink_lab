@@ -847,6 +847,7 @@
             >
           {/if}
           <span class="lore-panel__value">
+            <span class="lore-panel__number">{p2Lore}</span>
             <span
               class="lore-panel__delta"
               class:lore-panel__delta--pos={p2DeltaLastSecond > 0}
@@ -857,7 +858,6 @@
                 {p2DeltaLastSecond > 0 ? '+' : ''}{p2DeltaLastSecond}
               {/if}
             </span>
-            <span class="lore-panel__number">{p2Lore}</span>
           </span>
           {#if canEditMatch}
             <button
@@ -901,6 +901,7 @@
             >
           {/if}
           <span class="lore-panel__value">
+            <span class="lore-panel__number">{p1Lore}</span>
             <span
               class="lore-panel__delta"
               class:lore-panel__delta--pos={p1DeltaLastSecond > 0}
@@ -911,7 +912,6 @@
                 {p1DeltaLastSecond > 0 ? '+' : ''}{p1DeltaLastSecond}
               {/if}
             </span>
-            <span class="lore-panel__number">{p1Lore}</span>
           </span>
           {#if canEditMatch}
             <button
@@ -1559,6 +1559,23 @@
     }
     to {
       opacity: 1;
+    }
+  }
+
+  @media (orientation: landscape) {
+    .lore-panel__number {
+      font-size: clamp(4rem, 36vh, 15rem);
+      line-height: 1;
+    }
+
+    .lore-panel__delta {
+      font-size: clamp(1rem, 4vh, 2.4rem);
+      min-height: auto;
+    }
+
+    .lore-panel__btn {
+      height: 48vh;
+      font-size: clamp(3rem, 8vh, 7rem);
     }
   }
 </style>
