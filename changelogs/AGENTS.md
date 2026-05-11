@@ -50,6 +50,10 @@ Use this when **adding or updating** project changelogs so entries stay **consis
    - When adding a new **day**, add or update a row (this repo keeps **newest dates at the top**).
    - One row per day, not per edit.
 
+## Related agent guides
+
+- **Web UI conventions** — [`apps/web/AGENTS.md`](../apps/web/AGENTS.md): component usage, navigation config, state patterns, accessibility, and the new-feature adoption checklist. Read this before touching any file under `apps/web/src`.
+
 ## Workflow suggestions
 
 - **From git:** Run `git diff --cached --stat` and/or full diff when the user wants “staged” or “committed” scope. Put a **file list** or scope hint under `### Notes` when the change touches many paths.
