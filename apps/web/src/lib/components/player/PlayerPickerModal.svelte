@@ -6,6 +6,8 @@
   import { ERR, messageFromFailedResponse } from '$lib/errors';
   import Pagination from '$lib/components/ui/Pagination.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
+  import { get } from 'svelte/store';
+  import { authMe } from '../../me';
 
   /** Move the modal root to document.body so it covers the full viewport. */
   function portal(node: HTMLElement) {
@@ -45,7 +47,7 @@
 
   let players = $state<PlayerRow[]>([]);
   let filterName = $state('');
-  let filterTeam = $state('');
+  let filterTeam = $state('The Big Ink Theory');
   let currentPage = $state(1);
   let totalPages = $state(1);
   let loading = $state(false);
@@ -101,7 +103,16 @@
       return;
     }
     presetReady = false;
-    if (!presetTeamFromMe) {
+    if (presetTeamFromMe) {
+      // preset the team filter to the logged-in user's team
+      const me = get(authMe);
+      const myTeam = (me?.player?.team ?? '').trim();
+      if (myTeam) {
+        filterTeam = myTeam;
+        presetReady = true;
+        return;
+      }
+    } else {
       filterTeam = '';
       presetReady = true;
       return;
@@ -128,77 +139,90 @@
     ></button>
     <div class="player-picker-modal__card" use:focusTrap use:scrollLock>
       <AppCard>
-      <h2 id="player-picker-title" class="player-picker-modal__title">{title}</h2>
-      {#if forLabel}
-        <p class="player-picker-modal__for muted">
-          Selecting player for <strong>{forLabel}</strong>
-        </p>
-      {/if}
+        <h2 id="player-picker-title" class="player-picker-modal__title">{title}</h2>
+        {#if forLabel}
+          <p class="player-picker-modal__for muted">
+            Selecting player for <strong>{forLabel}</strong>
+          </p>
+        {/if}
 
-      <div class="player-picker-modal__filters">
-        <label for="player-picker-name" class="player-picker-modal__label">Name</label>
-        <input
-          id="player-picker-name"
-          type="text"
-          class="input player-picker-modal__input"
-          placeholder="Search by name…"
-          bind:value={filterName}
-          oninput={onFiltersChange}
-          aria-label="Filter by name"
-        />
-        <label for="player-picker-team" class="player-picker-modal__label">Team</label>
-        <input
-          id="player-picker-team"
-          type="text"
-          class="input player-picker-modal__input"
-          placeholder="Filter by team…"
-          bind:value={filterTeam}
-          oninput={onFiltersChange}
-          aria-label="Filter by team"
-        />
-      </div>
+        <div class="player-picker-modal__filters">
+          <label for="player-picker-name" class="player-picker-modal__label">Name</label>
+          <input
+            id="player-picker-name"
+            type="text"
+            class="input player-picker-modal__input"
+            placeholder="Search by name…"
+            bind:value={filterName}
+            oninput={onFiltersChange}
+            aria-label="Filter by name"
+          />
+          <label for="player-picker-team" class="player-picker-modal__label">Team</label>
+          <input
+            id="player-picker-team"
+            type="text"
+            class="input player-picker-modal__input"
+            placeholder="Filter by team…"
+            bind:value={filterTeam}
+            oninput={onFiltersChange}
+            aria-label="Filter by team"
+          />
+        </div>
 
-      <div role="status" aria-live="polite" aria-atomic="true" class="player-picker-modal__sr-status">
-        {#if loading}Loading players…{:else if error}{error}{:else if players.length === 0}No players match the filters.{/if}
-      </div>
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          class="player-picker-modal__sr-status"
+        >
+          {#if loading}Loading players…{:else if error}{error}{:else if players.length === 0}No
+            players match the filters.{/if}
+        </div>
 
-      {#if loading}
-        <p class="muted">Loading players…</p>
-      {:else if error}
-        <AppBanner variant="danger" message={error} />
-      {:else if players.length === 0}
-        <p class="muted">No players match the filters.</p>
-      {:else}
-        <ul class="player-picker-modal__list">
-          <li class="player-picker-modal__item">
-            <span class="player-picker-modal__item-name muted">No player</span>
-            <AppButton type="button" size="sm" aria-label="Select no player" onclick={() => selectPlayer('', undefined)}>Select</AppButton>
-          </li>
-          {#each players as player (player._id)}
-            {@const alreadySelected = excludePlayerId === player._id}
+        {#if loading}
+          <p class="muted">Loading players…</p>
+        {:else if error}
+          <AppBanner variant="danger" message={error} />
+        {:else if players.length === 0}
+          <p class="muted">No players match the filters.</p>
+        {:else}
+          <ul class="player-picker-modal__list">
             <li class="player-picker-modal__item">
-              <span class="player-picker-modal__item-name">
-                {player.name}
-                {#if player.team}
-                  <span class="muted">({player.team})</span>
-                {/if}
-              </span>
+              <span class="player-picker-modal__item-name muted">No player</span>
               <AppButton
                 type="button"
-                variant="primary"
                 size="sm"
-                disabled={alreadySelected}
-                aria-disabled={alreadySelected}
-                aria-label={alreadySelected ? `${player.name} already selected as other player` : `Select ${player.name}`}
-                onclick={() => selectPlayer(player._id, { name: player.name, team: player.team })}
+                aria-label="Select no player"
+                onclick={() => selectPlayer('', undefined)}>Select</AppButton
               >
-                Select
-              </AppButton>
             </li>
-          {/each}
-        </ul>
-        <Pagination {currentPage} {totalPages} {onPageChange} />
-      {/if}
+            {#each players as player (player._id)}
+              {@const alreadySelected = excludePlayerId === player._id}
+              <li class="player-picker-modal__item">
+                <span class="player-picker-modal__item-name">
+                  {player.name}
+                  {#if player.team}
+                    <span class="muted">({player.team})</span>
+                  {/if}
+                </span>
+                <AppButton
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  disabled={alreadySelected}
+                  aria-disabled={alreadySelected}
+                  aria-label={alreadySelected
+                    ? `${player.name} already selected as other player`
+                    : `Select ${player.name}`}
+                  onclick={() => selectPlayer(player._id, { name: player.name, team: player.team })}
+                >
+                  Select
+                </AppButton>
+              </li>
+            {/each}
+          </ul>
+          <Pagination {currentPage} {totalPages} {onPageChange} />
+        {/if}
 
         <div class="player-picker-modal__actions">
           <AppButton type="button" onclick={onClose}>Cancel</AppButton>
