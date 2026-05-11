@@ -258,6 +258,10 @@
         </div>
       </FilterCard>
 
+      <div role="status" aria-live="polite" aria-atomic="true" class="deck-picker-modal__sr-status">
+        {#if loading}Loading decks…{:else if error}{error}{:else if decks.length === 0}No decks match the filters.{:else}{total} deck{total === 1 ? '' : 's'} found.{/if}
+      </div>
+
       {#if loading}
         <p class="muted">Loading decks…</p>
       {:else if error}
@@ -268,7 +272,7 @@
         <ul class="deck-picker-modal__list">
           <li class="deck-picker-modal__item">
             <span class="deck-picker-modal__item-name muted">No deck</span>
-            <AppButton type="button" size="sm" onclick={() => selectDeck('')}>
+            <AppButton type="button" size="sm" aria-label="Select no deck" onclick={() => selectDeck('')}>
               Select
             </AppButton>
           </li>
@@ -284,6 +288,7 @@
                 type="button"
                 variant="primary"
                 size="sm"
+                aria-label="Select {deck.name}"
                 onclick={() => selectDeck(deck._id)}
               >
                 Select
@@ -375,5 +380,16 @@
   .deck-picker-modal__actions {
     margin-top: auto;
     padding-top: var(--space-sm);
+  }
+  .deck-picker-modal__sr-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 </style>

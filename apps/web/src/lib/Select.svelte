@@ -29,12 +29,34 @@
   let buttonEl = $state<HTMLButtonElement | null>(null);
   let listEl = $state<HTMLUListElement | null>(null);
   let listStyle = $state('');
+  let activeIndex = $state(-1);
+
+  const listId = `select-list-${Math.random().toString(36).slice(2, 9)}`;
+
+  function optId(i: number) {
+    return `${listId}-opt-${i}`;
+  }
+
+  const activeOptId = $derived(
+    open && activeIndex >= 0 && activeIndex < options.length ? optId(activeIndex) : undefined
+  );
 
   const GAP = 4;
   const MAX_LIST_H = 280;
   const VIEW_MARGIN = 8;
 
   const displayLabel = $derived(options.find((o) => o.value === value)?.label ?? placeholder);
+
+  function getInitialActiveIndex(): number {
+    const idx = options.findIndex((o) => o.value === value);
+    return idx >= 0 ? idx : 0;
+  }
+
+  function scrollActiveIntoView() {
+    if (!listEl || activeIndex < 0) return;
+    const opt = listEl.children[activeIndex] as HTMLElement | undefined;
+    opt?.scrollIntoView({ block: 'nearest' });
+  }
 
   function computeListStyle(): string {
     if (!buttonEl) return '';
@@ -111,6 +133,7 @@
 
   function toggle() {
     if (disabled) return;
+    if (!open) activeIndex = getInitialActiveIndex();
     open = !open;
   }
 
@@ -118,13 +141,53 @@
     value = next;
     open = false;
     onValueChange?.(next);
+    buttonEl?.focus();
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (!open) return;
-    if (e.key === 'Escape') {
+  function handleButtonKeydown(e: KeyboardEvent) {
+    if (disabled) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!open) {
+        activeIndex = getInitialActiveIndex();
+        open = true;
+        void tick().then(scrollActiveIntoView);
+      } else {
+        activeIndex = Math.min(activeIndex + 1, options.length - 1);
+        scrollActiveIntoView();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) {
+        activeIndex = options.length - 1;
+        open = true;
+        void tick().then(scrollActiveIntoView);
+      } else {
+        activeIndex = Math.max(activeIndex - 1, 0);
+        scrollActiveIntoView();
+      }
+    } else if (e.key === 'Home' && open) {
+      e.preventDefault();
+      activeIndex = 0;
+      scrollActiveIntoView();
+    } else if (e.key === 'End' && open) {
+      e.preventDefault();
+      activeIndex = options.length - 1;
+      scrollActiveIntoView();
+    } else if ((e.key === 'Enter' || e.key === ' ') && open) {
+      e.preventDefault();
+      if (activeIndex >= 0 && activeIndex < options.length) {
+        select(options[activeIndex].value);
+      } else {
+        open = false;
+        buttonEl?.focus();
+      }
+    } else if (e.key === 'Escape' && open) {
+      e.preventDefault();
       open = false;
       buttonEl?.focus();
+    } else if (e.key === 'Tab' && open) {
+      open = false;
     }
   }
 
@@ -137,10 +200,8 @@
 
   onMount(() => {
     document.addEventListener('click', handleClickOutside);
-    document.addEventListener('keydown', handleKeydown);
     return () => {
       document.removeEventListener('click', handleClickOutside);
-      document.removeEventListener('keydown', handleKeydown);
     };
   });
 </script>
@@ -153,12 +214,16 @@
     class:select-custom__trigger--open={open}
     class:select-custom__trigger--disabled={disabled}
     {id}
+    role="combobox"
     aria-label={ariaLabel}
     aria-haspopup="listbox"
     aria-expanded={open}
+    aria-controls={listId}
+    aria-activedescendant={activeOptId}
     aria-disabled={disabled}
     {disabled}
     onclick={toggle}
+    onkeydown={handleButtonKeydown}
   >
     <span class="select-custom__value">{displayLabel}</span>
     <span class="select-custom__chevron" aria-hidden="true">▼</span>
@@ -167,16 +232,19 @@
     <ul
       use:portal={document.body}
       bind:this={listEl}
+      id={listId}
       class="select-custom__list"
       style={listStyle}
       role="listbox"
       aria-label={ariaLabel}
     >
-      {#each options as opt (opt.value)}
+      {#each options as opt, i (opt.value)}
         <li
+          id={optId(i)}
           role="option"
           class="select-custom__option"
           class:select-custom__option--selected={value === opt.value}
+          class:select-custom__option--active={activeIndex === i}
           aria-selected={value === opt.value}
           tabindex="-1"
           onclick={() => select(opt.value)}
@@ -259,5 +327,11 @@
 
   .select-custom__option--selected {
     background: var(--glass-bg-strong);
+  }
+
+  .select-custom__option--active {
+    background: var(--glass-bg-strong);
+    outline: 2px solid var(--primary, var(--ink, currentColor));
+    outline-offset: -2px;
   }
 </style>

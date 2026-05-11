@@ -96,6 +96,10 @@
         aria-label="Filter tournaments by name"
       />
 
+      <div role="status" aria-live="polite" aria-atomic="true" class="tournament-picker-modal__sr-status">
+        {#if loading}Loading tournaments…{:else if error}{error}{:else if filtered.length === 0}{tournaments.length === 0 ? 'No tournaments yet.' : 'No tournaments match the filter.'}{/if}
+      </div>
+
       {#if loading}
         <p class="muted">Loading tournaments…</p>
       {:else if error}
@@ -110,7 +114,7 @@
             <div class="tournament-picker-modal__item-text">
               <span class="tournament-picker-modal__item-name muted">No tournament</span>
             </div>
-            <AppButton type="button" size="sm" onclick={() => pick('')}> Select </AppButton>
+            <AppButton type="button" size="sm" aria-label="Select no tournament" onclick={() => pick('')}> Select </AppButton>
           </li>
           {#each filtered as t (t._id)}
             {@const subtitle = formatRowSubtitle(t.date)}
@@ -124,7 +128,7 @@
                   <span class="tournament-picker-modal__item-date muted">{subtitle}</span>
                 {/if}
               </div>
-              <AppButton type="button" variant="primary" size="sm" onclick={() => pick(t._id)}>
+              <AppButton type="button" variant="primary" size="sm" aria-label="Select {t.name}" onclick={() => pick(t._id)}>
                 Select
               </AppButton>
             </li>
@@ -231,5 +235,16 @@
   .tournament-picker-modal__actions {
     margin-top: auto;
     padding-top: var(--space-sm);
+  }
+  .tournament-picker-modal__sr-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 </style>
