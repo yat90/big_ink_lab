@@ -1,7 +1,7 @@
 <script lang="ts">
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -13,7 +13,7 @@
     isIntentionalDrawMatch,
     matchStageOrTournamentLabel,
   } from '$lib/lorcana-match';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
   import { ERR, messageFromFailedResponse } from '$lib/errors';

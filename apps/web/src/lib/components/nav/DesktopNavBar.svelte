@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import logo from '../images/bigInkLab.png';
+  import logo from '../../../images/bigInkLab.png';
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
   import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';

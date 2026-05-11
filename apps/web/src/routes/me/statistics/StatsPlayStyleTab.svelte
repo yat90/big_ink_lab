@@ -1,6 +1,6 @@
 <script lang="ts">
-  import AppCard from '$lib/AppCard.svelte';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import { t } from '$lib/i18n';
   import type { PlayStyleSummary } from './stats-types';
 

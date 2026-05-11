@@ -5,9 +5,9 @@
   import { onMount } from 'svelte';
   import { getLocale, translate, t, locale } from '$lib/i18n';
   import { get } from 'svelte/store';
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { type Game, type GameStatus, STAGE_OPTIONS } from '$lib/matches';
   import type { LorcanaMatch, LorcanaMatchDeckRef, LorcanaMatchPlayer } from '$lib/lorcana-match';
   import {
@@ -25,10 +25,10 @@
     type DeckRef as AnalyseDeckRef,
     type GameSummaryForPrompt,
   } from '$lib/analyse-prompt';
-  import GameLine from '$lib/GameLine.svelte';
-  import GameAnalysePopup from '$lib/GameAnalysePopup.svelte';
-  import InkIcons from '$lib/InkIcons.svelte';
-  import MatchCardEdit from '$lib/MatchCardEdit.svelte';
+  import GameLine from '$lib/components/match/GameLine.svelte';
+  import GameAnalysePopup from '$lib/components/match/GameAnalysePopup.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
+  import MatchCardEdit from '$lib/components/match/MatchCardEdit.svelte';
   import IconEdit from '$lib/icons/IconEdit.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { DateDisplay } from '$lib/DateDisplay';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import {
     getMatchLineRowView,
     type LorcanaMatch,

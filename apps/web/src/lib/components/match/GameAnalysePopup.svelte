@@ -1,6 +1,6 @@
 <script lang="ts">
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
 
   type Props = {

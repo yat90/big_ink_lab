@@ -1,10 +1,10 @@
 <script lang="ts">
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { config } from '$lib/config';
   import { ERR, messageFromFailedResponse } from '$lib/errors';
-  import Pagination from '$lib/Pagination.svelte';
+  import Pagination from '$lib/components/ui/Pagination.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
 
   /** Move the modal root to document.body so it covers the full viewport. */

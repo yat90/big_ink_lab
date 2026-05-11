@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MatchupStatistics from '$lib/MatchupStatistics.svelte';
+  import MatchupStatistics from '$lib/components/match/MatchupStatistics.svelte';
   import { t } from '$lib/i18n';
 
   type MatrixMode = 'matches' | 'games';

@@ -12,18 +12,18 @@
     isByeMatch,
     isIntentionalDrawMatch,
   } from '$lib/lorcana-match';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import IconUpload from '$lib/icons/IconUpload.svelte';
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
-  import FilterCard from '$lib/FilterCard.svelte';
-  import PageHeader from '$lib/PageHeader.svelte';
-  import Select from '$lib/Select.svelte';
-  import Pagination from '$lib/Pagination.svelte';
-  import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
-  import StatusStateCard from '$lib/StatusStateCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
+  import FilterCard from '$lib/components/match/FilterCard.svelte';
+  import PageHeader from '$lib/components/ui/PageHeader.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
+  import Pagination from '$lib/components/ui/Pagination.svelte';
+  import PlayerPickerModal from '$lib/components/player/PlayerPickerModal.svelte';
+  import StatusStateCard from '$lib/components/ui/StatusStateCard.svelte';
   import { DateDisplay } from '$lib/DateDisplay';
   import { getLocale, translate, t, locale } from '$lib/i18n';
   import { get } from 'svelte/store';

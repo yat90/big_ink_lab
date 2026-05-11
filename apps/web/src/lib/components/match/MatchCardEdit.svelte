@@ -1,7 +1,7 @@
 <script lang="ts">
-  import DeckColorSelect from '$lib/DeckColorSelect.svelte';
-  import DeckPickerModal from '$lib/DeckPickerModal.svelte';
-  import PlayerPickerModal from '$lib/PlayerPickerModal.svelte';
+  import DeckColorSelect from '$lib/components/deck/DeckColorSelect.svelte';
+  import DeckPickerModal from '$lib/components/deck/DeckPickerModal.svelte';
+  import PlayerPickerModal from '$lib/components/player/PlayerPickerModal.svelte';
 
   type PlayerOption = { _id: string; name: string };
   type DeckOption = { _id: string; name: string };

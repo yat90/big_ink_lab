@@ -1,6 +1,6 @@
 <script lang="ts">
   import { get } from 'svelte/store';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import { translate, t, locale } from '$lib/i18n';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
 

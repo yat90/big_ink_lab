@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AppButton from '$lib/AppButton.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { config } from '$lib/config';
   import DeckStatsContent from './DeckStatsContent.svelte';
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import logo from '../images/bigInkLab.png';
+  import logo from '../../../images/bigInkLab.png';
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
   import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
@@ -121,17 +121,9 @@
     use:focusTrap
     use:scrollLock
   >
-    <button
-      type="button"
-      class="mobile-nav__drawer-close"
-      aria-label={$t('common.closeMenu')}
-      onclick={closeMenu}
-    >
-      <IconClose size={24} />
-    </button>
     <div class="mobile-nav__drawer-scroll">
       <div class="mobile-nav__drawer-header">
-        <img class="mobile-nav__drawer-header-logo" src={logo} alt="" width="128" height="128" />
+        <img class="mobile-nav__drawer-header-logo" src={logo} alt="" />
       </div>
       <a
         href={PRIMARY_NAV.home.href}

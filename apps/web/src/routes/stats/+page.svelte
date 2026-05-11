@@ -1,11 +1,11 @@
 <script lang="ts">
   import { get } from 'svelte/store';
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { config } from '$lib/config';
   import { STAGE_OPTIONS } from '$lib/matches';
-  import MatchupStatistics from '$lib/MatchupStatistics.svelte';
+  import MatchupStatistics from '$lib/components/match/MatchupStatistics.svelte';
   import { translate, t, locale } from '$lib/i18n';
 
   type GlobalStats = {

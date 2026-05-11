@@ -1,8 +1,8 @@
 <script lang="ts">
   import { get } from 'svelte/store';
   import { goto } from '$app/navigation';
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
   import { config } from '$lib/config';
   import { translate, t, locale } from '$lib/i18n';
 

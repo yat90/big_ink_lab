@@ -1,14 +1,14 @@
 <script lang="ts">
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { config } from '$lib/config';
   import { authMe } from '$lib/me';
   import { get } from 'svelte/store';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
-  import FilterCard from '$lib/FilterCard.svelte';
-  import InkIcons from '$lib/InkIcons.svelte';
-  import Pagination from '$lib/Pagination.svelte';
+  import FilterCard from '$lib/components/match/FilterCard.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
+  import Pagination from '$lib/components/ui/Pagination.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
 
   /** Move the modal root to document.body so it covers the full viewport. */

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import AppButton from '$lib/AppButton.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
   import IconClock from '$lib/icons/IconClock.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import IconPlay from '$lib/icons/IconPlay.svelte';

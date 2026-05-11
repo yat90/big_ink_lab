@@ -1,6 +1,6 @@
 <script lang="ts">
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   /** When set (e.g. in Vercel), links "issue #40" to your repo’s GitHub issue. */
   const resetIssueUrl = import.meta.env.VITE_GITHUB_ISSUE_40_URL as string | undefined;
 </script>

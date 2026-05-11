@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import Breadcrumb from '$lib/Breadcrumb.svelte';
+  import Breadcrumb from '$lib/components/ui/Breadcrumb.svelte';
   import { breadcrumbTrail } from '$lib/breadcrumbTrail';
   import { breadcrumbTail } from '$lib/breadcrumbTail';
   import { t } from '$lib/i18n';

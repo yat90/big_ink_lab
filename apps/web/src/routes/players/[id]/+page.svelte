@@ -1,12 +1,12 @@
 <script lang="ts">
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { config } from '$lib/config';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import { t } from '$lib/i18n';
-  import PlayerStatsOverview, { type PlayerStats } from '$lib/PlayerStatsOverview.svelte';
+  import PlayerStatsOverview, { type PlayerStats } from '$lib/components/player/PlayerStatsOverview.svelte';
   import IconEdit from '../../../lib/icons/IconEdit.svelte';
 
   type DeckUsed = { _id: string; name: string };

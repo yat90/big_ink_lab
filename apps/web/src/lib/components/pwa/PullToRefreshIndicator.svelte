@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { pullDistance, pullRefreshing } from '$lib/pullToRefreshState';
-  import { PULL_TO_REFRESH_THRESHOLD } from '$lib/pullToRefreshConstants';
+  import { pullDistance, pullRefreshing } from '$lib/pull-to-refresh/pullToRefreshState';
+  import { PULL_TO_REFRESH_THRESHOLD } from '$lib/pull-to-refresh/pullToRefreshConstants';
 </script>
 
 {#if browser && ($pullRefreshing || $pullDistance > 4)}

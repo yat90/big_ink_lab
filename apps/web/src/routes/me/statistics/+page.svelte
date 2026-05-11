@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
   import { translate, t, locale } from '$lib/i18n';
-  import type { PlayerStats } from '$lib/PlayerStatsOverview.svelte';
+  import type { PlayerStats } from '$lib/components/player/PlayerStatsOverview.svelte';
   import type { PlayStyleSummary, MatchAnalysisSummary } from './stats-types';
   import StatsOverviewTab from './StatsOverviewTab.svelte';
   import StatsMatchupsTab from './StatsMatchupsTab.svelte';

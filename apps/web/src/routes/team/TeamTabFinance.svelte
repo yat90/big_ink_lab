@@ -16,7 +16,7 @@
   import type { Writable } from 'svelte/store';
   import IconEdit from '$lib/icons/IconEdit.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
-  import Pagination from '$lib/Pagination.svelte';
+  import Pagination from '$lib/components/ui/Pagination.svelte';
   import TransactionEditModal from './TransactionEditModal.svelte';
   import TransactionTypePieChart from './TransactionTypePieChart.svelte';
 

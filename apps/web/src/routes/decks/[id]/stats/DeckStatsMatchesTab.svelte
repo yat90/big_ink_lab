@@ -1,5 +1,5 @@
 <script lang="ts">
-  import InkIcons from '$lib/InkIcons.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
 
   interface DeckStatsByOpponent {
     played: number;

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { DECK_COLOR_OPTIONS } from '$lib/matches';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import { portal } from '$lib/portal';
   import { onMount, tick } from 'svelte';
 

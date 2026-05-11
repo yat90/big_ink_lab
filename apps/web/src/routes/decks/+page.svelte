@@ -1,19 +1,19 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { config } from '$lib/config';
-  import DeckColorSelect from '$lib/DeckColorSelect.svelte';
+  import DeckColorSelect from '$lib/components/deck/DeckColorSelect.svelte';
   import type { Deck } from '$lib/decks';
   import { getDeckPlayerName } from '$lib/decks';
   import { getLocale, translate, t } from '$lib/i18n';
   import { messageFromFailedResponse } from '$lib/errors';
-  import FilterCard from '$lib/FilterCard.svelte';
+  import FilterCard from '$lib/components/match/FilterCard.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import { authMe } from '$lib/me';
-  import AppButton from '$lib/AppButton.svelte';
-  import Pagination from '$lib/Pagination.svelte';
-  import Select from '$lib/Select.svelte';
-  import StatusStateCard from '$lib/StatusStateCard.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import Pagination from '$lib/components/ui/Pagination.svelte';
+  import Select from '$lib/components/ui/Select.svelte';
+  import StatusStateCard from '$lib/components/ui/StatusStateCard.svelte';
   import { SvelteURLSearchParams } from 'svelte/reactivity';
   import { get } from 'svelte/store';
 

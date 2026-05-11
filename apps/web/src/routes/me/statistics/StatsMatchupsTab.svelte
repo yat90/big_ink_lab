@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PlayerStatsOverview, { type PlayerStats } from '$lib/PlayerStatsOverview.svelte';
+  import PlayerStatsOverview, { type PlayerStats } from '$lib/components/player/PlayerStatsOverview.svelte';
   import { t } from '$lib/i18n';
   import type { MatchAnalysisSummary } from './stats-types';
 

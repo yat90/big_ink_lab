@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
 
   type StatusStateKind = 'loading' | 'error' | 'empty';
   type StatusStateAlign = 'left' | 'center';

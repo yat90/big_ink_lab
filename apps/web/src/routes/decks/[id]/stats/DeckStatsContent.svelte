@@ -1,7 +1,7 @@
 <script lang="ts">
   import { INK_CHART_COLORS, INKS } from 'deck-ink';
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
   import DeckStatsCardTab from './DeckStatsCardTab.svelte';
   import DeckStatsMatchesTab from './DeckStatsMatchesTab.svelte';
   import DeckStatsMulliganTab from './DeckStatsMulliganTab.svelte';

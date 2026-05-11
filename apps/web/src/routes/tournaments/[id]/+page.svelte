@@ -4,9 +4,9 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { config } from '$lib/config';
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { breadcrumbTail } from '$lib/breadcrumbTail';
   import { translate, t, locale } from '$lib/i18n';
   import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
@@ -18,8 +18,8 @@
     isIntentionalDrawMatch,
     matchStageOrTournamentLabel,
   } from '$lib/lorcana-match';
-  import FilterCard from '$lib/FilterCard.svelte';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import FilterCard from '$lib/components/match/FilterCard.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import IconEdit from '$lib/icons/IconEdit.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';

@@ -3,13 +3,13 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import { getAuthToken } from '$lib/auth';
-  import AppBanner from '$lib/AppBanner.svelte';
-  import AppButton from '$lib/AppButton.svelte';
-  import AppCard from '$lib/AppCard.svelte';
+  import AppBanner from '$lib/components/ui/AppBanner.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
   import { config } from '$lib/config';
   import { translate, t, locale } from '$lib/i18n';
-  import DeckColorSelect from '$lib/DeckColorSelect.svelte';
-  import DeckPickerModal from '$lib/DeckPickerModal.svelte';
+  import DeckColorSelect from '$lib/components/deck/DeckColorSelect.svelte';
+  import DeckPickerModal from '$lib/components/deck/DeckPickerModal.svelte';
   import { onMount, tick } from 'svelte';
   import IconTrash from '../../../lib/icons/IconTrash.svelte';
 

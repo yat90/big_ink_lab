@@ -1,6 +1,6 @@
 import type { Action } from 'svelte/action';
-import { PULL_TO_REFRESH_THRESHOLD } from '$lib/pullToRefreshConstants';
-import { clearPullToRefreshUI, pullDistance, pullRefreshing } from '$lib/pullToRefreshState';
+import { PULL_TO_REFRESH_THRESHOLD } from '$lib/pull-to-refresh/pullToRefreshConstants';
+import { clearPullToRefreshUI, pullDistance, pullRefreshing } from '$lib/pull-to-refresh/pullToRefreshState';
 import { runPageRefresh } from '$lib/pageRefreshRegistry';
 
 type PullToRefreshParams = { disabled?: boolean };

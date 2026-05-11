@@ -8,16 +8,16 @@
   import { config } from '$lib/config';
   import { clearAuthSession, getAuthToken, getAuthUser } from '$lib/auth';
   import { injectAnalytics } from '@vercel/analytics/sveltekit';
-  import DesktopNavBar from '$lib/DesktopNavBar.svelte';
-  import MobileNavBar from '$lib/MobileNavBar.svelte';
-  import MobileNavDrawer from '$lib/MobileNavDrawer.svelte';
-  import InstallPrompt from '$lib/InstallPrompt.svelte';
+  import DesktopNavBar from '$lib/components/nav/DesktopNavBar.svelte';
+  import MobileNavBar from '$lib/components/nav/MobileNavBar.svelte';
+  import MobileNavDrawer from '$lib/components/nav/MobileNavDrawer.svelte';
+  import InstallPrompt from '$lib/components/pwa/InstallPrompt.svelte';
   import { setAuthMe } from '$lib/me';
-  import PullToRefreshIndicator from '$lib/PullToRefreshIndicator.svelte';
-  import { pullToRefresh } from '$lib/pullToRefresh';
+  import PullToRefreshIndicator from '$lib/components/pwa/PullToRefreshIndicator.svelte';
+  import { pullToRefresh } from '$lib/pull-to-refresh/pullToRefresh';
   import { initLocale } from '$lib/i18n';
-  import AppBreadcrumb from '$lib/AppBreadcrumb.svelte';
-  import AppToast from '$lib/AppToast.svelte';
+  import AppBreadcrumb from '$lib/components/nav/AppBreadcrumb.svelte';
+  import AppToast from '$lib/components/ui/AppToast.svelte';
 
   let { children = undefined }: { children?: Snippet } = $props();
 

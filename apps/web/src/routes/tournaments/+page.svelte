@@ -1,10 +1,10 @@
 <script lang="ts">
   import { get } from 'svelte/store';
   import { config } from '$lib/config';
-  import AppButton from '$lib/AppButton.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
   import IconFilter from '$lib/icons/IconFilter.svelte';
-  import Pagination from '$lib/Pagination.svelte';
-  import StatusStateCard from '$lib/StatusStateCard.svelte';
+  import Pagination from '$lib/components/ui/Pagination.svelte';
+  import StatusStateCard from '$lib/components/ui/StatusStateCard.svelte';
   import { translate, t, locale } from '$lib/i18n';
 
   type TournamentRow = {

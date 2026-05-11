@@ -1,8 +1,8 @@
 <script lang="ts">
   import { config } from '$lib/config';
   import type { LorcanaMatch } from '$lib/lorcana-match';
-  import MatchLineRow from '$lib/MatchLineRow.svelte';
-  import Pagination from '$lib/Pagination.svelte';
+  import MatchLineRow from '$lib/components/match/MatchLineRow.svelte';
+  import Pagination from '$lib/components/ui/Pagination.svelte';
 
   let { deckId }: { deckId: string } = $props();
 

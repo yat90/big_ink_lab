@@ -1,10 +1,10 @@
 <script lang="ts">
-  import AppCard from '$lib/AppCard.svelte';
-  import MatchLineRow from '$lib/MatchLineRow.svelte';
-  import InkIcons from '$lib/InkIcons.svelte';
+  import AppCard from '$lib/components/ui/AppCard.svelte';
+  import MatchLineRow from '$lib/components/match/MatchLineRow.svelte';
+  import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import { t } from '$lib/i18n';
   import { recentFormToLorcanaMatch } from '$lib/lorcana-match';
-  import type { PlayerStats } from '$lib/PlayerStatsOverview.svelte';
+  import type { PlayerStats } from '$lib/components/player/PlayerStatsOverview.svelte';
   import type { PlayStyleSummary, MatchAnalysisSummary, RecentFormSummary } from './stats-types';
 
   let {

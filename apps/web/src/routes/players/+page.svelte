@@ -4,12 +4,12 @@
   import { authMe } from '$lib/me';
   import { get } from 'svelte/store';
   import { ERR, messageFromFailedResponse } from '$lib/errors';
-  import FilterCard from '$lib/FilterCard.svelte';
-  import PageHeader from '$lib/PageHeader.svelte';
-  import Pagination from '$lib/Pagination.svelte';
+  import FilterCard from '$lib/components/match/FilterCard.svelte';
+  import PageHeader from '$lib/components/ui/PageHeader.svelte';
+  import Pagination from '$lib/components/ui/Pagination.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
-  import AppButton from '$lib/AppButton.svelte';
-  import StatusStateCard from '$lib/StatusStateCard.svelte';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
+  import StatusStateCard from '$lib/components/ui/StatusStateCard.svelte';
 
   type GuestScope = 'roster' | 'guests' | 'all';
 
