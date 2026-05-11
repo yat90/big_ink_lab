@@ -158,6 +158,10 @@
         />
       </div>
 
+      <div role="status" aria-live="polite" aria-atomic="true" class="player-picker-modal__sr-status">
+        {#if loading}Loading players…{:else if error}{error}{:else if players.length === 0}No players match the filters.{/if}
+      </div>
+
       {#if loading}
         <p class="muted">Loading players…</p>
       {:else if error}
@@ -168,9 +172,10 @@
         <ul class="player-picker-modal__list">
           <li class="player-picker-modal__item">
             <span class="player-picker-modal__item-name muted">No player</span>
-            <AppButton type="button" size="sm" onclick={() => selectPlayer('', undefined)}>Select</AppButton>
+            <AppButton type="button" size="sm" aria-label="Select no player" onclick={() => selectPlayer('', undefined)}>Select</AppButton>
           </li>
           {#each players as player (player._id)}
+            {@const alreadySelected = excludePlayerId === player._id}
             <li class="player-picker-modal__item">
               <span class="player-picker-modal__item-name">
                 {player.name}
@@ -182,9 +187,10 @@
                 type="button"
                 variant="primary"
                 size="sm"
-                disabled={excludePlayerId === player._id}
+                disabled={alreadySelected}
+                aria-disabled={alreadySelected}
+                aria-label={alreadySelected ? `${player.name} already selected as other player` : `Select ${player.name}`}
                 onclick={() => selectPlayer(player._id, { name: player.name, team: player.team })}
-                title={excludePlayerId === player._id ? 'Already selected as other player' : ''}
               >
                 Select
               </AppButton>
@@ -289,5 +295,16 @@
   .player-picker-modal__actions {
     margin-top: auto;
     padding-top: var(--space-sm);
+  }
+  .player-picker-modal__sr-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 </style>
