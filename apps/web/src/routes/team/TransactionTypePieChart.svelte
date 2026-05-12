@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatMoney } from '$lib/team-transactions';
+  import { formatMoney } from '$lib/team-utils';
   import type { TeamBalance } from '$lib/team-analytics';
 
   interface Props {

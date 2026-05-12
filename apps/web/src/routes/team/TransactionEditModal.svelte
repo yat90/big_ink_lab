@@ -8,11 +8,11 @@
   import { fetchTeamMembers, type TeamMember } from '$lib/team-members';
   import {
     createTransaction,
-    toDateInputValue,
     updateTransaction,
     type TeamTransaction,
     type TransactionType,
   } from '$lib/team-transactions';
+  import { toDateInputValue } from '$lib/team-utils';
 
   interface Props {
     /** When null, the modal is in create mode. */

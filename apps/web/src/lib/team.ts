@@ -14,10 +14,9 @@ export {
   createTransaction,
   updateTransaction,
   deleteTransaction,
-  formatMoney,
-  formatDate,
-  toDateInputValue,
 } from './team-transactions';
+
+export { formatMoney, formatDate, toDateInputValue } from './team-utils';
 
 export type { TeamPenalty, TeamSettings } from './team-settings';
 export { fetchTeamSettings, updateTeamSettings } from './team-settings';

@@ -17,7 +17,7 @@ export type LoreDraft = {
 
 export type LoreDraftMap = Record<string, LoreDraft>;
 
-type GameLike = {
+export type LoreGame = {
   p1Lore?: number;
   p2Lore?: number;
   status?: string;
@@ -44,7 +44,7 @@ export function writeLocalDrafts(key: string, drafts: LoreDraftMap) {
 }
 
 /** Merge draft scores and pending events into games for API sync. */
-export function applyDraftsToGames(sourceGames: GameLike[], drafts: LoreDraftMap): GameLike[] {
+export function applyDraftsToGames(sourceGames: LoreGame[], drafts: LoreDraftMap): LoreGame[] {
   const updatedGames = sourceGames.map((g) => ({ ...g }));
   for (const [rawIndex, draft] of Object.entries(drafts)) {
     const idx = Number(rawIndex);

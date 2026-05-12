@@ -10,7 +10,7 @@
   } from '$lib/team-accusations';
   import { fetchTeamMembers, type TeamMember } from '$lib/team-members';
   import { fetchTeamSettings, type TeamPenalty } from '$lib/team-settings';
-  import { formatDate, formatMoney } from '$lib/team-transactions';
+  import { formatDate, formatMoney } from '$lib/team-utils';
   import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
   import IconCheck from '$lib/icons/IconCheck.svelte';

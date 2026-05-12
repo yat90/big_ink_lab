@@ -21,26 +21,19 @@
     writeLocalDrafts,
     applyDraftsToGames,
     type LoreDraftMap,
+    type LoreGame,
   } from '$lib/lore-draft';
   import { LORE_BUTTON_COOLDOWN_MS, LORE_INACTIVITY_CLEAR_MS, createCooldownState } from '$lib/lore-timers.svelte';
   import LoreEventsPopup from './LoreEventsPopup.svelte';
   import LoreStarterChoice from './LoreStarterChoice.svelte';
 
   type Player = { _id: string; name: string; team: string };
-  type Game = {
-    p1Lore?: number;
-    p2Lore?: number;
-    status?: string;
-    winner?: string;
-    starter?: string | { _id: string };
-    events?: Array<{ type: string; timestamp: string | Date; player?: string }>;
-  };
   type Match = {
     _id: string;
     p1?: Player | string;
     p2?: Player | string;
     matchWinner?: Player | string;
-    games?: Game[];
+    games?: LoreGame[];
   };
   type WakeLockNavigator = Navigator & {
     wakeLock?: {
