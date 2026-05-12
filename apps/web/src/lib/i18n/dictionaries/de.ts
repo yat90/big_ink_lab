@@ -316,7 +316,12 @@ export default {
       player2Default: 'Spieler 2',
       opponentLabel: 'Gegner',
       opponentPlaceholder: 'Name des Gegners',
+      opponentFilterPlaceholder: 'Nach Namen filtern…',
       opponentNameAria: 'Name des Gegners',
+      p2ListLoading: 'Spieler werden geladen…',
+      p2ListEmpty: 'Kein Spieler passt zur Suche.',
+      p2ListEmptyNoFilter: 'Keine weiteren Spieler gefunden.',
+      opponentSelected: 'Ausgewählt: {name}',
       pickListTitle: 'Spieler aus Liste wählen',
       pickListAria: 'Gegner aus Liste wählen',
       searchHintMultiple:
