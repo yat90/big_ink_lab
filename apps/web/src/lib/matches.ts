@@ -58,3 +58,9 @@ export interface Game {
   /** Optional notes (e.g. import provenance). */
   notes?: string;
 }
+
+export function gameWinnerId(game: { winner?: string | { _id: string } }): string | undefined {
+  const w = game.winner;
+  if (w == null) return undefined;
+  return typeof w === 'object' ? w._id : w;
+}

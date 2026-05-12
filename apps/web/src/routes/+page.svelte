@@ -7,6 +7,7 @@
   import { onMount } from 'svelte';
   import type { LorcanaMatch } from '$lib/lorcana-match';
   import { playerName } from '$lib/players';
+  import { gameWinnerId } from '$lib/matches';
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
@@ -97,14 +98,6 @@
     const w = m.matchWinner;
     if (!w) return undefined;
     return typeof w === 'object' && w !== null ? w._id : w;
-  }
-
-  function gameWinnerId(g: { winner?: unknown }): string | undefined {
-    const w = g.winner;
-    if (w == null) return undefined;
-    return typeof w === 'object' && w !== null && '_id' in w
-      ? (w as { _id: string })._id
-      : String(w);
   }
 
   function gamesWon(match: LorcanaMatch, playerId: string): number {

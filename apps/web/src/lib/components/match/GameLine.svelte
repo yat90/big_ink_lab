@@ -4,7 +4,7 @@
   import IconCrown from '$lib/icons/IconCrown.svelte';
   import IconPlay from '$lib/icons/IconPlay.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
-  import { type Game, type GameStatus } from '$lib/matches';
+  import { type Game, type GameStatus, gameWinnerId } from '$lib/matches';
   import { t } from '$lib/i18n';
 
   type Props = {
@@ -43,14 +43,6 @@
     onDeleteGame,
     onShowEvents,
   }: Props = $props();
-
-  function gameWinnerId(g: Game): string | undefined {
-    const w = g.winner;
-    if (w == null) return undefined;
-    return typeof w === 'object' && w !== null && '_id' in w
-      ? (w as { _id: string })._id
-      : String(w);
-  }
 
   function gameStarterId(g: Game): string | undefined {
     const s = g.starter;
