@@ -13,8 +13,18 @@
   import { getLocale, translate, t, locale } from '$lib/i18n';
   import { playerName } from '$lib/players';
   import { gameWinnerId } from '$lib/matches';
-  import { getStorageItem, setStorageItem, removeStorageItem } from '$lib/storage';
   import { get } from 'svelte/store';
+  import {
+    LORE_MAX,
+    getLocalDraftStorageKey,
+    readLocalDrafts,
+    writeLocalDrafts,
+    applyDraftsToGames,
+    type LoreDraftMap,
+  } from '$lib/lore-draft';
+  import { LORE_BUTTON_COOLDOWN_MS, LORE_INACTIVITY_CLEAR_MS, createCooldownState } from '$lib/lore-timers.svelte';
+  import LoreEventsPopup from './LoreEventsPopup.svelte';
+  import LoreStarterChoice from './LoreStarterChoice.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Game = {
@@ -32,20 +42,6 @@
     matchWinner?: Player | string;
     games?: Game[];
   };
-  /** Local draft for a single game; events are synced to API with the game. */
-  type LoreDraft = {
-    p1Lore: number;
-    p2Lore: number;
-    starter?: string;
-    updatedAt: number;
-    /** Events (start, lore_increased, lore_decreased) to merge into game.events when syncing. */
-    events?: Array<{
-      type: 'start' | 'lore_increased' | 'lore_decreased';
-      timestamp: number;
-      player: string;
-    }>;
-  };
-  type LoreDraftMap = Record<string, LoreDraft>;
   type WakeLockNavigator = Navigator & {
     wakeLock?: {
       request: (type: 'screen') => Promise<WakeLockSentinel>;
@@ -55,6 +51,12 @@
   const id = $page.params.id;
   const gameParam = $page.url.searchParams.get('game');
   const initialGameIndex = gameParam ? Math.max(0, parseInt(gameParam, 10) || 0) : 0;
+
+  const LOCAL_DRAFT_STORAGE_KEY = getLocalDraftStorageKey(id ?? '');
+  const LORE_WIN = 20;
+  const SCORE_SYNC_INTERVAL_MS = 60_000;
+  const apiUrl = config.apiUrl ?? '/api';
+
   let match = $state<Match | null>(null);
   let gameIndex = $state(initialGameIndex);
   let p1Lore = $state(0);
@@ -70,33 +72,14 @@
   let hasPendingLocalSync = $state(false);
   let wakeLockSentinel: WakeLockSentinel | null = null;
 
-  /** Mobile: avoid single tap firing both inc and dec (touch + ghost click or wrong target). */
-  const LORE_BUTTON_COOLDOWN_MS = 400;
   let lastP1ChangeAt = 0;
   let lastP2ChangeAt = 0;
   let lastP1WasInc = false;
   let lastP2WasInc = false;
-  function createCooldownState() {
-    let active = $state(false);
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    return {
-      get active() { return active; },
-      flash() {
-        if (timer) clearTimeout(timer);
-        active = true;
-        timer = setTimeout(() => { active = false; timer = null; }, 220);
-      },
-      dispose() {
-        if (timer) clearTimeout(timer);
-      },
-    };
-  }
 
   const p1Cooldown = createCooldownState();
   const p2Cooldown = createCooldownState();
 
-  /** All lore changes since last clear; cleared after LORE_INACTIVITY_CLEAR_MS with no new changes. */
-  const LORE_INACTIVITY_CLEAR_MS = 2500;
   let recentChanges = $state<{ player: 'p1' | 'p2'; delta: number; at: number }[]>([]);
 
   function clearChangesAfterInactivity() {
@@ -111,7 +94,6 @@
     recentChanges = [...recentChanges, { player, delta, at: Date.now() }];
   }
 
-  /** Sum of changes since last activity (cleared after 5s inactivity). */
   const p1DeltaLastSecond = $derived(
     recentChanges.filter((c) => c.player === 'p1').reduce((sum, c) => sum + c.delta, 0)
   );
@@ -119,27 +101,15 @@
     recentChanges.filter((c) => c.player === 'p2').reduce((sum, c) => sum + c.delta, 0)
   );
 
-  /** Game indices for which the user dismissed the "choose starter" prompt (Skip). */
   let starterPromptDismissed = $state<Record<number, boolean>>({});
-  /** True when showing the "choose starting player" modal. */
   let showStarterPrompt = $state(false);
   let starterSaving = $state(false);
 
-  /** When a game ends (player reached 20 Lore): winner id and show "next game?" prompt. */
   let gameOverWinnerId = $state<string | null>(null);
   let showGameOverPrompt = $state(false);
 
-  /** Menu button: show "close game?" confirmation modal. */
   let showCloseGamePrompt = $state(false);
-
-  /** Events list popup for current game. */
   let showEventsPopup = $state(false);
-
-  const apiUrl = config.apiUrl ?? '/api';
-  const LORE_MAX = 25;
-  const LORE_WIN = 20;
-  const SCORE_SYNC_INTERVAL_MS = 60_000;
-  const LOCAL_DRAFT_STORAGE_KEY = `lore-tracker:${id}:drafts`;
 
   const games = $derived(match?.games ?? []);
   const p1Name = $derived.by(() => {
@@ -160,9 +130,7 @@
   const p2Id = $derived(
     match && (typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2)
   );
-  /** Current user's linked player id; set after loading /auth/me. */
   let myPlayerId = $state<string | null>(null);
-  /** True if the current user is p1 or p2 and can edit (track lore, sync, add games). */
   const canEditMatch = $derived(!!myPlayerId && (myPlayerId === p1Id || myPlayerId === p2Id));
   const gameOverWinnerName = $derived.by(() => {
     void get(locale);
@@ -171,24 +139,6 @@
     return translate(getLocale(), 'matches.detail.winnerWord');
   });
 
-  function loreEventTypeLabel(type: string): string {
-    void get(locale);
-    const loc = getLocale();
-    switch (type) {
-      case 'lore_increased':
-        return translate(loc, 'matches.detail.eventTypes.lore_increased');
-      case 'lore_decreased':
-        return translate(loc, 'matches.detail.eventTypes.lore_decreased');
-      case 'start':
-        return translate(loc, 'matches.detail.eventTypes.start');
-      case 'end':
-        return translate(loc, 'matches.detail.eventTypes.end');
-      case 'lore_update':
-        return translate(loc, 'matches.detail.eventTypes.lore_update');
-      default:
-        return type;
-    }
-  }
   let p1GamesWon = $derived(
     games.filter((g) => g.status === 'done' && gameWinnerId(g) === p1Id).length
   );
@@ -196,30 +146,24 @@
     games.filter((g) => g.status === 'done' && gameWinnerId(g) === p2Id).length
   );
 
-  function readLocalDrafts(): LoreDraftMap {
-    const parsed = getStorageItem<LoreDraftMap>(LOCAL_DRAFT_STORAGE_KEY);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  }
-
-  function writeLocalDrafts(drafts: LoreDraftMap) {
-    if (Object.keys(drafts).length === 0) {
-      removeStorageItem(LOCAL_DRAFT_STORAGE_KEY);
-    } else {
-      setStorageItem(LOCAL_DRAFT_STORAGE_KEY, drafts);
+  function loreEventTypeLabel(type: string): string {
+    void get(locale);
+    const loc = getLocale();
+    switch (type) {
+      case 'lore_increased': return translate(loc, 'matches.detail.eventTypes.lore_increased');
+      case 'lore_decreased': return translate(loc, 'matches.detail.eventTypes.lore_decreased');
+      case 'start': return translate(loc, 'matches.detail.eventTypes.start');
+      case 'end': return translate(loc, 'matches.detail.eventTypes.end');
+      case 'lore_update': return translate(loc, 'matches.detail.eventTypes.lore_update');
+      default: return type;
     }
   }
 
   function refreshPendingLocalSyncFlag() {
-    hasPendingLocalSync = Object.keys(readLocalDrafts()).length > 0;
+    hasPendingLocalSync = Object.keys(readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY)).length > 0;
   }
 
-  /** Merged events for current game (server + local draft), sorted by timestamp. */
-  function getCurrentGameEvents(): Array<{
-    type: string;
-    timestamp: number;
-    playerId?: string;
-    playerLabel: string;
-  }> {
+  function getCurrentGameEvents() {
     void get(locale);
     const loc = getLocale();
     const cur = match?.games?.[gameIndex];
@@ -239,20 +183,18 @@
               ? translate(loc, 'matches.detail.genericPlayer')
               : '–',
     }));
-    const draft = readLocalDrafts()[String(gameIndex)];
+    const draft = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY)[String(gameIndex)];
     const draftEvents = (draft?.events ?? []).map((e) => ({
       type: e.type,
       timestamp: e.timestamp,
       playerId: e.player,
       playerLabel: e.player === p1Id ? p1Name : e.player === p2Id ? p2Name : '–',
     }));
-    const merged = [...serverEvents, ...draftEvents].sort((a, b) => a.timestamp - b.timestamp);
-    return merged;
+    return [...serverEvents, ...draftEvents].sort((a, b) => a.timestamp - b.timestamp);
   }
 
-  /** Add a 'start' event to the current game's draft (e.g. after user selects starting player). */
   function addStartEventToCurrentDraft(playerId: string) {
-    const drafts = readLocalDrafts();
+    const drafts = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY);
     const key = String(gameIndex);
     const existing = drafts[key] ?? {
       p1Lore: Math.min(LORE_MAX, Math.max(0, p1Lore)),
@@ -266,27 +208,23 @@
       events: [...(existing.events ?? []), startEvent],
       updatedAt: Date.now(),
     };
-    writeLocalDrafts(drafts);
+    writeLocalDrafts(LOCAL_DRAFT_STORAGE_KEY, drafts);
     hasPendingLocalSync = true;
   }
 
   function clearLocalDraftForGame(index: number) {
-    const drafts = readLocalDrafts();
+    const drafts = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY);
     if (!(String(index) in drafts)) return;
     delete drafts[String(index)];
-    writeLocalDrafts(drafts);
+    writeLocalDrafts(LOCAL_DRAFT_STORAGE_KEY, drafts);
     refreshPendingLocalSyncFlag();
   }
 
-  /**
-   * Persist current game state (and optionally one new lore_increased/lore_decreased event) to local drafts.
-   * Events are merged into game.events when syncing to the API.
-   */
   function persistCurrentGameLocally(loreEvent?: {
     player: string;
     direction: 'increase' | 'decrease';
   }) {
-    const drafts = readLocalDrafts();
+    const drafts = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY);
     const key = String(gameIndex);
     const existing = drafts[key];
     const existingEvents = existing?.events ?? [];
@@ -308,13 +246,13 @@
       updatedAt: Date.now(),
       ...(newEvents.length > 0 ? { events: newEvents } : {}),
     };
-    writeLocalDrafts(drafts);
+    writeLocalDrafts(LOCAL_DRAFT_STORAGE_KEY, drafts);
     hasPendingLocalSync = true;
   }
 
   function applyLocalDraftForCurrentGame() {
     if (!browser) return;
-    const draft = readLocalDrafts()[String(gameIndex)];
+    const draft = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY)[String(gameIndex)];
     if (!draft) return;
     p1Lore = Math.min(LORE_MAX, Math.max(0, draft.p1Lore));
     p2Lore = Math.min(LORE_MAX, Math.max(0, draft.p2Lore));
@@ -322,62 +260,26 @@
     hasPendingLocalSync = true;
   }
 
-  /** Merge draft scores and pending events into games for API sync. */
-  function applyDraftsToGames(sourceGames: Game[], drafts: LoreDraftMap): Game[] {
-    const updatedGames = sourceGames.map((g) => ({ ...g }));
-    for (const [rawIndex, draft] of Object.entries(drafts)) {
-      const idx = Number(rawIndex);
-      if (!Number.isInteger(idx) || idx < 0) continue;
-      const current = updatedGames[idx];
-      if (current?.status === 'done') continue;
-      const existingEvents = (current?.events ?? []).map((e) => ({
-        type: e.type,
-        timestamp:
-          typeof e.timestamp === 'string' ? e.timestamp : new Date(e.timestamp).toISOString(),
-        player: e.player,
-      }));
-      const draftEvents = (draft.events ?? []).map((e) => ({
-        type: e.type,
-        timestamp: new Date(e.timestamp).toISOString(),
-        player: e.player,
-      }));
-      updatedGames[idx] = {
-        ...(current ?? {}),
-        p1Lore: Math.min(LORE_MAX, Math.max(0, draft.p1Lore)),
-        p2Lore: Math.min(LORE_MAX, Math.max(0, draft.p2Lore)),
-        ...(draft.starter ? { starter: draft.starter } : {}),
-        events: [...existingEvents, ...draftEvents],
-      };
-    }
-    return updatedGames;
-  }
-
   async function syncLocalDrafts() {
     if (!canEditMatch || syncInFlight || saving || !match?.games?.length) return;
-    const draftsToSync = readLocalDrafts();
+    const draftsToSync = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY);
     if (Object.keys(draftsToSync).length === 0) {
       hasPendingLocalSync = false;
       return;
     }
-
     syncInFlight = true;
     saving = true;
     error = '';
     try {
       const updatedGames = applyDraftsToGames(match.games, draftsToSync);
-      const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
-      const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
+      const _p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
+      const _p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
       const mw = match.matchWinner;
       const winnerId = typeof mw === 'object' && mw ? mw._id : mw;
       const res = await fetch(`${apiUrl}/matches/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          p1: p1Id,
-          p2: p2Id,
-          matchWinner: winnerId,
-          games: updatedGames,
-        }),
+        body: JSON.stringify({ p1: _p1Id, p2: _p2Id, matchWinner: winnerId, games: updatedGames }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -388,14 +290,14 @@
         return;
       }
       match = await res.json();
-      const latestDrafts = readLocalDrafts();
+      const latestDrafts = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY);
       for (const [gameKey, syncedDraft] of Object.entries(draftsToSync)) {
         const latest = latestDrafts[gameKey];
         if (latest && latest.updatedAt === syncedDraft.updatedAt) {
           delete latestDrafts[gameKey];
         }
       }
-      writeLocalDrafts(latestDrafts);
+      writeLocalDrafts(LOCAL_DRAFT_STORAGE_KEY, latestDrafts);
       hasPendingLocalSync = Object.keys(latestDrafts).length > 0;
     } catch {
       error = translate(getLocale(), 'matches.lore.errOfflineRetry');
@@ -455,9 +357,7 @@
         if (!disposed) loading = false;
       }
     };
-    const handleOnline = () => {
-      void syncLocalDrafts();
-    };
+    const handleOnline = () => { void syncLocalDrafts(); };
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         void requestWakeLock();
@@ -466,19 +366,15 @@
         void releaseWakeLock();
       }
     };
-
     refreshPendingLocalSyncFlag();
     syncInterval = setInterval(() => {
       if (canEditMatch) void syncLocalDrafts();
     }, SCORE_SYNC_INTERVAL_MS);
-    pruneChangesInterval = setInterval(() => {
-      clearChangesAfterInactivity();
-    }, 200);
+    pruneChangesInterval = setInterval(clearChangesAfterInactivity, 200);
     void requestWakeLock();
     document.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('online', handleOnline);
     void loadMatch();
-
     return () => {
       disposed = true;
       if (winCheckTimeout) clearTimeout(winCheckTimeout);
@@ -507,10 +403,9 @@
     }
   });
 
-  /** Show "choose starter" prompt when current game has no starter and not dismissed. Skip in quick play (no players). Only for participants. */
   $effect(() => {
     if (!match || games.length === 0 || !canEditMatch) return;
-    if (!p1Id || !p2Id) return; /* quick play: skip */
+    if (!p1Id || !p2Id) return;
     const cur = games[gameIndex];
     const hasStarter =
       cur && (typeof cur.starter === 'object' ? cur.starter != null : !!cur.starter);
@@ -541,7 +436,7 @@
     if (winCheckTimeout) clearTimeout(winCheckTimeout);
     winCheckTimeout = setTimeout(() => {
       winCheckTimeout = null;
-      const draft = readLocalDrafts()[String(gameIndex)];
+      const draft = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY)[String(gameIndex)];
       const p1 = draft != null ? draft.p1Lore : p1Lore;
       const p2 = draft != null ? draft.p2Lore : p2Lore;
       if (p1 >= LORE_WIN || p2 >= LORE_WIN) {
@@ -605,25 +500,25 @@
     if (!canEditMatch || !match?.games?.length) return;
     const cur = match.games[gameIndex];
     if (cur?.status === 'done') return;
-    const draft = readLocalDrafts()[String(gameIndex)];
+    const draft = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY)[String(gameIndex)];
     const effectiveP1 = draft != null ? draft.p1Lore : p1Lore;
     const effectiveP2 = draft != null ? draft.p2Lore : p2Lore;
     if (effectiveP1 < LORE_WIN && effectiveP2 < LORE_WIN) return;
-    const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
-    const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
+    const _p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
+    const _p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
     let winnerId: string | undefined;
     if (effectiveP1 >= LORE_WIN && effectiveP2 >= LORE_WIN) {
-      winnerId = effectiveP1 >= effectiveP2 ? p1Id : p2Id;
+      winnerId = effectiveP1 >= effectiveP2 ? _p1Id : _p2Id;
     } else if (effectiveP1 >= LORE_WIN) {
-      winnerId = p1Id;
+      winnerId = _p1Id;
     } else if (effectiveP2 >= LORE_WIN) {
-      winnerId = p2Id;
+      winnerId = _p2Id;
     }
     persistCurrentGameLocally();
     saving = true;
     error = '';
     try {
-      const updatedGames = applyDraftsToGames(match.games, readLocalDrafts());
+      const updatedGames = applyDraftsToGames(match.games, readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY));
       if (!updatedGames[gameIndex]) updatedGames[gameIndex] = {};
       const existingEvents = (updatedGames[gameIndex].events ?? []).map((e) => ({
         type: e.type,
@@ -651,8 +546,8 @@
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          p1: p1Id,
-          p2: p2Id,
+          p1: _p1Id,
+          p2: _p2Id,
           matchWinner: matchWinnerId,
           games: updatedGames,
         }),
@@ -680,14 +575,7 @@
     if (!canEditMatch) return;
     showGameOverPrompt = false;
     gameOverWinnerId = null;
-    // save match with a new game
-    const newGame = {
-      p1Lore: 0,
-      p2Lore: 0,
-      status: 'in_progress',
-      winner: null,
-      starter: null,
-    };
+    const newGame = { p1Lore: 0, p2Lore: 0, status: 'in_progress', winner: null, starter: null };
     const updatedGames = [...games, newGame];
     const res = await fetch(`${apiUrl}/matches/${id}`, {
       method: 'PATCH',
@@ -699,15 +587,6 @@
     }
     match = await res.json();
     gameIndex = updatedGames.length - 1;
-    // update the game counter
-    p1GamesWon = updatedGames.filter(
-      (g) => g.status === 'done' && gameWinnerId(g) === p1Id
-    ).length;
-    p2GamesWon = updatedGames.filter(
-      (g) => g.status === 'done' && gameWinnerId(g) === p2Id
-    ).length;
-
-    // redirect to the new game
     goto(`/matches/${id}/lore?game=${gameIndex}`, { replaceState: true });
   }
 
@@ -726,7 +605,7 @@
     saving = true;
     error = '';
     try {
-      const updatedGames = applyDraftsToGames(match.games, readLocalDrafts());
+      const updatedGames = applyDraftsToGames(match.games, readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY));
       if (!updatedGames[gameIndex]) updatedGames[gameIndex] = {};
       updatedGames[gameIndex] = {
         ...updatedGames[gameIndex],
@@ -734,16 +613,16 @@
         p2Lore: clampedP2,
         ...(starter ? { starter } : {}),
       };
-      const p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
-      const p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
+      const _p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
+      const _p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
       const mw = match.matchWinner;
       const winnerId = typeof mw === 'object' && mw ? mw._id : mw;
       const res = await fetch(`${apiUrl}/matches/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          p1: p1Id,
-          p2: p2Id,
+          p1: _p1Id,
+          p2: _p2Id,
           matchWinner: winnerId,
           games: updatedGames,
         }),
@@ -783,7 +662,6 @@
     </AppCard>
   {:else if match && games.length > 0}
     <div class="lore-split">
-      <!-- Vertical game counter: half in top, half in bottom -->
       <div class="lore-score-pill-wrap" aria-label={$t('matches.lore.gamesWonAria')}>
         <div class="lore-score-pill">
           <span class="lore-score-pill__score">{p2GamesWon} – {p1GamesWon}</span>
@@ -816,12 +694,7 @@
       >
         <div class="lore-panel__center">
           {#if canEditMatch}
-            <button
-              type="button"
-              class="lore-panel__btn lore-panel__btn--dec"
-              onclick={decP2}
-              aria-label={$t('matches.lore.decLoreAria')}>−</button
-            >
+            <button type="button" class="lore-panel__btn lore-panel__btn--dec" onclick={decP2} aria-label={$t('matches.lore.decLoreAria')}>−</button>
           {/if}
           <span class="lore-panel__value">
             <span class="lore-panel__number">{p2Lore}</span>
@@ -831,18 +704,11 @@
               class:lore-panel__delta--neg={p2DeltaLastSecond < 0}
               aria-label={$t('matches.lore.recentDeltaAria')}
             >
-              {#if p2DeltaLastSecond !== 0}
-                {p2DeltaLastSecond > 0 ? '+' : ''}{p2DeltaLastSecond}
-              {/if}
+              {#if p2DeltaLastSecond !== 0}{p2DeltaLastSecond > 0 ? '+' : ''}{p2DeltaLastSecond}{/if}
             </span>
           </span>
           {#if canEditMatch}
-            <button
-              type="button"
-              class="lore-panel__btn lore-panel__btn--inc"
-              onclick={incP2}
-              aria-label={$t('matches.lore.incLoreAria')}>+</button
-            >
+            <button type="button" class="lore-panel__btn lore-panel__btn--inc" onclick={incP2} aria-label={$t('matches.lore.incLoreAria')}>+</button>
           {/if}
         </div>
       </div>
@@ -850,19 +716,14 @@
       <div class="lore-divider">
         <span class="lore-divider__name lore-divider__name--p2" aria-hidden="true">{p2Name}</span>
         {#if canEditMatch}
-          <button
-            type="button"
-            class="lore-divider__menu"
-            aria-label={$t('matches.lore.menuAria')}
-            onclick={() => (showCloseGamePrompt = true)}
-          >
+          <button type="button" class="lore-divider__menu" aria-label={$t('matches.lore.menuAria')} onclick={() => (showCloseGamePrompt = true)}>
             <IconMenu size={18} />
           </button>
         {/if}
         <span class="lore-divider__name lore-divider__name--p1" aria-hidden="true">{p1Name}</span>
       </div>
 
-      <!-- P1 bottom (grey): left = decrease, right = increase -->
+      <!-- P1 bottom (grey) -->
       <div
         class="lore-panel lore-panel--p1"
         class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p1Id}
@@ -870,12 +731,7 @@
       >
         <div class="lore-panel__center">
           {#if canEditMatch}
-            <button
-              type="button"
-              class="lore-panel__btn lore-panel__btn--dec"
-              onclick={decP1}
-              aria-label={$t('matches.lore.decLoreAria')}>−</button
-            >
+            <button type="button" class="lore-panel__btn lore-panel__btn--dec" onclick={decP1} aria-label={$t('matches.lore.decLoreAria')}>−</button>
           {/if}
           <span class="lore-panel__value">
             <span class="lore-panel__number">{p1Lore}</span>
@@ -885,18 +741,11 @@
               class:lore-panel__delta--neg={p1DeltaLastSecond < 0}
               aria-label={$t('matches.lore.recentDeltaAria')}
             >
-              {#if p1DeltaLastSecond !== 0}
-                {p1DeltaLastSecond > 0 ? '+' : ''}{p1DeltaLastSecond}
-              {/if}
+              {#if p1DeltaLastSecond !== 0}{p1DeltaLastSecond > 0 ? '+' : ''}{p1DeltaLastSecond}{/if}
             </span>
           </span>
           {#if canEditMatch}
-            <button
-              type="button"
-              class="lore-panel__btn lore-panel__btn--inc"
-              onclick={incP1}
-              aria-label={$t('matches.lore.incLoreAria')}>+</button
-            >
+            <button type="button" class="lore-panel__btn lore-panel__btn--inc" onclick={incP1} aria-label={$t('matches.lore.incLoreAria')}>+</button>
           {/if}
         </div>
       </div>
@@ -912,107 +761,41 @@
     </AppCard>
   {/if}
 
-  <!-- Game events list popup -->
   {#if showEventsPopup}
-    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="events-popup-title">
-      <button
-        type="button"
-        class="lore-modal__backdrop"
-        aria-label={$t('matches.lore.close')}
-        onclick={() => (showEventsPopup = false)}
-      ></button>
-      <AppCard className="lore-modal__card lore-events-popup">
-        <h2 id="events-popup-title" class="lore-modal__title">
-          {$t('matches.lore.eventsTitle', { n: String(gameIndex + 1) })}
-        </h2>
-        <div class="lore-events-popup__list">
-          {#each getCurrentGameEvents() as evt, i (evt.timestamp + '-' + i)}
-            <div class="lore-events-popup__row">
-              <span class="lore-events-popup__time" title={new Date(evt.timestamp).toISOString()}>
-                {new Date(evt.timestamp).toLocaleTimeString(undefined, {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-                })}
-              </span>
-              <span class="lore-events-popup__type">{loreEventTypeLabel(evt.type)}</span>
-              <span class="lore-events-popup__player muted">{evt.playerLabel}</span>
-            </div>
-          {:else}
-            <p class="muted lore-events-popup__empty">{$t('matches.detail.eventsEmpty')}</p>
-          {/each}
-        </div>
-        <div class="lore-modal__actions">
-          <AppButton type="button" onclick={() => (showEventsPopup = false)}
-            >{$t('matches.lore.close')}</AppButton
-          >
-        </div>
-      </AppCard>
-    </div>
+    <LoreEventsPopup
+      {gameIndex}
+      events={getCurrentGameEvents()}
+      eventTypeLabel={loreEventTypeLabel}
+      onClose={() => (showEventsPopup = false)}
+    />
   {/if}
 
-  <!-- Close game?: confirm before leaving lore tracker -->
   {#if showCloseGamePrompt}
     <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="close-game-title">
-      <button
-        type="button"
-        class="lore-modal__backdrop"
-        aria-label={$t('matches.lore.close')}
-        onclick={() => (showCloseGamePrompt = false)}
-      ></button>
+      <button type="button" class="lore-modal__backdrop" aria-label={$t('matches.lore.close')} onclick={() => (showCloseGamePrompt = false)}></button>
       <AppCard className="lore-modal__card">
         <h2 id="close-game-title" class="lore-modal__title">{$t('matches.lore.leaveGameTitle')}</h2>
         <p class="lore-modal__text muted">{$t('matches.lore.leaveGameBody')}</p>
         <div class="lore-modal__actions">
-          <AppButton type="button" variant="primary" onclick={closeGameAndLeave}
-            >{$t('matches.lore.leave')}</AppButton
-          >
-          <AppButton type="button" onclick={() => (showCloseGamePrompt = false)}
-            >{$t('common.cancel')}</AppButton
-          >
+          <AppButton type="button" variant="primary" onclick={closeGameAndLeave}>{$t('matches.lore.leave')}</AppButton>
+          <AppButton type="button" onclick={() => (showCloseGamePrompt = false)}>{$t('common.cancel')}</AppButton>
         </div>
       </AppCard>
     </div>
   {/if}
 
-  <!-- Choose starting player: two large buttons in player direction (P2 top, P1 bottom) -->
   {#if showStarterPrompt}
-    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="starter-choice-title">
-      <button
-        type="button"
-        class="lore-modal__backdrop"
-        aria-label={$t('matches.lore.close')}
-        onclick={dismissStarterPrompt}
-      ></button>
-      <AppCard className="lore-modal__card lore-starter-choice">
-        <h2 id="starter-choice-title" class="lore-starter-choice__title">
-          {$t('matches.lore.starterTitle')}
-        </h2>
-        <div class="lore-starter-choice__buttons">
-          <button
-            type="button"
-            class="lore-starter-choice__btn lore-starter-choice__btn--p2"
-            disabled={starterSaving}
-            onclick={() => p2Id && chooseStarter(p2Id)}
-            aria-label={$t('matches.lore.playerStartsAria', { name: p2Name })}
-          >
-            {starterSaving ? $t('matches.lore.saving') : p2Name}
-          </button>
-          <button
-            type="button"
-            class="lore-starter-choice__btn lore-starter-choice__btn--p1"
-            disabled={starterSaving}
-            onclick={() => p1Id && chooseStarter(p1Id)}
-            aria-label={$t('matches.lore.playerStartsAria', { name: p1Name })}
-          >
-            {starterSaving ? $t('matches.lore.saving') : p1Name}
-          </button>
-        </div>
-      </AppCard>
-    </div>
+    <LoreStarterChoice
+      {p1Name}
+      {p2Name}
+      {p1Id}
+      {p2Id}
+      saving={starterSaving}
+      onChoose={chooseStarter}
+      onDismiss={dismissStarterPrompt}
+    />
   {/if}
 
-  <!-- Game over: winner animation + "Go to next game?" -->
   {#if showGameOverPrompt}
     <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
       <div class="lore-modal__backdrop"></div>
@@ -1024,9 +807,7 @@
         <div class="lore-modal__actions">
           <AppButton href="/matches/{id}" variant="primary">{$t('matches.lore.backToMatch')}</AppButton>
           {#if canEditMatch}
-            <AppButton type="button" onclick={() => goToNextGame()}
-              >{$t('matches.lore.nextGame')}</AppButton
-            >
+            <AppButton type="button" onclick={() => goToNextGame()}>{$t('matches.lore.nextGame')}</AppButton>
           {/if}
         </div>
       </AppCard>
@@ -1039,7 +820,6 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    /* gap: 16px; */
     width: 100%;
     min-height: 0;
     user-select: none;
@@ -1072,7 +852,6 @@
     flex-shrink: 0;
   }
 
-  /* Split layout: two full-height halves + divider */
   .lore-split {
     display: flex;
     flex-direction: column;
@@ -1082,7 +861,6 @@
     position: relative;
   }
 
-  /* Vertical game counter + events button: left side */
   .lore-score-pill-wrap {
     position: absolute;
     left: 0;
@@ -1098,11 +876,9 @@
     pointer-events: none;
     margin-top: 36px;
   }
-
   .lore-score-pill-wrap .lore-score-pill__events-btn {
     pointer-events: auto;
   }
-
   .lore-score-pill__events-btn {
     width: 100%;
     min-width: 0;
@@ -1117,16 +893,13 @@
     align-items: center;
     justify-content: center;
   }
-
   .lore-score-pill__events-btn:hover {
     background: rgba(50, 50, 50, 0.9);
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
   }
-
   .lore-score-pill__events-btn:active {
     transform: scale(0.98);
   }
-
   .lore-score-pill {
     display: flex;
     flex-direction: column;
@@ -1141,7 +914,6 @@
     padding: 10px;
     border-radius: 0 12px 12px 0;
   }
-
   .lore-score-pill__score {
     font-size: 1.25rem;
     font-weight: 700;
@@ -1157,14 +929,12 @@
     justify-content: center;
     position: relative;
   }
-
   .lore-panel--p1 {
     background: rgba(87, 101, 124, 0.65);
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
     border: 1px solid var(--glass-border);
   }
-
   .lore-panel--p2 {
     background: rgba(122, 54, 171, 0.65);
     backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
@@ -1172,48 +942,26 @@
     border: 1px solid var(--glass-border);
     transform: rotate(180deg);
   }
-
   .lore-panel--winner {
     animation: lore-winner-pulse-panel 2s ease-in-out;
     box-shadow: inset 0 0 0 3px var(--ok);
   }
-
   .lore-panel--cooldown-flash {
     animation: lore-cooldown-nudge 0.22s ease-out;
   }
-
   @keyframes lore-cooldown-nudge {
-    0%,
-    100% {
-      filter: brightness(1);
-    }
-    50% {
-      filter: brightness(1.15);
-      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
-    }
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.15); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35); }
   }
-
   @keyframes lore-winner-pulse-panel {
-    0%,
-    100% {
-      box-shadow:
-        inset 0 0 0 3px var(--ok),
-        inset 0 0 24px rgba(34, 197, 94, 0.2);
-    }
-    50% {
-      box-shadow:
-        inset 0 0 0 4px var(--ok),
-        inset 0 0 32px rgba(34, 197, 94, 0.35);
-    }
+    0%, 100% { box-shadow: inset 0 0 0 3px var(--ok), inset 0 0 24px rgba(34, 197, 94, 0.2); }
+    50% { box-shadow: inset 0 0 0 4px var(--ok), inset 0 0 32px rgba(34, 197, 94, 0.35); }
   }
-
   .lore-panel__center {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* gap: 16px; */
   }
-
   .lore-panel__value {
     display: flex;
     flex-direction: column;
@@ -1224,7 +972,6 @@
     pointer-events: none;
     text-align: center;
   }
-
   .lore-panel__number {
     font-size: 15rem;
     font-weight: 500;
@@ -1232,7 +979,6 @@
     color: #fff;
     min-width: 2ch;
   }
-
   .lore-panel__delta {
     font-size: 2.4rem;
     font-weight: 700;
@@ -1249,7 +995,6 @@
     color: rgba(255, 255, 255, 0.9);
     text-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
   }
-
   .lore-panel__btn {
     width: 50vw;
     height: 50vh;
@@ -1264,31 +1009,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition:
-      background 0.15s,
-      transform 0.1s;
+    transition: background 0.15s, transform 0.1s;
     touch-action: manipulation;
     position: relative;
     z-index: 2;
   }
-  .lore-panel__btn--dec {
-    transform: translateX(-10%);
-  }
-  .lore-panel__btn--inc {
-    transform: translateX(10%);
-  }
-
+  .lore-panel__btn--dec { transform: translateX(-10%); }
+  .lore-panel__btn--inc { transform: translateX(10%); }
   @media (max-width: 480px) {
     .lore-panel__btn {
       min-width: 64px;
       font-size: 4em;
     }
-    .lore-panel__btn--dec {
-      transform: translateX(-25%);
-    }
-    .lore-panel__btn--inc {
-      transform: translateX(25%);
-    }
+    .lore-panel__btn--dec { transform: translateX(-25%); }
+    .lore-panel__btn--inc { transform: translateX(25%); }
   }
 
   .lore-divider {
@@ -1300,7 +1034,6 @@
     align-items: center;
     justify-content: center;
   }
-
   .lore-divider__name {
     position: absolute;
     top: 50%;
@@ -1308,9 +1041,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.85);
-    text-shadow:
-      0 0 4px #000,
-      0 1px 2px #000;
+    text-shadow: 0 0 4px #000, 0 1px 2px #000;
     white-space: nowrap;
     max-width: 28vw;
     overflow: hidden;
@@ -1328,10 +1059,8 @@
     text-align: right;
     transform: translateY(5%);
   }
-
   .lore-divider__menu {
     position: absolute;
-
     width: 48px;
     height: 48px;
     padding: 0;
@@ -1348,71 +1077,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition:
-      background 0.15s,
-      transform 0.1s;
+    transition: background 0.15s, transform 0.1s;
     box-shadow: 0 0 0 2px #000;
   }
+  .lore-divider__menu:hover { background: #222; transform: scale(1.05); }
+  .lore-divider__menu:active { transform: scale(0.98); }
 
-  .lore-divider__menu:hover {
-    background: #222;
-    transform: scale(1.05);
-  }
-
-  .lore-divider__menu:active {
-    transform: scale(0.98);
-  }
-
-  .lore-events-popup__list {
-    max-height: 50vh;
-    overflow-y: auto;
-    margin-bottom: 20px;
-    text-align: left;
-  }
-
-  .lore-events-popup__row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--glass-border);
-    font-size: 0.9rem;
-  }
-
-  .lore-events-popup__row:last-child {
-    border-bottom: none;
-  }
-
-  .lore-events-popup__time {
-    flex-shrink: 0;
-    font-variant-numeric: tabular-nums;
-    min-width: 5.5em;
-  }
-
-  .lore-events-popup__type {
-    flex-shrink: 0;
-    font-weight: 600;
-    min-width: 6em;
-  }
-
-  .lore-events-popup__player {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .lore-events-popup__empty {
-    padding: 16px 0;
-    margin: 0;
-    text-align: center;
-  }
-
-  .lore-game-over__title {
-    color: var(--ok);
-  }
-
-  /* Modal overlay */
+  /* Inline close-game modal (shared lore-modal pattern) */
   .lore-modal {
     position: fixed;
     inset: 0;
@@ -1423,7 +1094,6 @@
     padding: 16px;
     animation: lore-fade-in 0.2s ease-out;
   }
-
   .lore-modal__backdrop {
     position: absolute;
     inset: 0;
@@ -1435,7 +1105,6 @@
     cursor: pointer;
     appearance: none;
   }
-
   .lore-modal__card {
     position: relative;
     z-index: 1;
@@ -1443,100 +1112,33 @@
     width: 100%;
     text-align: center;
   }
-
   .lore-modal__title {
     font-size: 1.5rem;
     font-weight: 800;
     margin: 0 0 24px;
   }
-
   .lore-modal__text {
     margin: 0 0 24px;
   }
-
   .lore-modal__actions {
     display: flex;
     gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
   }
-
   @media (max-width: 480px) {
-    .lore-modal__actions .btn {
+    .lore-modal__actions :global(.btn) {
       min-height: 52px;
       padding: 14px 24px;
       font-size: 1.1rem;
     }
   }
-
-  /* Choose starting player: two large buttons in player direction (P2 top, P1 bottom) */
-  .lore-starter-choice {
-    padding: 0;
-    max-width: 420px;
-    overflow: hidden;
+  .lore-game-over__title {
+    color: var(--ok);
   }
-
-  .lore-starter-choice__title {
-    margin: 0;
-    padding: 20px 20px 12px;
-    font-size: 1.25rem;
-    text-align: center;
-  }
-
-  .lore-starter-choice__buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .lore-starter-choice__btn {
-    flex: 1;
-    min-height: 120px;
-    border: none;
-    padding: 24px 20px;
-    font-size: 1.5rem;
-    font-weight: 700;
-    font-family: inherit;
-    cursor: pointer;
-    transition:
-      filter 0.15s,
-      transform 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: #fff;
-  }
-
-  .lore-starter-choice__btn:hover:not(:disabled) {
-    filter: brightness(1.1);
-    transform: scale(1.01);
-  }
-
-  .lore-starter-choice__btn:active:not(:disabled) {
-    transform: scale(0.99);
-  }
-
-  .lore-starter-choice__btn:disabled {
-    opacity: 0.8;
-    cursor: wait;
-  }
-
-  .lore-starter-choice__btn--p2 {
-    background: linear-gradient(145deg, #5b21b6, #7c3aed);
-  }
-
-  .lore-starter-choice__btn--p1 {
-    background: linear-gradient(145deg, #4b5563, #6b7280);
-  }
-
   @keyframes lore-fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   @media (orientation: landscape) {
@@ -1544,12 +1146,10 @@
       font-size: clamp(4rem, 36vh, 15rem);
       line-height: 1;
     }
-
     .lore-panel__delta {
       font-size: clamp(1rem, 4vh, 2.4rem);
       min-height: auto;
     }
-
     .lore-panel__btn {
       height: 48vh;
       font-size: clamp(3rem, 8vh, 7rem);
