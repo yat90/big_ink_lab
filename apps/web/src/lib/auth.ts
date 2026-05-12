@@ -1,4 +1,4 @@
-import { browser } from '$app/environment';
+import { STORAGE_KEYS, getStorageItem, setStorageItem, removeStorageItem } from '$lib/storage';
 
 export type AuthUser = {
   id: string;
@@ -6,33 +6,20 @@ export type AuthUser = {
   name?: string;
 };
 
-const AUTH_TOKEN_KEY = 'bil.auth.token';
-const AUTH_USER_KEY = 'bil.auth.user';
-
 export function getAuthToken(): string {
-  if (!browser) return '';
-  return localStorage.getItem(AUTH_TOKEN_KEY) ?? '';
+  return getStorageItem<string>(STORAGE_KEYS.AUTH_TOKEN) ?? '';
 }
 
 export function getAuthUser(): AuthUser | null {
-  if (!browser) return null;
-  const raw = localStorage.getItem(AUTH_USER_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as AuthUser;
-  } catch {
-    return null;
-  }
+  return getStorageItem<AuthUser>(STORAGE_KEYS.AUTH_USER);
 }
 
 export function setAuthSession(accessToken: string, user: AuthUser) {
-  if (!browser) return;
-  localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
-  localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+  setStorageItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
+  setStorageItem(STORAGE_KEYS.AUTH_USER, user);
 }
 
 export function clearAuthSession() {
-  if (!browser) return;
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-  localStorage.removeItem(AUTH_USER_KEY);
+  removeStorageItem(STORAGE_KEYS.AUTH_TOKEN);
+  removeStorageItem(STORAGE_KEYS.AUTH_USER);
 }

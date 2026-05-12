@@ -1,7 +1,5 @@
-import { config } from './config';
 import type { MeRole } from './me';
-
-const apiUrl = config.apiUrl ?? '/api';
+import { getJson, postJson, patchJson, deleteNoContent } from '$lib/api-client';
 
 export type MemberStatus = 'active' | 'padawan' | 'inactive';
 export type TransactionType = 'contribution' | 'income' | 'expense' | 'penalty_fine';
@@ -109,37 +107,12 @@ export interface PaginatedResult<T> {
   meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
-async function jsonOrThrow<T>(res: Response, fallback: string): Promise<T> {
-  if (res.ok) {
-    if (res.status === 204) return undefined as T;
-    return (await res.json()) as T;
-  }
-  let message = fallback;
-  try {
-    const data = (await res.json()) as { message?: string | string[] };
-    if (Array.isArray(data.message)) message = data.message.join(', ');
-    else if (typeof data.message === 'string' && data.message.trim()) message = data.message;
-  } catch {
-    /* ignore */
-  }
-  const err = new Error(message) as Error & { status: number };
-  err.status = res.status;
-  throw err;
-}
-
-async function noContentOrThrow(res: Response, fallback: string): Promise<void> {
-  if (res.ok) return;
-  await jsonOrThrow<unknown>(res, fallback);
-}
-
 export async function fetchTeamOverview(): Promise<TeamOverview> {
-  const res = await fetch(`${apiUrl}/team/me`);
-  return jsonOrThrow<TeamOverview>(res, "Couldn't load team overview.");
+  return getJson<TeamOverview>('/team/me');
 }
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
-  const res = await fetch(`${apiUrl}/team/members`);
-  const body = await jsonOrThrow<{ data: TeamMember[] }>(res, "Couldn't load members.");
+  const body = await getJson<{ data: TeamMember[] }>('/team/members');
   return body.data;
 }
 
@@ -149,12 +122,7 @@ export async function addTeamMember(input: {
   joinedAt?: string;
   status?: MemberStatus;
 }): Promise<TeamMember> {
-  const res = await fetch(`${apiUrl}/team/members`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  return jsonOrThrow<TeamMember>(res, "Couldn't add member.");
+  return postJson<TeamMember>('/team/members', input);
 }
 
 export async function updateTeamMember(
@@ -166,26 +134,17 @@ export async function updateTeamMember(
     role?: MeRole;
   }
 ): Promise<TeamMember> {
-  const res = await fetch(`${apiUrl}/team/members/${playerId}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patch),
-  });
-  return jsonOrThrow<TeamMember>(res, "Couldn't update member.");
+  return patchJson<TeamMember>(`/team/members/${playerId}`, patch);
 }
 
 export async function removeTeamMember(playerId: string): Promise<void> {
-  const res = await fetch(`${apiUrl}/team/members/${playerId}`, { method: 'DELETE' });
-  return noContentOrThrow(res, "Couldn't remove member.");
+  return deleteNoContent(`/team/members/${playerId}`);
 }
 
 export async function resetTeamMemberPassword(
   playerId: string
 ): Promise<{ temporaryPassword: string }> {
-  const res = await fetch(`${apiUrl}/team/members/${playerId}/reset-password`, {
-    method: 'POST',
-  });
-  return jsonOrThrow(res, "Couldn't reset password.");
+  return postJson(`/team/members/${playerId}/reset-password`, {});
 }
 
 export async function fetchTeamTransactions(
@@ -197,9 +156,8 @@ export async function fetchTeamTransactions(
   if (params.type) qs.set('type', params.type);
   if (params.playerId) qs.set('playerId', params.playerId);
   const query = qs.toString();
-  const url = query ? `${apiUrl}/team/transactions?${query}` : `${apiUrl}/team/transactions`;
-  const res = await fetch(url);
-  return jsonOrThrow<PaginatedResult<TeamTransaction>>(res, "Couldn't load transactions.");
+  const path = query ? `/team/transactions?${query}` : '/team/transactions';
+  return getJson<PaginatedResult<TeamTransaction>>(path);
 }
 
 export async function fetchMyContributions(
@@ -209,9 +167,8 @@ export async function fetchMyContributions(
   if (params.page) qs.set('page', String(params.page));
   if (params.limit) qs.set('limit', String(params.limit));
   const query = qs.toString();
-  const url = query ? `${apiUrl}/team/transactions/me?${query}` : `${apiUrl}/team/transactions/me`;
-  const res = await fetch(url);
-  return jsonOrThrow<PaginatedResult<TeamTransaction>>(res, "Couldn't load your contributions.");
+  const path = query ? `/team/transactions/me?${query}` : '/team/transactions/me';
+  return getJson<PaginatedResult<TeamTransaction>>(path);
 }
 
 export async function createTransaction(input: {
@@ -221,12 +178,7 @@ export async function createTransaction(input: {
   occurredAt?: string;
   playerId?: string;
 }): Promise<TeamTransaction> {
-  const res = await fetch(`${apiUrl}/team/transactions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  return jsonOrThrow<TeamTransaction>(res, "Couldn't save transaction.");
+  return postJson<TeamTransaction>('/team/transactions', input);
 }
 
 export async function updateTransaction(
@@ -239,39 +191,26 @@ export async function updateTransaction(
     playerId?: string;
   }
 ): Promise<TeamTransaction> {
-  const res = await fetch(`${apiUrl}/team/transactions/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patch),
-  });
-  return jsonOrThrow<TeamTransaction>(res, "Couldn't save transaction.");
+  return patchJson<TeamTransaction>(`/team/transactions/${id}`, patch);
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
-  const res = await fetch(`${apiUrl}/team/transactions/${id}`, { method: 'DELETE' });
-  return noContentOrThrow(res, "Couldn't delete transaction.");
+  return deleteNoContent(`/team/transactions/${id}`);
 }
 
 export async function fetchTeamSettings(): Promise<TeamSettings> {
-  const res = await fetch(`${apiUrl}/team/settings`);
-  return jsonOrThrow<TeamSettings>(res, "Couldn't load team settings.");
+  return getJson<TeamSettings>('/team/settings');
 }
 
 export async function updateTeamSettings(patch: {
   monthlyDues?: number;
   penalties?: { id?: string; description: string; amount: number }[];
 }): Promise<TeamSettings> {
-  const res = await fetch(`${apiUrl}/team/settings`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patch),
-  });
-  return jsonOrThrow<TeamSettings>(res, "Couldn't save team settings.");
+  return patchJson<TeamSettings>('/team/settings', patch);
 }
 
 export async function fetchTeamAccusations(): Promise<TeamAccusation[]> {
-  const res = await fetch(`${apiUrl}/team/accusations`);
-  const body = await jsonOrThrow<{ data: TeamAccusation[] }>(res, "Couldn't load accusations.");
+  const body = await getJson<{ data: TeamAccusation[] }>('/team/accusations');
   return body.data;
 }
 
@@ -280,29 +219,18 @@ export async function createTeamAccusation(input: {
   penaltyId: string;
   details?: string;
 }): Promise<TeamAccusation> {
-  const res = await fetch(`${apiUrl}/team/accusations`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  return jsonOrThrow<TeamAccusation>(res, "Couldn't file accusation.");
+  return postJson<TeamAccusation>('/team/accusations', input);
 }
 
 export async function updateTeamAccusationStatus(
   id: string,
   status: AccusationStatus
 ): Promise<TeamAccusation> {
-  const res = await fetch(`${apiUrl}/team/accusations/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status }),
-  });
-  return jsonOrThrow<TeamAccusation>(res, "Couldn't update accusation.");
+  return patchJson<TeamAccusation>(`/team/accusations/${id}`, { status });
 }
 
 export async function deleteTeamAccusation(id: string): Promise<void> {
-  const res = await fetch(`${apiUrl}/team/accusations/${id}`, { method: 'DELETE' });
-  await noContentOrThrow(res, "Couldn't withdraw accusation.");
+  return deleteNoContent(`/team/accusations/${id}`);
 }
 
 const currencyFormatter = new Intl.NumberFormat(undefined, {
