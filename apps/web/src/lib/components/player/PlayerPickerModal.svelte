@@ -47,7 +47,7 @@
 
   let players = $state<PlayerRow[]>([]);
   let filterName = $state('');
-  let filterTeam = $state('The Big Ink Theory');
+  let filterTeam = $state('');
   let currentPage = $state(1);
   let totalPages = $state(1);
   let loading = $state(false);

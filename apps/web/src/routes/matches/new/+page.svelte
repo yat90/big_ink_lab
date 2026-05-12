@@ -619,7 +619,7 @@
     title={$t('matches.new.playerPickerTitle')}
     forLabel={$t('matches.new.playerPickerFor')}
     excludePlayerId={p1}
-    presetTeamFromMe={true}
+    presetTeamFromMe={false}
     onSelect={handlePlayerSelect}
     onClose={() => (playerPickerOpen = false)}
   />
