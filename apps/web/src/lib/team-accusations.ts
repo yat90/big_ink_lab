@@ -16,7 +16,10 @@ export interface TeamAccusation {
 }
 
 export async function fetchTeamAccusations(): Promise<TeamAccusation[]> {
-  const body = await getJson<{ data: TeamAccusation[] }>('/team/accusations');
+  const body = await getJson<{ data: TeamAccusation[] }>(
+    '/team/accusations',
+    "Couldn't load accusations.",
+  );
   return body.data;
 }
 
@@ -25,16 +28,20 @@ export async function createTeamAccusation(input: {
   penaltyId: string;
   details?: string;
 }): Promise<TeamAccusation> {
-  return postJson<TeamAccusation>('/team/accusations', input);
+  return postJson<TeamAccusation>('/team/accusations', input, "Couldn't file accusation.");
 }
 
 export async function updateTeamAccusationStatus(
   id: string,
   status: AccusationStatus
 ): Promise<TeamAccusation> {
-  return patchJson<TeamAccusation>(`/team/accusations/${id}`, { status });
+  return patchJson<TeamAccusation>(
+    `/team/accusations/${id}`,
+    { status },
+    "Couldn't update accusation.",
+  );
 }
 
 export async function deleteTeamAccusation(id: string): Promise<void> {
-  return deleteNoContent(`/team/accusations/${id}`);
+  return deleteNoContent(`/team/accusations/${id}`, "Couldn't withdraw accusation.");
 }

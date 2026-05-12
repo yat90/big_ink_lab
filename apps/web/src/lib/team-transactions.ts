@@ -27,7 +27,7 @@ export async function fetchTeamTransactions(
   if (params.playerId) qs.set('playerId', params.playerId);
   const query = qs.toString();
   const path = query ? `/team/transactions?${query}` : '/team/transactions';
-  return getJson<PaginatedResult<TeamTransaction>>(path);
+  return getJson<PaginatedResult<TeamTransaction>>(path, "Couldn't load transactions.");
 }
 
 export async function fetchMyContributions(
@@ -38,7 +38,7 @@ export async function fetchMyContributions(
   if (params.limit) qs.set('limit', String(params.limit));
   const query = qs.toString();
   const path = query ? `/team/transactions/me?${query}` : '/team/transactions/me';
-  return getJson<PaginatedResult<TeamTransaction>>(path);
+  return getJson<PaginatedResult<TeamTransaction>>(path, "Couldn't load your contributions.");
 }
 
 export async function createTransaction(input: {
@@ -48,7 +48,7 @@ export async function createTransaction(input: {
   occurredAt?: string;
   playerId?: string;
 }): Promise<TeamTransaction> {
-  return postJson<TeamTransaction>('/team/transactions', input);
+  return postJson<TeamTransaction>('/team/transactions', input, "Couldn't save transaction.");
 }
 
 export async function updateTransaction(
@@ -61,11 +61,15 @@ export async function updateTransaction(
     playerId?: string;
   }
 ): Promise<TeamTransaction> {
-  return patchJson<TeamTransaction>(`/team/transactions/${id}`, patch);
+  return patchJson<TeamTransaction>(
+    `/team/transactions/${id}`,
+    patch,
+    "Couldn't save transaction.",
+  );
 }
 
 export async function deleteTransaction(id: string): Promise<void> {
-  return deleteNoContent(`/team/transactions/${id}`);
+  return deleteNoContent(`/team/transactions/${id}`, "Couldn't delete transaction.");
 }
 
 const currencyFormatter = new Intl.NumberFormat(undefined, {

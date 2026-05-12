@@ -18,7 +18,7 @@ export interface TeamMember {
 }
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
-  const body = await getJson<{ data: TeamMember[] }>('/team/members');
+  const body = await getJson<{ data: TeamMember[] }>('/team/members', "Couldn't load members.");
   return body.data;
 }
 
@@ -28,7 +28,7 @@ export async function addTeamMember(input: {
   joinedAt?: string;
   status?: MemberStatus;
 }): Promise<TeamMember> {
-  return postJson<TeamMember>('/team/members', input);
+  return postJson<TeamMember>('/team/members', input, "Couldn't add member.");
 }
 
 export async function updateTeamMember(
@@ -40,15 +40,15 @@ export async function updateTeamMember(
     role?: MeRole;
   }
 ): Promise<TeamMember> {
-  return patchJson<TeamMember>(`/team/members/${playerId}`, patch);
+  return patchJson<TeamMember>(`/team/members/${playerId}`, patch, "Couldn't update member.");
 }
 
 export async function removeTeamMember(playerId: string): Promise<void> {
-  return deleteNoContent(`/team/members/${playerId}`);
+  return deleteNoContent(`/team/members/${playerId}`, "Couldn't remove member.");
 }
 
 export async function resetTeamMemberPassword(
   playerId: string
 ): Promise<{ temporaryPassword: string }> {
-  return postJson(`/team/members/${playerId}/reset-password`, {});
+  return postJson(`/team/members/${playerId}/reset-password`, {}, "Couldn't reset password.");
 }

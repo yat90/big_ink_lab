@@ -1,4 +1,4 @@
-import type { MeRole } from './me';
+import type { MeRole } from '$lib/me';
 import { getJson } from '$lib/api-client';
 
 export interface TeamBalance {
@@ -49,5 +49,5 @@ export interface TeamOverview {
 }
 
 export async function fetchTeamOverview(): Promise<TeamOverview> {
-  return getJson<TeamOverview>('/team/me');
+  return getJson<TeamOverview>('/team/me', "Couldn't load team overview.");
 }

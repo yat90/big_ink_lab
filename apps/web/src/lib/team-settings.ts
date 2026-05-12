@@ -13,12 +13,12 @@ export interface TeamSettings {
 }
 
 export async function fetchTeamSettings(): Promise<TeamSettings> {
-  return getJson<TeamSettings>('/team/settings');
+  return getJson<TeamSettings>('/team/settings', "Couldn't load team settings.");
 }
 
 export async function updateTeamSettings(patch: {
   monthlyDues?: number;
   penalties?: { id?: string; description: string; amount: number }[];
 }): Promise<TeamSettings> {
-  return patchJson<TeamSettings>('/team/settings', patch);
+  return patchJson<TeamSettings>('/team/settings', patch, "Couldn't save team settings.");
 }
