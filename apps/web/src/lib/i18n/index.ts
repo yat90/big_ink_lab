@@ -2,10 +2,9 @@ import { derived, get, writable, type Readable } from 'svelte/store';
 import { browser } from '$app/environment';
 import en from './dictionaries/en';
 import de from './dictionaries/de';
+import { STORAGE_KEYS, getStorageItem, setStorageItem } from '$lib/storage';
 
 export type Locale = 'en' | 'de';
-
-const STORAGE_KEY = 'bigInkLab.locale';
 
 const dictionaries = { en, de } as const;
 
@@ -42,13 +41,8 @@ export function translate(
 }
 
 function readStoredLocale(): Locale | null {
-  if (!browser) return null;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === 'en' || raw === 'de') return raw;
-  } catch {
-    /* ignore */
-  }
+  const raw = getStorageItem<string>(STORAGE_KEYS.LOCALE);
+  if (raw === 'en' || raw === 'de') return raw;
   return null;
 }
 
@@ -86,13 +80,7 @@ if (browser) {
 
 export function setLocale(next: Locale): void {
   locale.set(next);
-  if (browser) {
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* ignore */
-    }
-  }
+  setStorageItem(STORAGE_KEYS.LOCALE, next);
 }
 
 export function getLocale(): Locale {

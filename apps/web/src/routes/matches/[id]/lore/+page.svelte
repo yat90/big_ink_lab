@@ -13,6 +13,7 @@
   import { getLocale, translate, t, locale } from '$lib/i18n';
   import { playerName } from '$lib/players';
   import { gameWinnerId } from '$lib/matches';
+  import { getStorageItem, setStorageItem, removeStorageItem } from '$lib/storage';
   import { get } from 'svelte/store';
 
   type Player = { _id: string; name: string; team: string };
@@ -196,27 +197,15 @@
   );
 
   function readLocalDrafts(): LoreDraftMap {
-    if (!browser) return {};
-    try {
-      const raw = localStorage.getItem(LOCAL_DRAFT_STORAGE_KEY);
-      if (!raw) return {};
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? (parsed as LoreDraftMap) : {};
-    } catch {
-      return {};
-    }
+    const parsed = getStorageItem<LoreDraftMap>(LOCAL_DRAFT_STORAGE_KEY);
+    return parsed && typeof parsed === 'object' ? parsed : {};
   }
 
   function writeLocalDrafts(drafts: LoreDraftMap) {
-    if (!browser) return;
-    try {
-      if (Object.keys(drafts).length === 0) {
-        localStorage.removeItem(LOCAL_DRAFT_STORAGE_KEY);
-      } else {
-        localStorage.setItem(LOCAL_DRAFT_STORAGE_KEY, JSON.stringify(drafts));
-      }
-    } catch {
-      // ignore storage quota / privacy mode errors
+    if (Object.keys(drafts).length === 0) {
+      removeStorageItem(LOCAL_DRAFT_STORAGE_KEY);
+    } else {
+      setStorageItem(LOCAL_DRAFT_STORAGE_KEY, drafts);
     }
   }
 

@@ -2,47 +2,23 @@
   import AppButton from '$lib/components/ui/AppButton.svelte';
   import { browser } from '$app/environment';
   import { onMount } from 'svelte';
+  import { STORAGE_KEYS, getStorageItem, setStorageItem } from '$lib/storage';
 
   /** Minimal typing where DOM lib may omit `BeforeInstallPromptEvent`. */
   type ChromiumInstallEvent = Event & { prompt: () => Promise<{ outcome?: string } | void> };
-
-  const STORAGE_KEY = 'bil-install-prompt-dismissed';
 
   let dismissed = $state(false);
   let deferredPrompt: ChromiumInstallEvent | null = $state(null);
   let showChromiumInstall = $state(false);
   let showIosHint = $state(false);
 
-  type WebStorageLite = {
-    getItem: (key: string) => string | null;
-    setItem: (key: string, value: string) => void;
-  };
-
-  function getLs(): WebStorageLite | null {
-    if (typeof globalThis === 'undefined') return null;
-    const g = globalThis as typeof globalThis & { localStorage?: WebStorageLite };
-    return g.localStorage ?? null;
-  }
-
   function readDismissed(): boolean {
-    const ls = getLs();
-    if (!ls) return false;
-    try {
-      return ls.getItem(STORAGE_KEY) === '1';
-    } catch {
-      return false;
-    }
+    return getStorageItem<boolean>(STORAGE_KEYS.INSTALL_DISMISSED) === true;
   }
 
   function dismiss() {
     dismissed = true;
-    const ls = getLs();
-    if (!ls) return;
-    try {
-      ls.setItem(STORAGE_KEY, '1');
-    } catch {
-      /* ignore */
-    }
+    setStorageItem(STORAGE_KEYS.INSTALL_DISMISSED, true);
   }
 
   async function install() {
