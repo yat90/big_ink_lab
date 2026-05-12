@@ -35,7 +35,7 @@ export function readLocalDrafts(key: string): LoreDraftMap {
   return parsed && typeof parsed === 'object' ? parsed : {};
 }
 
-export function writeLocalDrafts(key: string, drafts: LoreDraftMap) {
+export function writeLocalDrafts(key: string, drafts: LoreDraftMap): void {
   if (Object.keys(drafts).length === 0) {
     removeStorageItem(key);
   } else {
@@ -48,7 +48,7 @@ export function applyDraftsToGames(sourceGames: LoreGame[], drafts: LoreDraftMap
   const updatedGames = sourceGames.map((g) => ({ ...g }));
   for (const [rawIndex, draft] of Object.entries(drafts)) {
     const idx = Number(rawIndex);
-    if (!Number.isInteger(idx) || idx < 0) continue;
+    if (!Number.isInteger(idx) || idx < 0 || idx >= updatedGames.length) continue;
     const current = updatedGames[idx];
     if (current?.status === 'done') continue;
     const existingEvents = (current?.events ?? []).map((e) => ({

@@ -2,6 +2,7 @@
   import AppButton from '$lib/components/ui/AppButton.svelte';
   import AppCard from '$lib/components/ui/AppCard.svelte';
   import { t } from '$lib/i18n';
+  import LoreModal from './LoreModal.svelte';
 
   type EventRow = {
     type: string;
@@ -20,14 +21,8 @@
   let { gameIndex, events, eventTypeLabel, onClose }: Props = $props();
 </script>
 
-<div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="events-popup-title">
-  <button
-    type="button"
-    class="lore-modal__backdrop"
-    aria-label={$t('matches.lore.close')}
-    onclick={onClose}
-  ></button>
-  <AppCard className="lore-modal__card lore-events-popup">
+<LoreModal labelledBy="events-popup-title" onDismiss={onClose}>
+  <AppCard className="lore-modal__card">
     <h2 id="events-popup-title" class="lore-modal__title">
       {$t('matches.lore.eventsTitle', { n: String(gameIndex + 1) })}
     </h2>
@@ -52,7 +47,7 @@
       <AppButton type="button" onclick={onClose}>{$t('matches.lore.close')}</AppButton>
     </div>
   </AppCard>
-</div>
+</LoreModal>
 
 <style>
   .lore-events-popup__list {
@@ -100,38 +95,6 @@
     text-align: center;
   }
 
-  /* Modal overlay */
-  .lore-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    animation: lore-fade-in 0.2s ease-out;
-  }
-
-  .lore-modal__backdrop {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    border: none;
-    background: rgba(0, 0, 0, 0.5);
-    cursor: pointer;
-    appearance: none;
-  }
-
-  .lore-modal__card {
-    position: relative;
-    z-index: 1;
-    max-width: 420px;
-    width: 100%;
-    text-align: center;
-  }
-
   .lore-modal__title {
     font-size: 1.5rem;
     font-weight: 800;
@@ -151,10 +114,5 @@
       padding: 14px 24px;
       font-size: 1.1rem;
     }
-  }
-
-  @keyframes lore-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
   }
 </style>
