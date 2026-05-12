@@ -6,8 +6,6 @@
   import DeckPickerModal from '$lib/components/deck/DeckPickerModal.svelte';
   import AppBanner from '$lib/components/ui/AppBanner.svelte';
   import AppButton from '$lib/components/ui/AppButton.svelte';
-  import IconUsers from '$lib/icons/IconUsers.svelte';
-  import PlayerPickerModal from '$lib/components/player/PlayerPickerModal.svelte';
   import TournamentPickerModal from '$lib/components/match/TournamentPickerModal.svelte';
   import { authMe } from '$lib/me';
   import { STAGE_OPTIONS } from '$lib/matches';
@@ -22,14 +20,18 @@
   let players = $state<Player[]>([]);
   let p1 = $state('');
   let p2 = $state('');
-  let p2SearchText = $state('');
-  let p2SearchHint = $state('');
-  let p2SearchGen = 0;
+  let p2NameFilter = $state('');
+  let p2Candidates = $state<Player[]>([]);
+  let p2ListLoading = $state(false);
+  let p2ListError = $state('');
+  let p2ListGen = 0;
+  /** Opponent suggestions (list / loading / empty / create) only while the filter field is focused. */
+  let p2FilterFocused = $state(false);
+  let p2BlurCloseTimer: ReturnType<typeof setTimeout> | null = null;
   let p1DeckId = $state('');
   let p2DeckId = $state('');
   let p1DeckDisplayName = $state('');
   let p2DeckDisplayName = $state('');
-  let playerPickerOpen = $state(false);
   let deckPickerOpen = $state(false);
   let deckPickerRole = $state<'p1' | 'p2'>('p1');
   let stage = $state('Casual');
@@ -56,9 +58,16 @@
   let loading = $state(false);
   let error = $state('');
 
-  let p2OfferGuestCreate = $state(false);
   let createGuestLoading = $state(false);
   let createGuestError = $state('');
+
+  const showP2CreateGuest = $derived(
+    p2FilterFocused &&
+      !!p1.trim() &&
+      !p2ListLoading &&
+      p2Candidates.length === 0 &&
+      p2NameFilter.trim().length > 0,
+  );
 
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -115,99 +124,68 @@
     players = Object.values(byId);
   }
 
-  function openPlayerPicker() {
-    playerPickerOpen = true;
+  function selectP2FromList(pl: Player) {
+    if (pl._id === p1) return;
+    p2 = pl._id;
+    p2NameFilter = pl.name;
+    createGuestError = '';
+    mergePlayers([pl]);
+    if (p2BlurCloseTimer) {
+      clearTimeout(p2BlurCloseTimer);
+      p2BlurCloseTimer = null;
+    }
+    p2FilterFocused = false;
   }
 
-  function handlePlayerSelect(playerId: string, player?: { name: string; team?: string }) {
-    if (!playerId.trim()) {
-      p2 = '';
-      p2SearchText = '';
-      p2SearchHint = '';
-      p2OfferGuestCreate = false;
+  async function loadP2Candidates() {
+    const gen = ++p2ListGen;
+    if (!p1.trim()) {
+      p2Candidates = [];
+      p2ListLoading = false;
+      p2ListError = '';
       return;
     }
-    if (playerId === p1) return;
-    p2 = playerId;
-    p2SearchHint = '';
-    p2OfferGuestCreate = false;
-    if (player?.name) p2SearchText = player.name;
-    mergePlayers([{ _id: playerId, name: player?.name ?? '', team: (player?.team ?? '').trim() }]);
-  }
-
-  /** True when the search box text exactly matches the resolved opponent's name (keeps picker selection). */
-  function p2TextMatchesResolvedPlayer(q: string): boolean {
-    if (!p2.trim()) return false;
-    const pl = players.find((x) => x._id === p2);
-    if (!pl) return false;
-    return pl.name.trim().toLowerCase() === q.trim().toLowerCase();
-  }
-
-  async function searchP2ByName(q: string) {
-    const gen = ++p2SearchGen;
+    p2ListLoading = true;
+    p2ListError = '';
+    createGuestError = '';
     try {
       const params = new URLSearchParams({
-        name: q,
         page: '1',
-        limit: '50',
+        limit: '3',
         includeGuests: 'true',
       });
+      const q = p2NameFilter.trim();
+      if (q) params.set('name', q);
       const res = await fetch(`${apiUrl}/players?${params}`);
       if (!res.ok) {
-        if (gen === p2SearchGen) p2OfferGuestCreate = false;
+        if (gen === p2ListGen) {
+          p2Candidates = [];
+          p2ListError = translate(getLocale(), 'matches.new.searchHintFailed');
+        }
         return;
       }
       const json = await res.json();
-      if (gen !== p2SearchGen) return;
+      if (gen !== p2ListGen) return;
       const rows: Player[] = (json?.data ?? []).map((r: Player) => ({
         _id: r._id,
         name: r.name,
         team: (r.team ?? '').trim(),
       }));
       const rowsNoSelf = rows.filter((r) => r._id !== p1);
+      p2Candidates = rowsNoSelf;
       mergePlayers(rowsNoSelf);
-
-      const qLower = q.toLowerCase();
-      const exact = rowsNoSelf.filter((p) => p.name.trim().toLowerCase() === qLower);
-      if (exact.length === 1) {
-        p2 = exact[0]._id;
-        p2SearchHint = '';
-        p2OfferGuestCreate = false;
-      } else if (exact.length > 1) {
-        if (!p2TextMatchesResolvedPlayer(q)) p2 = '';
-        p2SearchHint = translate(getLocale(), 'matches.new.searchHintMultiple');
-        p2OfferGuestCreate = false;
-      } else if (rowsNoSelf.length === 0) {
-        if (!p2TextMatchesResolvedPlayer(q)) {
-          p2 = '';
-          p2SearchHint = translate(getLocale(), 'matches.new.searchHintNone');
-          p2OfferGuestCreate = true;
-        } else {
-          p2SearchHint = '';
-          p2OfferGuestCreate = false;
-        }
-      } else {
-        p2OfferGuestCreate = false;
-        if (!p2TextMatchesResolvedPlayer(q)) {
-          p2 = '';
-          p2SearchHint =
-            rowsNoSelf.length > 1
-              ? translate(getLocale(), 'matches.new.searchHintPickList')
-              : translate(getLocale(), 'matches.new.searchHintNoExact');
-        } else {
-          p2SearchHint = '';
-        }
-      }
     } catch {
-      if (gen === p2SearchGen) {
-        p2SearchHint = translate(getLocale(), 'matches.new.searchHintFailed');
-        p2OfferGuestCreate = false;
+      if (gen === p2ListGen) {
+        p2Candidates = [];
+        p2ListError = translate(getLocale(), 'common.apiUnreachable');
       }
+    } finally {
+      if (gen === p2ListGen) p2ListLoading = false;
     }
   }
 
   async function createGuestOpponent() {
-    const name = p2SearchText.trim();
+    const name = p2NameFilter.trim();
     if (!name) return;
     createGuestError = '';
     createGuestLoading = true;
@@ -230,9 +208,13 @@
       const team = String(created.team ?? '').trim();
       mergePlayers([{ _id: id, name: createdName, team }]);
       p2 = id;
-      p2SearchText = createdName;
-      p2SearchHint = '';
-      p2OfferGuestCreate = false;
+      p2NameFilter = createdName;
+      if (p2BlurCloseTimer) {
+        clearTimeout(p2BlurCloseTimer);
+        p2BlurCloseTimer = null;
+      }
+      p2FilterFocused = false;
+      void loadP2Candidates();
     } catch {
       createGuestError = translate(getLocale(), 'common.apiUnreachable');
     } finally {
@@ -240,28 +222,48 @@
     }
   }
 
-  let p2SearchDebounce: ReturnType<typeof setTimeout> | null = null;
+  function onP2FilterFocus() {
+    if (p2BlurCloseTimer) {
+      clearTimeout(p2BlurCloseTimer);
+      p2BlurCloseTimer = null;
+    }
+    p2FilterFocused = true;
+  }
+
+  function onP2FilterBlur() {
+    p2BlurCloseTimer = setTimeout(() => {
+      p2BlurCloseTimer = null;
+      p2FilterFocused = false;
+    }, 120);
+  }
+
+  /** Keep focus on the input when choosing a row (blur would fire before click otherwise). */
+  function onP2SuggestionsMouseDown(e: MouseEvent) {
+    e.preventDefault();
+  }
+
+  let p2ListDebounce: ReturnType<typeof setTimeout> | null = null;
   $effect(() => {
     void p1;
-    const raw = p2SearchText;
-    if (p2SearchDebounce) {
-      clearTimeout(p2SearchDebounce);
-      p2SearchDebounce = null;
-    }
-    const trimmed = raw.trim();
-    if (!trimmed) {
-      p2 = '';
-      p2SearchHint = '';
-      p2OfferGuestCreate = false;
-      createGuestError = '';
+    void p2NameFilter;
+    void p2FilterFocused;
+    if (!p2FilterFocused) {
+      if (p2ListDebounce) {
+        clearTimeout(p2ListDebounce);
+        p2ListDebounce = null;
+      }
       return;
     }
-    p2SearchDebounce = setTimeout(() => {
-      p2SearchDebounce = null;
-      void searchP2ByName(trimmed);
-    }, 350);
+    if (p2ListDebounce) {
+      clearTimeout(p2ListDebounce);
+      p2ListDebounce = null;
+    }
+    p2ListDebounce = setTimeout(() => {
+      p2ListDebounce = null;
+      void loadP2Candidates();
+    }, 300);
     return () => {
-      if (p2SearchDebounce) clearTimeout(p2SearchDebounce);
+      if (p2ListDebounce) clearTimeout(p2ListDebounce);
     };
   });
 
@@ -537,49 +539,85 @@
         {$t('matches.new.p2SectionTitle')}
       </h3>
       <label class="label" for="p2-opponent">{$t('matches.new.opponentLabel')}</label>
-      <div class="new-match__opponent-row">
+      <div class="new-match__p2-filter-wrap">
         <input
           id="p2-opponent"
           type="text"
-          class="input new-match__opponent-input"
+          class="input"
           maxlength="120"
-          bind:value={p2SearchText}
-          placeholder={$t('matches.new.opponentPlaceholder')}
+          bind:value={p2NameFilter}
+          placeholder={$t('matches.new.opponentFilterPlaceholder')}
           aria-label={$t('matches.new.opponentNameAria')}
+          aria-expanded={p2FilterFocused}
+          aria-controls={p2FilterFocused ? 'p2-opponent-suggestions' : undefined}
           autocomplete="off"
+          onfocus={onP2FilterFocus}
+          onblur={onP2FilterBlur}
         />
-        <button
-          type="button"
-          class="btn new-match__opponent-pick-btn"
-          onclick={() => openPlayerPicker()}
-          title={$t('matches.new.pickListTitle')}
-          aria-label={$t('matches.new.pickListAria')}
-        >
-          <IconUsers size={20} />
-        </button>
-      </div>
-      {#if p2SearchHint}
-        <p class="card__sub muted" role="status">{p2SearchHint}</p>
-      {/if}
-      {#if p2OfferGuestCreate}
-        <div class="new-match__guest-create">
-          <AppButton
-            type="button"
-            variant="primary"
-            disabled={createGuestLoading || !p2SearchText.trim()}
-            onclick={createGuestOpponent}
+        {#if p2FilterFocused}
+          <div
+            id="p2-opponent-suggestions"
+            class="new-match__p2-popover"
+            onmousedown={onP2SuggestionsMouseDown}
           >
-            {createGuestLoading
-              ? $t('matches.new.createGuestCreating')
-              : $t('matches.new.createGuest')}
-          </AppButton>
-          <p class="card__sub muted new-match__guest-create-help">
-            {$t('matches.new.createGuestHelp', { name: p2SearchText.trim() })}
-          </p>
-          {#if createGuestError}
-            <AppBanner variant="danger" message={createGuestError} />
-          {/if}
-        </div>
+            {#if p2ListError}
+              <AppBanner variant="danger" message={p2ListError} />
+            {:else if p2ListLoading}
+              <p class="card__sub muted new-match__p2-popover-pad" role="status">
+                {$t('matches.new.p2ListLoading')}
+              </p>
+            {:else if p2Candidates.length === 0}
+              <p class="card__sub muted new-match__p2-popover-pad" role="status">
+                {p2NameFilter.trim()
+                  ? $t('matches.new.p2ListEmpty')
+                  : $t('matches.new.p2ListEmptyNoFilter')}
+              </p>
+            {:else}
+              <ul class="new-match__p2-list" aria-label={$t('matches.new.opponentLabel')}>
+                {#each p2Candidates as pl (pl._id)}
+                  <li>
+                    <button
+                      type="button"
+                      class="new-match__p2-row"
+                      class:new-match__p2-row--selected={p2 === pl._id}
+                      onclick={() => selectP2FromList(pl)}
+                    >
+                      <span class="new-match__p2-name">{pl.name}</span>
+                      {#if pl.team}
+                        <span class="muted new-match__p2-team">({pl.team})</span>
+                      {/if}
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+            {#if showP2CreateGuest}
+              <div class="new-match__guest-create new-match__p2-popover-pad">
+                <AppButton
+                  type="button"
+                  variant="primary"
+                  disabled={createGuestLoading || !p2NameFilter.trim()}
+                  onclick={createGuestOpponent}
+                >
+                  {createGuestLoading
+                    ? $t('matches.new.createGuestCreating')
+                    : $t('matches.new.createGuest')}
+                </AppButton>
+                <p class="card__sub muted new-match__guest-create-help">
+                  {$t('matches.new.createGuestHelp', { name: p2NameFilter.trim() })}
+                </p>
+                {#if createGuestError}
+                  <AppBanner variant="danger" message={createGuestError} />
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+      {#if p2}
+        <p class="card__sub muted" role="status">
+          {$t('matches.new.opponentSelected', { name: p2PlayerDisplayName })}
+        </p>
       {/if}
       {#if showP2DeckSelect}
         <label class="label" for="p2Deck">{$t('matches.new.deckLabel')}</label>
@@ -614,15 +652,6 @@
     </div>
   </form>
 
-  <PlayerPickerModal
-    bind:open={playerPickerOpen}
-    title={$t('matches.new.playerPickerTitle')}
-    forLabel={$t('matches.new.playerPickerFor')}
-    excludePlayerId={p1}
-    presetTeamFromMe={true}
-    onSelect={handlePlayerSelect}
-    onClose={() => (playerPickerOpen = false)}
-  />
   <DeckPickerModal
     bind:open={deckPickerOpen}
     title={$t('matches.new.deckPickerTitle')}
@@ -655,7 +684,8 @@
     z-index: 1;
   }
   /* Deck color dropdown extends past the card; raise stacking so it isn’t covered by the adjacent column. */
-  .new-match__card:has(:global(.deck-color-select__trigger--open)) {
+  .new-match__card:has(:global(.deck-color-select__trigger--open)),
+  .new-match__card:has(.new-match__p2-popover) {
     z-index: 20;
   }
   .new-match__card-title {
@@ -698,22 +728,69 @@
     min-height: 2.5rem;
     font-weight: 600;
   }
-  .new-match__opponent-row {
-    display: flex;
-    gap: 0.5rem;
-    align-items: stretch;
+  .new-match__p2-filter-wrap {
+    position: relative;
   }
-  .new-match__opponent-input {
-    flex: 1;
+  .new-match__p2-popover {
+    margin-top: 0.35rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm, 6px);
+    background: var(--card);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    position: relative;
+    z-index: 30;
+  }
+  .new-match__p2-popover-pad {
+    padding: 0.5rem 0.65rem;
+    margin: 0;
+  }
+  .new-match__p2-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: none;
+    overflow: visible;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+  .new-match__p2-list li {
+    margin: 0;
+  }
+  .new-match__p2-row {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    padding: 0.5rem 0.65rem;
+    margin: 0;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+    color: var(--fg);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .new-match__p2-list li:last-child .new-match__p2-row {
+    border-bottom: none;
+  }
+  .new-match__p2-row:hover {
+    background: var(--bg, rgba(0, 0, 0, 0.04));
+  }
+  .new-match__p2-row--selected {
+    background: color-mix(in srgb, var(--primary, #2563eb) 12%, transparent);
+    font-weight: 600;
+  }
+  .new-match__p2-name {
     min-width: 0;
   }
-  .new-match__opponent-pick-btn {
-    flex-shrink: 0;
-    padding: 0 0.65rem;
-    min-width: 2.75rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .new-match__p2-team {
+    font-size: 0.9em;
   }
   .new-match__guest-create {
     display: flex;

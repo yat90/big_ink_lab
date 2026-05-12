@@ -6,7 +6,8 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authMe } from '$lib/me';
-  import { fetchTeamOverview, formatMoney, type TeamOverview } from '$lib/team';
+  import { fetchTeamOverview, type TeamOverview } from '$lib/team-analytics';
+  import { formatMoney } from '$lib/team-utils';
   import { getLocale, translate, t } from '$lib/i18n';
   import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
   import { TEAM_DRIVE_MEETINGS_URL } from '$lib/teamDriveLinks';

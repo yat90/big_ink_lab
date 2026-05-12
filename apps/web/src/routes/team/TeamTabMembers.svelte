@@ -2,12 +2,11 @@
   import { onMount } from 'svelte';
   import {
     fetchTeamMembers,
-    formatDate,
-    formatMoney,
     removeTeamMember,
     resetTeamMemberPassword,
     type TeamMember,
-  } from '$lib/team';
+  } from '$lib/team-members';
+  import { formatDate, formatMoney } from '$lib/team-utils';
   import IconEdit from '$lib/icons/IconEdit.svelte';
   import IconRefresh from '$lib/icons/IconRefresh.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';

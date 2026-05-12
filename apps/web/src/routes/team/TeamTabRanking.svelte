@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TeamHeadToHeadMatrix, TeamInternalRankingRow } from '$lib/team';
+  import type { TeamHeadToHeadMatrix, TeamInternalRankingRow } from '$lib/team-analytics';
 
   interface Props {
     rows: TeamInternalRankingRow[];
