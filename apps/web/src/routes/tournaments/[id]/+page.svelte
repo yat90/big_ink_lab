@@ -9,7 +9,8 @@
   import AppCard from '$lib/components/ui/AppCard.svelte';
   import { breadcrumbTail } from '$lib/breadcrumbTail';
   import { translate, t, locale } from '$lib/i18n';
-  import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
+  import type { LorcanaMatch } from '$lib/lorcana-match';
+  import { playerName } from '$lib/players';
   import {
     formatMatchRoundLabel,
     getLorcanaMatchPlayerId,
@@ -165,11 +166,6 @@
   function clearTournamentViewFilters(): void {
     if (activeView === 'rounds') roundFilter = 'all';
     else playerFilterId = '';
-  }
-
-  function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
-    if (!p) return '–';
-    return typeof p === 'string' ? p : (p.name ?? '–');
   }
 
   function formatDate(s: string | undefined): string {
