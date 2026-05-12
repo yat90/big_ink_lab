@@ -49,14 +49,14 @@
   }
 
   function addRow() {
-    draft = [...draft, { id: crypto.randomUUID(), description: '', amount: 0 }];
+    draft = [...draft, { id: crypto.randomUUID(), description: '', amount: 0, legalText: '' }];
   }
 
   function removeRow(id: string) {
     draft = draft.filter((p) => p.id !== id);
   }
 
-  function patchRow(id: string, patch: Partial<Pick<TeamPenalty, 'description' | 'amount'>>) {
+  function patchRow(id: string, patch: Partial<Pick<TeamPenalty, 'description' | 'amount' | 'legalText'>>) {
     draft = draft.map((p) => (p.id === id ? { ...p, ...patch } : p));
   }
 
@@ -66,6 +66,7 @@
         id: p.id,
         description: p.description.trim(),
         amount: Number.isFinite(p.amount) && p.amount >= 0 ? p.amount : 0,
+        legalText: p.legalText?.trim() || undefined,
       }))
       .filter((p) => p.description.length > 0);
     saving = true;
@@ -142,16 +143,24 @@
           <tbody>
             {#if editing}
               {#each draft as row (row.id)}
-                <tr class="penalties-table__row">
+                <tr class="penalties-table__row penalties-table__row--editing">
                   <td class="penalties-table__desc">
                     <input
                       type="text"
                       class="penalties-input penalties-input--text"
                       maxlength={500}
-                      placeholder="Beschreibung"
+                      placeholder="Verstoß"
                       value={row.description}
                       oninput={(e) => patchRow(row.id, { description: e.currentTarget.value })}
                     />
+                    <textarea
+                      class="penalties-input penalties-input--legal"
+                      maxlength={2000}
+                      placeholder="Gesetzestext (optional)"
+                      rows={3}
+                      value={row.legalText ?? ''}
+                      oninput={(e) => patchRow(row.id, { legalText: e.currentTarget.value })}
+                    ></textarea>
                   </td>
                   <td class="penalties-table__amount">
                     <input
@@ -183,7 +192,12 @@
             {:else}
               {#each penalties as row (row.id)}
                 <tr class="penalties-table__row">
-                  <td class="penalties-table__desc">{row.description}</td>
+                  <td class="penalties-table__desc">
+                    <span class="penalties-table__desc-title">{row.description}</span>
+                    {#if row.legalText}
+                      <p class="penalties-table__legal-text">{row.legalText}</p>
+                    {/if}
+                  </td>
                   <td class="penalties-table__amount">{formatMoney(row.amount)}</td>
                 </tr>
               {/each}
@@ -290,9 +304,28 @@
     border-bottom: none;
   }
 
+  .penalties-table__row--editing td {
+    vertical-align: top;
+    padding-top: var(--space-md);
+    padding-bottom: var(--space-md);
+  }
+
   .penalties-table__desc {
     font-weight: 500;
     line-height: 1.4;
+  }
+
+  .penalties-table__desc-title {
+    display: block;
+  }
+
+  .penalties-table__legal-text {
+    margin: var(--space-xs) 0 0;
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: var(--muted);
+    line-height: 1.5;
+    white-space: pre-wrap;
   }
 
   .penalties-table__amount {
@@ -325,6 +358,13 @@
     margin-left: auto;
     text-align: right;
     font-variant-numeric: tabular-nums;
+  }
+
+  .penalties-input--legal {
+    margin-top: var(--space-xs);
+    resize: vertical;
+    min-height: 4.5rem;
+    line-height: 1.45;
   }
 
   .penalties-input:focus {

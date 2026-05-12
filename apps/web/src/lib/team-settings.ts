@@ -4,6 +4,7 @@ export interface TeamPenalty {
   id: string;
   description: string;
   amount: number;
+  legalText?: string;
 }
 
 export interface TeamSettings {
@@ -18,7 +19,7 @@ export async function fetchTeamSettings(): Promise<TeamSettings> {
 
 export async function updateTeamSettings(patch: {
   monthlyDues?: number;
-  penalties?: { id?: string; description: string; amount: number }[];
+  penalties?: { id?: string; description: string; amount: number; legalText?: string }[];
 }): Promise<TeamSettings> {
   return patchJson<TeamSettings>('/team/settings', patch, "Couldn't save team settings.");
 }

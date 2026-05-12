@@ -50,6 +50,9 @@ export const ACCUSATION_STATUS_VALUES = [
 /** Maximum length used for free-text fields (notes, description). */
 export const TEAM_TEXT_MAX_LENGTH = 500;
 
+/** Maximum length for penalty legal texts (Gesetzestexte). */
+export const TEAM_LEGAL_TEXT_MAX_LENGTH = 2000;
+
 /** Validation bounds for monetary amounts (in the team's currency, no decimals beyond cents). */
 export const MIN_TRANSACTION_AMOUNT = 0.01;
 export const MAX_TRANSACTION_AMOUNT = 1_000_000;
