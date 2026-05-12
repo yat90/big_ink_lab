@@ -12,6 +12,7 @@
   import IconMenu from '$lib/icons/IconMenu.svelte';
   import { getLocale, translate, t, locale } from '$lib/i18n';
   import { playerName } from '$lib/players';
+  import { gameWinnerId } from '$lib/matches';
   import { get } from 'svelte/store';
 
   type Player = { _id: string; name: string; team: string };
@@ -191,10 +192,6 @@
       default:
         return type;
     }
-  }
-  function gameWinnerId(g: Game): string | undefined {
-    if (!g.winner) return undefined;
-    return typeof g.winner === 'string' ? g.winner : (g.winner as { _id?: string })?._id;
   }
   let p1GamesWon = $derived(
     games.filter((g) => g.status === 'done' && gameWinnerId(g) === p1Id).length
@@ -720,10 +717,10 @@
     gameIndex = updatedGames.length - 1;
     // update the game counter
     p1GamesWon = updatedGames.filter(
-      (g) => g.status === 'done' && gameWinnerId(g as Game) === p1Id
+      (g) => g.status === 'done' && gameWinnerId(g) === p1Id
     ).length;
     p2GamesWon = updatedGames.filter(
-      (g) => g.status === 'done' && gameWinnerId(g as Game) === p2Id
+      (g) => g.status === 'done' && gameWinnerId(g) === p2Id
     ).length;
 
     // redirect to the new game

@@ -8,7 +8,7 @@
   import AppBanner from '$lib/components/ui/AppBanner.svelte';
   import AppButton from '$lib/components/ui/AppButton.svelte';
   import AppCard from '$lib/components/ui/AppCard.svelte';
-  import { type Game, type GameStatus, STAGE_OPTIONS } from '$lib/matches';
+  import { type Game, type GameStatus, STAGE_OPTIONS, gameWinnerId } from '$lib/matches';
   import type { LorcanaMatch, LorcanaMatchDeckRef, LorcanaMatchPlayer } from '$lib/lorcana-match';
   import { playerName } from '$lib/players';
   import {
@@ -297,14 +297,6 @@
   function getDeckDisplayName(deck: DeckRef | LorcanaMatchDeckRef | string | undefined): string {
     if (!deck || typeof deck === 'string') return '—';
     return deck.name ?? '—';
-  }
-
-  function gameWinnerId(g: Game): string | undefined {
-    const w = g.winner;
-    if (w == null) return undefined;
-    return typeof w === 'object' && w !== null && '_id' in w
-      ? (w as { _id: string })._id
-      : String(w);
   }
 
   function gamesWon(m: LorcanaMatch, playerId: string): number {

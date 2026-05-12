@@ -4,7 +4,7 @@
   import { page } from '$app/stores';
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
-  import { STAGE_OPTIONS } from '$lib/matches';
+  import { STAGE_OPTIONS, gameWinnerId } from '$lib/matches';
   import type { LorcanaMatch } from '$lib/lorcana-match';
   import { playerName } from '$lib/players';
   import {
@@ -125,14 +125,6 @@
     const w = m.matchWinner;
     if (!w) return undefined;
     return typeof w === 'object' && w !== null ? w._id : w;
-  }
-
-  function gameWinnerId(g: { winner?: unknown }): string | undefined {
-    const w = g.winner;
-    if (w == null) return undefined;
-    return typeof w === 'object' && w !== null && '_id' in w
-      ? (w as { _id: string })._id
-      : String(w);
   }
 
   function gamesWon(match: LorcanaMatch, playerId: string): number {

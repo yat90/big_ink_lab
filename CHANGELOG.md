@@ -6,7 +6,7 @@ Notable changes are recorded as **one file per calendar day** under [`changelogs
 
 | Date / file | Summary |
 |-------------|---------|
-| [`2026-05-12.md`](./changelogs/2026-05-12.md) | Extract shared `playerName` utility into `$lib/players` (#65); commit/changelog requirements added to `apps/web/AGENTS.md` |
+| [`2026-05-12.md`](./changelogs/2026-05-12.md) | Extract shared `playerName` (#65) and `gameWinnerId` (#66) utilities; commit/changelog requirements added to `apps/web/AGENTS.md` |
 | [`2026-05-11.md`](./changelogs/2026-05-11.md) | Accessibility pass for custom Select and modal dialogs (#55); enterprise UI guideline document `apps/web/AGENTS.md` (#58) |
 | [`2026-05-10.md`](./changelogs/2026-05-10.md) | Remove viewport zoom lock (#44); add `768px` tablet breakpoint with fluid spacing/typography scale (#50) |
 | [`2026-05-09.md`](./changelogs/2026-05-09.md) | Split `app.css` into CSS modules (#49); `PageHeader` shared component (#51); `toast` store + `AppToast` component, 3 flows migrated to success toasts (#53); WCAG AA contrast fixes — primary button gradient + input borders (#54) |
