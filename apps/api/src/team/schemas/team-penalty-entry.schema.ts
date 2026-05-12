@@ -11,6 +11,9 @@ export class TeamPenaltyEntry {
 
   @Prop({ type: Number, required: true, min: 0 })
   amount!: number;
+
+  @Prop({ type: String, required: false, default: '' })
+  legalText?: string;
 }
 
 export const TeamPenaltyEntrySchema = SchemaFactory.createForClass(TeamPenaltyEntry);

@@ -94,11 +94,12 @@ export class TeamSettingsService {
   }
 
   private asPenaltyView(p: unknown): TeamPenaltyView {
-    const row = p as { id?: string; description?: string; amount?: number };
+    const row = p as { id?: string; description?: string; amount?: number; legalText?: string };
     return {
       id: typeof row.id === 'string' && row.id.trim() ? row.id.trim() : randomUUID(),
       description: typeof row.description === 'string' ? row.description.trim() : '',
       amount: this.round2(typeof row.amount === 'number' ? row.amount : 0),
+      legalText: typeof row.legalText === 'string' ? row.legalText.trim() : undefined,
     };
   }
 
@@ -110,6 +111,7 @@ export class TeamSettingsService {
           : randomUUID(),
       description: p.description.trim(),
       amount: this.round2(p.amount),
+      legalText: typeof p.legalText === 'string' ? p.legalText.trim() : undefined,
     }));
   }
 

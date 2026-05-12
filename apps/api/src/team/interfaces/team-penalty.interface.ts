@@ -3,4 +3,6 @@ export interface TeamPenaltyView {
   id: string;
   description: string;
   amount: number;
+  /** Optional "Gesetzestext" – formal description of the offense and consequences. */
+  legalText?: string;
 }
