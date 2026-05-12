@@ -75,29 +75,24 @@
   let lastP2ChangeAt = 0;
   let lastP1WasInc = false;
   let lastP2WasInc = false;
-  /** Brief flash when a tap is ignored due to cooldown (same player, opposite direction). */
-  let p1CooldownFlash = $state(false);
-  let p2CooldownFlash = $state(false);
-  let p1CooldownFlashTimer: ReturnType<typeof setTimeout> | null = null;
-  let p2CooldownFlashTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function flashCooldownIgnored(player: 'p1' | 'p2') {
-    if (player === 'p1') {
-      if (p1CooldownFlashTimer) clearTimeout(p1CooldownFlashTimer);
-      p1CooldownFlash = true;
-      p1CooldownFlashTimer = setTimeout(() => {
-        p1CooldownFlash = false;
-        p1CooldownFlashTimer = null;
-      }, 220);
-    } else {
-      if (p2CooldownFlashTimer) clearTimeout(p2CooldownFlashTimer);
-      p2CooldownFlash = true;
-      p2CooldownFlashTimer = setTimeout(() => {
-        p2CooldownFlash = false;
-        p2CooldownFlashTimer = null;
-      }, 220);
-    }
+  function createCooldownState() {
+    let active = $state(false);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    return {
+      get active() { return active; },
+      flash() {
+        if (timer) clearTimeout(timer);
+        active = true;
+        timer = setTimeout(() => { active = false; timer = null; }, 220);
+      },
+      dispose() {
+        if (timer) clearTimeout(timer);
+      },
+    };
   }
+
+  const p1Cooldown = createCooldownState();
+  const p2Cooldown = createCooldownState();
 
   /** All lore changes since last clear; cleared after LORE_INACTIVITY_CLEAR_MS with no new changes. */
   const LORE_INACTIVITY_CLEAR_MS = 2500;
@@ -500,8 +495,8 @@
       if (winCheckTimeout) clearTimeout(winCheckTimeout);
       if (syncInterval) clearInterval(syncInterval);
       if (pruneChangesInterval) clearInterval(pruneChangesInterval);
-      if (p1CooldownFlashTimer) clearTimeout(p1CooldownFlashTimer);
-      if (p2CooldownFlashTimer) clearTimeout(p2CooldownFlashTimer);
+      p1Cooldown.dispose();
+      p2Cooldown.dispose();
       void releaseWakeLock();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleOnline);
@@ -569,7 +564,7 @@
   function incP1() {
     const now = Date.now();
     if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP1WasInc) {
-      flashCooldownIgnored('p1');
+      p1Cooldown.flash();
       return;
     }
     lastP1ChangeAt = now;
@@ -582,7 +577,7 @@
   function decP1() {
     const now = Date.now();
     if (now - lastP1ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP1WasInc) {
-      flashCooldownIgnored('p1');
+      p1Cooldown.flash();
       return;
     }
     lastP1ChangeAt = now;
@@ -594,7 +589,7 @@
   function incP2() {
     const now = Date.now();
     if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && !lastP2WasInc) {
-      flashCooldownIgnored('p2');
+      p2Cooldown.flash();
       return;
     }
     lastP2ChangeAt = now;
@@ -607,7 +602,7 @@
   function decP2() {
     const now = Date.now();
     if (now - lastP2ChangeAt < LORE_BUTTON_COOLDOWN_MS && lastP2WasInc) {
-      flashCooldownIgnored('p2');
+      p2Cooldown.flash();
       return;
     }
     lastP2ChangeAt = now;
@@ -828,7 +823,7 @@
       <div
         class="lore-panel lore-panel--p2"
         class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p2Id}
-        class:lore-panel--cooldown-flash={p2CooldownFlash}
+        class:lore-panel--cooldown-flash={p2Cooldown.active}
       >
         <div class="lore-panel__center">
           {#if canEditMatch}
@@ -882,7 +877,7 @@
       <div
         class="lore-panel lore-panel--p1"
         class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p1Id}
-        class:lore-panel--cooldown-flash={p1CooldownFlash}
+        class:lore-panel--cooldown-flash={p1Cooldown.active}
       >
         <div class="lore-panel__center">
           {#if canEditMatch}
