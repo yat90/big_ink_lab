@@ -5,7 +5,8 @@
   import { config } from '$lib/config';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
+  import type { LorcanaMatch } from '$lib/lorcana-match';
+  import { playerName } from '$lib/players';
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
@@ -82,11 +83,6 @@
     } finally {
       loreTrackerLoading = false;
     }
-  }
-
-  function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
-    if (!p) return '–';
-    return typeof p === 'string' ? p : (p.name ?? '–');
   }
 
   function localCalendarDay(): string {

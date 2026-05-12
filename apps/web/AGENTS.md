@@ -161,6 +161,15 @@ Every list or detail route **must** handle all three states using `StatusStateCa
 | Use `--border-ui` for interactive element borders | Use `--glass-border` or `--border` on inputs and selects |
 | Show a `toast` for async action results | Use `alert()` or silent failures |
 
+## Commit and changelog requirements
+
+Every commit that closes or addresses a GitHub issue **must**:
+
+1. **Reference the issue** in the commit message body — e.g. `Closes #65` or `Part of #65`.
+2. **Add a changelog entry** following [`changelogs/AGENTS.md`](../../changelogs/AGENTS.md) before pushing:
+   - Create or extend today's `changelogs/YYYY-MM-DD.md`.
+   - Update the table in the root `CHANGELOG.md` (newest row at top).
+
 ## New feature adoption checklist
 
 When adding a new feature or route, verify:

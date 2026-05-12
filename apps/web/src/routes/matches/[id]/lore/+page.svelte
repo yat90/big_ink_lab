@@ -11,6 +11,7 @@
   import IconCloud from '$lib/icons/IconCloud.svelte';
   import IconMenu from '$lib/icons/IconMenu.svelte';
   import { getLocale, translate, t, locale } from '$lib/i18n';
+  import { playerName } from '$lib/players';
   import { get } from 'svelte/store';
 
   type Player = { _id: string; name: string; team: string };
@@ -142,11 +143,6 @@
   const LORE_WIN = 20;
   const SCORE_SYNC_INTERVAL_MS = 60_000;
   const LOCAL_DRAFT_STORAGE_KEY = `lore-tracker:${id}:drafts`;
-
-  function playerName(p: Player | string | undefined): string {
-    if (!p) return '–';
-    return typeof p === 'string' ? p : (p.name ?? '–');
-  }
 
   const games = $derived(match?.games ?? []);
   const p1Name = $derived.by(() => {

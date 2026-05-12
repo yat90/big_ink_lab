@@ -10,6 +10,7 @@
   import AppCard from '$lib/components/ui/AppCard.svelte';
   import { type Game, type GameStatus, STAGE_OPTIONS } from '$lib/matches';
   import type { LorcanaMatch, LorcanaMatchDeckRef, LorcanaMatchPlayer } from '$lib/lorcana-match';
+  import { playerName } from '$lib/players';
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
@@ -116,11 +117,6 @@
   );
   const isIntentionalDraw = $derived(!!match && isIntentionalDrawMatch(match));
   const isBye = $derived(!!match && isByeMatch(match));
-
-  function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
-    if (!p) return '–';
-    return typeof p === 'string' ? p : (p.name ?? '–');
-  }
 
   /** Display name for UI: localized Player 1 / Player 2 when no player selected. */
   function displayPlayerName(

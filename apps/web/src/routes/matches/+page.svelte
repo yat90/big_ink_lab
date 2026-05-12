@@ -5,7 +5,8 @@
   import { config } from '$lib/config';
   import { getAuthToken } from '$lib/auth';
   import { STAGE_OPTIONS } from '$lib/matches';
-  import type { LorcanaMatch, LorcanaMatchPlayer } from '$lib/lorcana-match';
+  import type { LorcanaMatch } from '$lib/lorcana-match';
+  import { playerName } from '$lib/players';
   import {
     formatMatchRoundLabel,
     getMatchRoundKey,
@@ -118,11 +119,6 @@
 
   function toggleDuelsHelp() {
     duelsHelpOpen = !duelsHelpOpen;
-  }
-
-  function playerName(p: Player | LorcanaMatchPlayer | string | undefined): string {
-    if (!p) return '–';
-    return typeof p === 'string' ? p : (p.name ?? '–');
   }
 
   function matchWinnerId(m: LorcanaMatch): string | undefined {
