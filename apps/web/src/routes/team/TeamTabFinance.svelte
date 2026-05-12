@@ -6,12 +6,12 @@
     fetchTeamTransactions,
     formatDate,
     formatMoney,
-    updateTeamSettings,
     type PaginatedResult,
-    type TeamBalance,
     type TeamTransaction,
     type TransactionType,
-  } from '$lib/team';
+  } from '$lib/team-transactions';
+  import { updateTeamSettings } from '$lib/team-settings';
+  import type { TeamBalance } from '$lib/team-analytics';
   import type { AuthMePayload } from '$lib/me';
   import type { Writable } from 'svelte/store';
   import IconEdit from '$lib/icons/IconEdit.svelte';

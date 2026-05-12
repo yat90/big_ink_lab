@@ -6,7 +6,7 @@
   import { config } from '$lib/config';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { portal } from '$lib/portal';
-  import { addTeamMember } from '$lib/team';
+  import { addTeamMember } from '$lib/team-members';
 
   interface Props {
     team: string;

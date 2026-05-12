@@ -4,12 +4,8 @@
   import AppCard from '$lib/components/ui/AppCard.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { portal } from '$lib/portal';
-  import {
-    toDateInputValue,
-    updateTeamMember,
-    type MemberStatus,
-    type TeamMember,
-  } from '$lib/team';
+  import { updateTeamMember, type MemberStatus, type TeamMember } from '$lib/team-members';
+  import { toDateInputValue } from '$lib/team-transactions';
   import type { MeRole } from '$lib/me';
 
   interface Props {
