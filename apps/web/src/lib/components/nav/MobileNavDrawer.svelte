@@ -182,13 +182,13 @@
 
       <!-- Team (collapsible with tab links) -->
       <div
-        class="mobile-nav__drawer-group mobile-nav__drawer-group--team"
+        class="mobile-nav__drawer-group mobile-nav__drawer-group--collapsible"
         role="group"
         aria-label={$t('nav.teamSection')}
       >
         <div
-          class="mobile-nav__drawer-subhead mobile-nav__drawer-subhead--team"
-          class:mobile-nav__drawer-subhead--team-expanded={teamOpen}
+          class="mobile-nav__drawer-subhead mobile-nav__drawer-subhead--collapsible"
+          class:mobile-nav__drawer-subhead--expanded={teamOpen}
         >
           <a
             href={PRIMARY_NAV.team.href}
@@ -230,9 +230,9 @@
           </button>
         </div>
         {#if teamOpen}
-          <div id="mobile-nav-drawer-team-sub" class="mobile-nav__drawer-team-sub">
+          <div id="mobile-nav-drawer-team-sub" class="mobile-nav__drawer-sub">
             <div
-              class="mobile-nav__drawer-team-panel"
+              class="mobile-nav__drawer-sub-panel"
               role="group"
               aria-label={$t('team.tablistLabel')}
             >
@@ -240,7 +240,7 @@
                 {@const TabIcon = TEAM_TAB_ICONS[tabId]}
                 <a
                   href="/team?tab={tabId}"
-                  class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--team-tab"
+                  class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--panel-item"
                   class:mobile-nav__drawer-link--active={isTeam && activeTeamTab === tabId}
                   aria-current={isTeam && activeTeamTab === tabId ? 'page' : undefined}
                   onclick={closeMenu}
@@ -257,8 +257,15 @@
       </div>
 
       <!-- Statistics (collapsible) -->
-      <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.statisticsSection')}>
-        <div class="mobile-nav__drawer-subhead">
+      <div
+        class="mobile-nav__drawer-group mobile-nav__drawer-group--collapsible"
+        role="group"
+        aria-label={$t('nav.statisticsSection')}
+      >
+        <div
+          class="mobile-nav__drawer-subhead mobile-nav__drawer-subhead--collapsible"
+          class:mobile-nav__drawer-subhead--expanded={statsOpen}
+        >
           <a
             href="/stats"
             class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
@@ -302,21 +309,24 @@
         {#if statsOpen}
           <div
             id="mobile-nav-drawer-stats-sub"
+            class="mobile-nav__drawer-sub"
             role="group"
             aria-labelledby="mobile-nav-drawer-stats-toggle"
           >
-            <a
-              href="/me/statistics"
-              class="mobile-nav__drawer-link mobile-nav__drawer-link--sub"
-              class:mobile-nav__drawer-link--active={isMyStatistics}
-              aria-current={isMyStatistics ? 'page' : undefined}
-              onclick={closeMenu}
-            >
-              <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-                <IconBarChart size={18} />
-              </span>
-              {$t('nav.myStatistics')}
-            </a>
+            <div class="mobile-nav__drawer-sub-panel">
+              <a
+                href="/me/statistics"
+                class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--panel-item"
+                class:mobile-nav__drawer-link--active={isMyStatistics}
+                aria-current={isMyStatistics ? 'page' : undefined}
+                onclick={closeMenu}
+              >
+                <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+                  <IconBarChart size={18} />
+                </span>
+                {$t('nav.myStatistics')}
+              </a>
+            </div>
           </div>
         {/if}
       </div>
