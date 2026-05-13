@@ -383,6 +383,13 @@
         </span>
         {$t('nav.logOut')}
       </button>
+
+      <div class="mobile-nav__drawer-divider" role="separator" aria-hidden="true"></div>
+
+      <button type="button" class="mobile-nav__drawer-footer-close btn" onclick={closeMenu}>
+        <IconClose size={20} />
+        {$t('common.closeMenu')}
+      </button>
     </div>
 
     <!-- ── Logout confirmation modal ─────────── -->
