@@ -1,29 +1,25 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import logo from '../../../images/bigInkLab.png';
-  import IconTrophy from '$lib/icons/IconTrophy.svelte';
-  import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
-  import IconDecks from '$lib/icons/IconDecks.svelte';
-  import IconUsers from '$lib/icons/IconUsers.svelte';
-  import IconUser from '$lib/icons/IconUser.svelte';
-  import IconTeam from '$lib/icons/IconTeam.svelte';
   import IconCircleUser from '$lib/icons/IconCircleUser.svelte';
-  import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import IconClose from '$lib/icons/IconClose.svelte';
-  import IconGavel from '$lib/icons/IconGavel.svelte';
-  import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import IconCloud from '$lib/icons/IconCloud.svelte';
+  import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
+  import IconDecks from '$lib/icons/IconDecks.svelte';
+  import IconGavel from '$lib/icons/IconGavel.svelte';
+  import IconLogOut from '$lib/icons/IconLogOut.svelte';
+  import IconPenalties from '$lib/icons/IconPenalties.svelte';
+  import IconSparkle from '$lib/icons/IconSparkle.svelte';
+  import IconTeam from '$lib/icons/IconTeam.svelte';
+  import IconTrophy from '$lib/icons/IconTrophy.svelte';
+  import IconUser from '$lib/icons/IconUser.svelte';
+  import IconUsers from '$lib/icons/IconUsers.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { locale, setLocale, t } from '$lib/i18n';
-  import type { Locale } from '$lib/i18n';
   import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
   import { authMe } from '$lib/me';
   import { PRIMARY_NAV, isPrimaryNavActive } from '$lib/navConfig';
-
-  function pickLocale(next: Locale) {
-    setLocale(next);
-  }
 
   interface Props {
     open: boolean;
@@ -33,40 +29,25 @@
   let { open = false, closeMenu, logout }: Props = $props();
 
   const playerName = $derived(($authMe?.player?.name ?? '').trim());
-
   let showLogoutPrompt = $state(false);
+  let statsOpen = $state(false);
+  let teamOpen = $state(false);
 
-  function openLogoutPrompt() {
-    showLogoutPrompt = true;
-  }
-
-  function closeLogoutPrompt() {
-    showLogoutPrompt = false;
-  }
-
-  async function confirmLogout() {
-    closeLogoutPrompt();
-    closeMenu();
-    await logout();
-  }
-
-  $effect(() => {
-    if (!open) showLogoutPrompt = false;
-  });
-
+  // Route active states
   const isHome = $derived(isPrimaryNavActive('home', $page.url.pathname));
   const isMatches = $derived(isPrimaryNavActive('matches', $page.url.pathname));
   const isTournaments = $derived(isPrimaryNavActive('tournaments', $page.url.pathname));
-  const isStats = $derived($page.url.pathname === '/stats');
-  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
   const isDecks = $derived(isPrimaryNavActive('decks', $page.url.pathname));
   const isPlayers = $derived(isPrimaryNavActive('players', $page.url.pathname));
+  const isStats = $derived($page.url.pathname === '/stats');
+  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
   const isTeam = $derived(isPrimaryNavActive('team', $page.url.pathname));
+  const isMe = $derived($page.url.pathname === '/me');
   const activeTeamTab = $derived(
     $page.url.pathname.startsWith('/team') ? teamTabFromSearchParams($page.url.searchParams) : null
   );
 
-  const TEAM_TAB_ICON_MAP: Record<
+  const TEAM_TAB_ICONS: Record<
     TeamTabId,
     | typeof IconUsers
     | typeof IconTrophy
@@ -83,37 +64,38 @@
     links: IconCloud,
   };
 
-  const isMe = $derived($page.url.pathname === '/me');
-
-  let statsOpen = $state(false);
-  let teamOpen = $state(false);
-  let accountOpen = $state(false);
-
+  // Reset states on close; auto-expand active sections on open
   $effect(() => {
-    if (!open) return;
+    if (!open) {
+      showLogoutPrompt = false;
+      return;
+    }
     statsOpen = isMyStatistics;
     teamOpen = isTeam;
-    accountOpen = isMe;
   });
 
+  // Escape key: close logout prompt first, then close drawer
   $effect(() => {
     if (!open) return;
-    const logoutPromptOpen = showLogoutPrompt;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
-      if (logoutPromptOpen) {
-        closeLogoutPrompt();
-        return;
-      }
+      if (showLogoutPrompt) { showLogoutPrompt = false; return; }
       closeMenu();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   });
+
+  function confirmLogout() {
+    showLogoutPrompt = false;
+    closeMenu();
+    void logout();
+  }
 </script>
 
 {#if open}
   <div class="mobile-nav__backdrop" role="presentation" onclick={closeMenu}></div>
+
   <nav
     id="mobile-nav-drawer"
     class="mobile-nav__drawer"
@@ -121,10 +103,31 @@
     use:focusTrap
     use:scrollLock
   >
+    <!-- ── Header: logo + close button ─────────── -->
+    <div class="mobile-nav__drawer-header">
+      <img class="mobile-nav__drawer-header-logo" src={logo} alt="Big Ink Lab" />
+      <button
+        type="button"
+        class="mobile-nav__drawer-close"
+        aria-label={$t('common.closeMenu')}
+        onclick={closeMenu}
+      >
+        <IconClose size={20} />
+      </button>
+    </div>
+
+    <!-- ── Scrollable navigation body ──────────── -->
     <div class="mobile-nav__drawer-scroll">
-      <div class="mobile-nav__drawer-header">
-        <img class="mobile-nav__drawer-header-logo" src={logo} alt="" />
-      </div>
+      {#if playerName}
+        <div class="mobile-nav__drawer-player">
+          <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+            <IconCircleUser size={20} />
+          </span>
+          <span>{playerName}</span>
+        </div>
+      {/if}
+
+      <!-- Main nav links -->
       <a
         href={PRIMARY_NAV.home.href}
         class="mobile-nav__drawer-link"
@@ -132,8 +135,12 @@
         aria-current={isHome ? 'page' : undefined}
         onclick={closeMenu}
       >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconSparkle size={22} />
+        </span>
         {$t(PRIMARY_NAV.home.labelKey)}
       </a>
+
       <a
         href={PRIMARY_NAV.matches.href}
         class="mobile-nav__drawer-link"
@@ -142,10 +149,11 @@
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-          <IconTrophy size={24} />
+          <IconTrophy size={22} />
         </span>
         {$t(PRIMARY_NAV.matches.labelKey)}
       </a>
+
       <a
         href={PRIMARY_NAV.tournaments.href}
         class="mobile-nav__drawer-link"
@@ -154,10 +162,11 @@
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-          <IconCrownOutline size={24} />
+          <IconCrownOutline size={22} />
         </span>
         {$t(PRIMARY_NAV.tournaments.labelKey)}
       </a>
+
       <a
         href={PRIMARY_NAV.decks.href}
         class="mobile-nav__drawer-link"
@@ -166,10 +175,11 @@
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-          <IconDecks size={24} />
+          <IconDecks size={22} />
         </span>
         {$t(PRIMARY_NAV.decks.labelKey)}
       </a>
+
       <a
         href={PRIMARY_NAV.players.href}
         class="mobile-nav__drawer-link"
@@ -178,10 +188,12 @@
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-          <IconCircleUser size={24} />
+          <IconCircleUser size={22} />
         </span>
         {$t(PRIMARY_NAV.players.labelKey)}
       </a>
+
+      <!-- Statistics (collapsible) -->
       <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.statisticsSection')}>
         <div class="mobile-nav__drawer-subhead">
           <a
@@ -192,7 +204,7 @@
             onclick={closeMenu}
           >
             <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-              <IconBarChart size={24} />
+              <IconBarChart size={22} />
             </span>
             {$t('nav.statistics')}
           </a>
@@ -208,8 +220,8 @@
             <svg
               class="mobile-nav__drawer-chevron-svg"
               class:mobile-nav__drawer-chevron-svg--open={statsOpen}
-              width="14"
-              height="14"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               aria-hidden="true"
@@ -238,13 +250,15 @@
               onclick={closeMenu}
             >
               <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-                <IconBarChart size={20} />
+                <IconBarChart size={18} />
               </span>
               {$t('nav.myStatistics')}
             </a>
           </div>
         {/if}
       </div>
+
+      <!-- Team (collapsible with tab links) -->
       <div
         class="mobile-nav__drawer-group mobile-nav__drawer-group--team"
         role="group"
@@ -261,7 +275,7 @@
             onclick={closeMenu}
           >
             <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-              <IconTeam size={24} />
+              <IconTeam size={22} />
             </span>
             {$t(PRIMARY_NAV.team.labelKey)}
           </a>
@@ -277,8 +291,8 @@
             <svg
               class="mobile-nav__drawer-chevron-svg"
               class:mobile-nav__drawer-chevron-svg--open={teamOpen}
-              width="14"
-              height="14"
+              width="16"
+              height="16"
               viewBox="0 0 24 24"
               fill="none"
               aria-hidden="true"
@@ -296,18 +310,12 @@
         {#if teamOpen}
           <div id="mobile-nav-drawer-team-sub" class="mobile-nav__drawer-team-sub">
             <div
-              class="mobile-nav__drawer-team-heading muted"
-              id="mobile-nav-drawer-team-sub-label"
-            >
-              {$t('team.tablistLabel')}
-            </div>
-            <div
               class="mobile-nav__drawer-team-panel"
               role="group"
-              aria-labelledby="mobile-nav-drawer-team-sub-label"
+              aria-label={$t('team.tablistLabel')}
             >
               {#each TEAM_TAB_IDS as tabId (tabId)}
-                {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
+                {@const TabIcon = TEAM_TAB_ICONS[tabId]}
                 <a
                   href="/team?tab={tabId}"
                   class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--team-tab"
@@ -316,7 +324,7 @@
                   onclick={closeMenu}
                 >
                   <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-                    <TabIcon size={20} />
+                    <TabIcon size={18} />
                   </span>
                   {$t(`team.tabs.${tabId}`)}
                 </a>
@@ -325,142 +333,89 @@
           </div>
         {/if}
       </div>
-      <div
-        class="mobile-nav__drawer-group mobile-nav__drawer-group--language"
-        role="group"
-        aria-labelledby="mobile-nav-drawer-lang-label"
-      >
-        <div class="mobile-nav__drawer-lang-wrap">
-          <div class="mobile-nav__drawer-lang-label muted" id="mobile-nav-drawer-lang-label">
-            {$t('common.language')}
-          </div>
-          <div class="mobile-nav__drawer-lang">
-            <button
-              type="button"
-              class="mobile-nav__drawer-lang-btn"
-              class:mobile-nav__drawer-lang-btn--active={$locale === 'de'}
-              aria-pressed={$locale === 'de'}
-              onclick={() => pickLocale('de')}
-            >
-              {$t('lang.deShort')}
-            </button>
-            <button
-              type="button"
-              class="mobile-nav__drawer-lang-btn"
-              class:mobile-nav__drawer-lang-btn--active={$locale === 'en'}
-              aria-pressed={$locale === 'en'}
-              onclick={() => pickLocale('en')}
-            >
-              {$t('lang.enShort')}
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="mobile-nav__drawer-group" role="group" aria-label={$t('nav.accountSection')}>
-        {#if playerName}
-          <p class="mobile-nav__drawer-player-name muted" role="presentation">{playerName}</p>
-        {/if}
-        <div class="mobile-nav__drawer-subhead">
-          <a
-            href="/me"
-            class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
-            class:mobile-nav__drawer-link--active={isMe}
-            aria-current={isMe ? 'page' : undefined}
-            onclick={closeMenu}
-          >
-            <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-              <IconUser size={24} />
-            </span>
-            {$t('nav.mobileMe')}
-          </a>
+    </div>
+
+    <!-- ── Footer: language + account + logout ── -->
+    <div class="mobile-nav__drawer-footer">
+      <div class="mobile-nav__drawer-lang-wrap">
+        <div class="mobile-nav__drawer-lang">
           <button
             type="button"
-            class="mobile-nav__drawer-chevron-btn"
-            id="mobile-nav-drawer-account-toggle"
-            aria-expanded={accountOpen}
-            aria-controls="mobile-nav-drawer-account-sub"
-            aria-label={$t('nav.openAccountMenu')}
-            onclick={() => (accountOpen = !accountOpen)}
+            class="mobile-nav__drawer-lang-btn"
+            class:mobile-nav__drawer-lang-btn--active={$locale === 'de'}
+            aria-pressed={$locale === 'de'}
+            onclick={() => setLocale('de')}
           >
-            <svg
-              class="mobile-nav__drawer-chevron-svg"
-              class:mobile-nav__drawer-chevron-svg--open={accountOpen}
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="m6 9 6 6 6-6"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+            {$t('lang.deShort')}
+          </button>
+          <button
+            type="button"
+            class="mobile-nav__drawer-lang-btn"
+            class:mobile-nav__drawer-lang-btn--active={$locale === 'en'}
+            aria-pressed={$locale === 'en'}
+            onclick={() => setLocale('en')}
+          >
+            {$t('lang.enShort')}
           </button>
         </div>
-        {#if accountOpen}
-          <div
-            id="mobile-nav-drawer-account-sub"
-            role="group"
-            aria-labelledby="mobile-nav-drawer-account-toggle"
-          >
-            <button
-              type="button"
-              class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--button"
-              onclick={openLogoutPrompt}
-            >
-              <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
-                <IconLogOut size={20} />
-              </span>
-              {$t('nav.logOut')}
-            </button>
-          </div>
-        {/if}
       </div>
-      <div class="mobile-nav__drawer-divider" role="separator" aria-hidden="true"></div>
-      <button type="button" class="mobile-nav__drawer-footer-close btn" onclick={closeMenu}>
-        <IconClose size={22} />
-        {$t('common.closeMenu')}
+
+      <a
+        href="/me"
+        class="mobile-nav__drawer-link"
+        class:mobile-nav__drawer-link--active={isMe}
+        aria-current={isMe ? 'page' : undefined}
+        onclick={closeMenu}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconUser size={22} />
+        </span>
+        {$t('nav.mobileMe')}
+      </a>
+
+      <button
+        type="button"
+        class="mobile-nav__drawer-link mobile-nav__drawer-link--button mobile-nav__drawer-link--logout"
+        onclick={() => (showLogoutPrompt = true)}
+      >
+        <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+          <IconLogOut size={22} />
+        </span>
+        {$t('nav.logOut')}
       </button>
     </div>
 
+    <!-- ── Logout confirmation modal ─────────── -->
     {#if showLogoutPrompt}
       <div
-        class="mobile-nav-logout-modal delete-game-modal"
+        class="logout-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="logout-confirm-title"
       >
         <button
           type="button"
-          class="delete-game-modal__backdrop"
+          class="logout-modal__backdrop"
           aria-label={$t('nav.logOutCancel')}
-          onclick={closeLogoutPrompt}
+          onclick={() => (showLogoutPrompt = false)}
         ></button>
         <div
-          class="delete-game-modal__card card"
+          class="logout-modal__card card"
           use:focusTrap={{ focusRoot: true }}
           use:scrollLock
         >
-          <h2 id="logout-confirm-title" class="delete-game-modal__title">
+          <h2 id="logout-confirm-title" class="logout-modal__title">
             {$t('nav.logOutConfirmTitle')}
           </h2>
-          <p class="delete-game-modal__text muted">{$t('nav.logOutConfirmBody')}</p>
-          <div class="delete-game-modal__actions row">
-            <button
-              type="button"
-              class="btn btn--primary btn--icon"
-              onclick={() => void confirmLogout()}
-            >
+          <p class="logout-modal__text muted">{$t('nav.logOutConfirmBody')}</p>
+          <div class="logout-modal__actions row">
+            <button type="button" class="btn btn--primary btn--icon" onclick={confirmLogout}>
               <IconLogOut size={18} />
               {$t('nav.logOut')}
             </button>
-            <button type="button" class="btn" onclick={closeLogoutPrompt}
-              >{$t('nav.logOutCancel')}</button
-            >
+            <button type="button" class="btn" onclick={() => (showLogoutPrompt = false)}>
+              {$t('nav.logOutCancel')}
+            </button>
           </div>
         </div>
       </div>
@@ -469,26 +424,17 @@
 {/if}
 
 <style>
-  .mobile-nav__drawer-player-name {
-    margin: 0;
-    padding: 6px 16px 2px;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    line-height: 1.3;
-  }
-
-  .mobile-nav-logout-modal.delete-game-modal {
-    z-index: 1300;
-  }
-  .delete-game-modal {
+  .logout-modal {
     position: fixed;
     inset: 0;
+    z-index: 1300;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 16px;
   }
-  .delete-game-modal__backdrop {
+
+  .logout-modal__backdrop {
     position: absolute;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
@@ -496,21 +442,25 @@
     padding: 0;
     cursor: pointer;
   }
-  .delete-game-modal__card {
+
+  .logout-modal__card {
     position: relative;
     z-index: 1;
     max-width: 360px;
     width: 100%;
     text-align: center;
   }
-  .delete-game-modal__title {
+
+  .logout-modal__title {
     font-size: 1.25rem;
     margin: 0 0 8px;
   }
-  .delete-game-modal__text {
+
+  .logout-modal__text {
     margin: 0 0 20px;
   }
-  .delete-game-modal__actions {
+
+  .logout-modal__actions {
     gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
