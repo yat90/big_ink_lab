@@ -500,15 +500,15 @@ button.desktop-nav__dropdown-link {
   background: var(--glass-bg-strong);
 }
 
-/* Team chevron stays neutral; only the main "Team" link uses active (ink) styles. */
+/* Team and Stats chevrons stay neutral; only their main links get the active (ink) style. */
 .mobile-nav__drawer-subhead:has(a.mobile-nav__drawer-link--active.mobile-nav__drawer-link--main)
-  .mobile-nav__drawer-chevron-btn:not(.mobile-nav__drawer-chevron-btn--team) {
+  .mobile-nav__drawer-chevron-btn:not(.mobile-nav__drawer-chevron-btn--team):not(.mobile-nav__drawer-chevron-btn--stats) {
   color: white;
   background: var(--ink);
 }
 
 .mobile-nav__drawer-subhead:has(a.mobile-nav__drawer-link--active.mobile-nav__drawer-link--main)
-  .mobile-nav__drawer-chevron-btn:not(.mobile-nav__drawer-chevron-btn--team):hover {
+  .mobile-nav__drawer-chevron-btn:not(.mobile-nav__drawer-chevron-btn--team):not(.mobile-nav__drawer-chevron-btn--stats):hover {
   color: white;
   background: var(--ink-hover);
 }
