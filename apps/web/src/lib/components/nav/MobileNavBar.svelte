@@ -57,6 +57,7 @@
       <button
         type="button"
         class="mobile-nav__item mobile-nav__item--more"
+        class:mobile-nav__item--active={menuOpen}
         aria-label={menuOpen ? 'Close menu' : 'More menu'}
         aria-expanded={menuOpen}
         aria-controls="mobile-nav-drawer"
