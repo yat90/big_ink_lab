@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { formatMoney } from '$lib/team-utils';
-  import type { TeamBalance } from '$lib/team-analytics';
+  import { formatMoney } from '$lib/components/team/team-utils';
+  import type { TeamBalance } from '$lib/components/team/team-analytics';
 
   interface Props {
     balance: TeamBalance;

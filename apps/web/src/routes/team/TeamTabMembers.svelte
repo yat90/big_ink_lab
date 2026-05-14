@@ -5,8 +5,8 @@
     removeTeamMember,
     resetTeamMemberPassword,
     type TeamMember,
-  } from '$lib/team-members';
-  import { formatDate, formatMoney } from '$lib/team-utils';
+  } from '$lib/components/team/team-members';
+  import { formatDate, formatMoney } from '$lib/components/team/team-utils';
   import IconEdit from '$lib/icons/IconEdit.svelte';
   import IconRefresh from '$lib/icons/IconRefresh.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';

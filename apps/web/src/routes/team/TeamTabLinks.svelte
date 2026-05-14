@@ -1,6 +1,6 @@
 <script lang="ts">
   import IconCloud from '$lib/icons/IconCloud.svelte';
-  import { TEAM_DRIVE_LINKS } from '$lib/teamDriveLinks';
+  import { TEAM_DRIVE_LINKS } from '$lib/components/team/teamDriveLinks';
   import { t } from '$lib/i18n';
 </script>
 

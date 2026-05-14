@@ -17,7 +17,7 @@
   import IconUsers from '$lib/icons/IconUsers.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { locale, setLocale, t } from '$lib/i18n';
-  import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
+  import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/components/team/teamTabs';
   import { authMe } from '$lib/me';
   import { PRIMARY_NAV, isPrimaryNavActive } from '$lib/navConfig';
 
