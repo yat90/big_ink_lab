@@ -4,22 +4,18 @@
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconCircleUser from '$lib/icons/IconCircleUser.svelte';
   import IconClose from '$lib/icons/IconClose.svelte';
-  import IconCloud from '$lib/icons/IconCloud.svelte';
   import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
-  import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
-  import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import IconSparkle from '$lib/icons/IconSparkle.svelte';
   import IconTeam from '$lib/icons/IconTeam.svelte';
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
-  import IconUsers from '$lib/icons/IconUsers.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { locale, setLocale, t } from '$lib/i18n';
-  import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/components/team/teamTabs';
+  import { TEAM_TAB_IDS } from '$lib/components/team/teamTabs';
   import { authMe } from '$lib/me';
-  import { PRIMARY_NAV, isPrimaryNavActive } from '$lib/navConfig';
+  import { PRIMARY_NAV, TEAM_TAB_ICON_MAP, getNavRouteState } from '$lib/navConfig';
 
   interface Props {
     open: boolean;
@@ -34,35 +30,7 @@
   let teamOpen = $state(false);
 
   // Route active states
-  const isHome = $derived(isPrimaryNavActive('home', $page.url.pathname));
-  const isMatches = $derived(isPrimaryNavActive('matches', $page.url.pathname));
-  const isTournaments = $derived(isPrimaryNavActive('tournaments', $page.url.pathname));
-  const isDecks = $derived(isPrimaryNavActive('decks', $page.url.pathname));
-  const isPlayers = $derived(isPrimaryNavActive('players', $page.url.pathname));
-  const isStats = $derived($page.url.pathname === '/stats');
-  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
-  const isTeam = $derived(isPrimaryNavActive('team', $page.url.pathname));
-  const isMe = $derived($page.url.pathname === '/me');
-  const activeTeamTab = $derived(
-    $page.url.pathname.startsWith('/team') ? teamTabFromSearchParams($page.url.searchParams) : null
-  );
-
-  const TEAM_TAB_ICONS: Record<
-    TeamTabId,
-    | typeof IconUsers
-    | typeof IconTrophy
-    | typeof IconPenalties
-    | typeof IconGavel
-    | typeof IconBarChart
-    | typeof IconCloud
-  > = {
-    members: IconUsers,
-    ranking: IconTrophy,
-    penalties: IconPenalties,
-    court: IconGavel,
-    finance: IconBarChart,
-    links: IconCloud,
-  };
+  const nav = $derived(getNavRouteState($page.url));
 
   // Reset states on close; auto-expand active sections on open
   $effect(() => {
@@ -70,8 +38,8 @@
       showLogoutPrompt = false;
       return;
     }
-    statsOpen = isMyStatistics;
-    teamOpen = isTeam;
+    statsOpen = nav.isMyStatistics;
+    teamOpen = nav.isTeam;
   });
 
   // Escape key: close logout prompt first, then close drawer
@@ -131,8 +99,8 @@
       <a
         href={PRIMARY_NAV.home.href}
         class="mobile-nav__drawer-link"
-        class:mobile-nav__drawer-link--active={isHome}
-        aria-current={isHome ? 'page' : undefined}
+        class:mobile-nav__drawer-link--active={nav.isHome}
+        aria-current={nav.isHome ? 'page' : undefined}
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
@@ -144,8 +112,8 @@
       <a
         href={PRIMARY_NAV.matches.href}
         class="mobile-nav__drawer-link"
-        class:mobile-nav__drawer-link--active={isMatches}
-        aria-current={isMatches ? 'page' : undefined}
+        class:mobile-nav__drawer-link--active={nav.isMatches}
+        aria-current={nav.isMatches ? 'page' : undefined}
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
@@ -157,8 +125,8 @@
       <a
         href={PRIMARY_NAV.tournaments.href}
         class="mobile-nav__drawer-link"
-        class:mobile-nav__drawer-link--active={isTournaments}
-        aria-current={isTournaments ? 'page' : undefined}
+        class:mobile-nav__drawer-link--active={nav.isTournaments}
+        aria-current={nav.isTournaments ? 'page' : undefined}
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
@@ -170,8 +138,8 @@
       <a
         href={PRIMARY_NAV.decks.href}
         class="mobile-nav__drawer-link"
-        class:mobile-nav__drawer-link--active={isDecks}
-        aria-current={isDecks ? 'page' : undefined}
+        class:mobile-nav__drawer-link--active={nav.isDecks}
+        aria-current={nav.isDecks ? 'page' : undefined}
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
@@ -193,7 +161,7 @@
           <a
             href={PRIMARY_NAV.team.href}
             class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
-            class:mobile-nav__drawer-link--active={isTeam}
+            class:mobile-nav__drawer-link--active={nav.isTeam}
             onclick={closeMenu}
           >
             <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
@@ -237,12 +205,12 @@
               aria-label={$t('team.tablistLabel')}
             >
               {#each TEAM_TAB_IDS as tabId (tabId)}
-                {@const TabIcon = TEAM_TAB_ICONS[tabId]}
+                {@const TabIcon = TEAM_TAB_ICON_MAP[tabId]}
                 <a
                   href="/team?tab={tabId}"
                   class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--panel-item"
-                  class:mobile-nav__drawer-link--active={isTeam && activeTeamTab === tabId}
-                  aria-current={isTeam && activeTeamTab === tabId ? 'page' : undefined}
+                  class:mobile-nav__drawer-link--active={nav.isTeam && nav.activeTeamTab === tabId}
+                  aria-current={nav.isTeam && nav.activeTeamTab === tabId ? 'page' : undefined}
                   onclick={closeMenu}
                 >
                   <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
@@ -269,8 +237,8 @@
           <a
             href="/stats"
             class="mobile-nav__drawer-link mobile-nav__drawer-link--main"
-            class:mobile-nav__drawer-link--active={isStats && !isMyStatistics}
-            aria-current={isStats && !isMyStatistics ? 'page' : undefined}
+            class:mobile-nav__drawer-link--active={nav.isStats && !nav.isMyStatistics}
+            aria-current={nav.isStats && !nav.isMyStatistics ? 'page' : undefined}
             onclick={closeMenu}
           >
             <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
@@ -317,8 +285,8 @@
               <a
                 href="/me/statistics"
                 class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--panel-item"
-                class:mobile-nav__drawer-link--active={isMyStatistics}
-                aria-current={isMyStatistics ? 'page' : undefined}
+                class:mobile-nav__drawer-link--active={nav.isMyStatistics}
+                aria-current={nav.isMyStatistics ? 'page' : undefined}
                 onclick={closeMenu}
               >
                 <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
@@ -335,8 +303,8 @@
       <a
         href={PRIMARY_NAV.players.href}
         class="mobile-nav__drawer-link"
-        class:mobile-nav__drawer-link--active={isPlayers}
-        aria-current={isPlayers ? 'page' : undefined}
+        class:mobile-nav__drawer-link--active={nav.isPlayers}
+        aria-current={nav.isPlayers ? 'page' : undefined}
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
@@ -374,8 +342,8 @@
       <a
         href="/me"
         class="mobile-nav__drawer-link"
-        class:mobile-nav__drawer-link--active={isMe}
-        aria-current={isMe ? 'page' : undefined}
+        class:mobile-nav__drawer-link--active={nav.isMe}
+        aria-current={nav.isMe ? 'page' : undefined}
         onclick={closeMenu}
       >
         <span class="mobile-nav__drawer-link-icon" aria-hidden="true">

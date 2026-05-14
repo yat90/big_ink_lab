@@ -4,21 +4,17 @@
   import logo from '../../../images/bigInkLab.png';
   import IconTrophy from '$lib/icons/IconTrophy.svelte';
   import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
-  import IconUsers from '$lib/icons/IconUsers.svelte';
   import IconTeam from '$lib/icons/IconTeam.svelte';
   import IconCircleUser from '$lib/icons/IconCircleUser.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
-  import IconGavel from '$lib/icons/IconGavel.svelte';
-  import IconPenalties from '$lib/icons/IconPenalties.svelte';
-  import IconCloud from '$lib/icons/IconCloud.svelte';
   import { authMe } from '$lib/me';
   import { locale, setLocale, t } from '$lib/i18n';
   import type { Locale } from '$lib/i18n';
-  import { TEAM_TAB_IDS, teamTabFromSearchParams } from '$lib/components/team/teamTabs';
-  import { PRIMARY_NAV, isPrimaryNavActive } from '$lib/navConfig';
+  import { TEAM_TAB_IDS } from '$lib/components/team/teamTabs';
+  import { PRIMARY_NAV, TEAM_TAB_ICON_MAP, getNavRouteState } from '$lib/navConfig';
 
   interface Props {
     authDisplayName: string;
@@ -41,28 +37,7 @@
     setLocale(next);
   }
 
-  const TEAM_TAB_ICON_MAP = {
-    members: IconUsers,
-    ranking: IconTrophy,
-    penalties: IconPenalties,
-    court: IconGavel,
-    finance: IconBarChart,
-    links: IconCloud,
-  };
-
-  const activeTeamTab = $derived(
-    $page.url.pathname.startsWith('/team') ? teamTabFromSearchParams($page.url.searchParams) : null
-  );
-
-  const isHome = $derived(isPrimaryNavActive('home', $page.url.pathname));
-  const isMatches = $derived(isPrimaryNavActive('matches', $page.url.pathname));
-  const isTournaments = $derived(isPrimaryNavActive('tournaments', $page.url.pathname));
-  const isPlayers = $derived(isPrimaryNavActive('players', $page.url.pathname));
-  const isTeam = $derived(isPrimaryNavActive('team', $page.url.pathname));
-  const isDecks = $derived(isPrimaryNavActive('decks', $page.url.pathname));
-  const isStats = $derived($page.url.pathname === '/stats');
-  const isMe = $derived($page.url.pathname === '/me');
-  const isMyStatistics = $derived($page.url.pathname === '/me/statistics');
+  const nav = $derived(getNavRouteState($page.url));
   $effect(() => {
     $page.url.pathname;
     statsMenuOpen = false;
@@ -101,8 +76,8 @@
   <a
     href={PRIMARY_NAV.home.href}
     class="desktop-nav__link"
-    class:desktop-nav__link--active={isHome}
-    aria-current={isHome ? 'page' : undefined}
+    class:desktop-nav__link--active={nav.isHome}
+    aria-current={nav.isHome ? 'page' : undefined}
   >
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <img class="desktop-nav__brand-logo" src={logo} alt="" width="64" height="64" />
@@ -111,8 +86,8 @@
   <a
     href={PRIMARY_NAV.matches.href}
     class="desktop-nav__link"
-    class:desktop-nav__link--active={isMatches}
-    aria-current={isMatches ? 'page' : undefined}
+    class:desktop-nav__link--active={nav.isMatches}
+    aria-current={nav.isMatches ? 'page' : undefined}
   >
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconTrophy size={28} />
@@ -122,8 +97,8 @@
   <a
     href={PRIMARY_NAV.tournaments.href}
     class="desktop-nav__link"
-    class:desktop-nav__link--active={isTournaments}
-    aria-current={isTournaments ? 'page' : undefined}
+    class:desktop-nav__link--active={nav.isTournaments}
+    aria-current={nav.isTournaments ? 'page' : undefined}
   >
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconCrownOutline size={28} />
@@ -139,8 +114,8 @@
       <a
         href="/stats"
         class="desktop-nav__link desktop-nav__link--dropdown-main"
-        class:desktop-nav__link--active={isStats && !isMyStatistics}
-        aria-current={isStats && !isMyStatistics ? 'page' : undefined}
+        class:desktop-nav__link--active={nav.isStats && !nav.isMyStatistics}
+        aria-current={nav.isStats && !nav.isMyStatistics ? 'page' : undefined}
       >
         <span class="desktop-nav__link-icon" aria-hidden="true">
           <IconBarChart size={28} />
@@ -180,8 +155,8 @@
       <a
         href="/me/statistics"
         class="desktop-nav__dropdown-link"
-        class:desktop-nav__dropdown-link--active={isMyStatistics}
-        aria-current={isMyStatistics ? 'page' : undefined}
+        class:desktop-nav__dropdown-link--active={nav.isMyStatistics}
+        aria-current={nav.isMyStatistics ? 'page' : undefined}
       >
         <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
           <IconBarChart size={18} />
@@ -193,8 +168,8 @@
   <a
     href={PRIMARY_NAV.decks.href}
     class="desktop-nav__link"
-    class:desktop-nav__link--active={isDecks}
-    aria-current={isDecks ? 'page' : undefined}
+    class:desktop-nav__link--active={nav.isDecks}
+    aria-current={nav.isDecks ? 'page' : undefined}
   >
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconDecks size={28} />
@@ -210,7 +185,7 @@
       <a
         href={PRIMARY_NAV.team.href}
         class="desktop-nav__link desktop-nav__link--dropdown-main"
-        class:desktop-nav__link--active={isTeam}
+        class:desktop-nav__link--active={nav.isTeam}
       >
         <span class="desktop-nav__link-icon" aria-hidden="true">
           <IconTeam size={28} />
@@ -252,8 +227,8 @@
         <a
           href="/team?tab={tabId}"
           class="desktop-nav__dropdown-link"
-          class:desktop-nav__dropdown-link--active={activeTeamTab === tabId}
-          aria-current={activeTeamTab === tabId ? 'page' : undefined}
+          class:desktop-nav__dropdown-link--active={nav.activeTeamTab === tabId}
+          aria-current={nav.activeTeamTab === tabId ? 'page' : undefined}
         >
           <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
             <TabIcon size={18} />
@@ -267,8 +242,8 @@
   <a
     href={PRIMARY_NAV.players.href}
     class="desktop-nav__link desktop-nav__link--push-end"
-    class:desktop-nav__link--active={isPlayers}
-    aria-current={isPlayers ? 'page' : undefined}
+    class:desktop-nav__link--active={nav.isPlayers}
+    aria-current={nav.isPlayers ? 'page' : undefined}
   >
     <span class="desktop-nav__link-icon" aria-hidden="true">
       <IconCircleUser size={28} />
@@ -364,8 +339,8 @@
       <a
         href="/me"
         class="desktop-nav__link desktop-nav__link--dropdown-main"
-        class:desktop-nav__link--active={isMe}
-        aria-current={isMe ? 'page' : undefined}
+        class:desktop-nav__link--active={nav.isMe}
+        aria-current={nav.isMe ? 'page' : undefined}
         title={[playerName, authDisplayName].filter(Boolean).join(' · ') || undefined}
         aria-label={playerName
           ? authDisplayName
@@ -415,8 +390,8 @@
       <a
         href="/me/statistics"
         class="desktop-nav__dropdown-link"
-        class:desktop-nav__dropdown-link--active={isMyStatistics}
-        aria-current={isMyStatistics ? 'page' : undefined}
+        class:desktop-nav__dropdown-link--active={nav.isMyStatistics}
+        aria-current={nav.isMyStatistics ? 'page' : undefined}
       >
         <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
           <IconBarChart size={18} />
@@ -426,8 +401,8 @@
       <a
         href="/decks"
         class="desktop-nav__dropdown-link"
-        class:desktop-nav__dropdown-link--active={isDecks}
-        aria-current={isDecks ? 'page' : undefined}
+        class:desktop-nav__dropdown-link--active={nav.isDecks}
+        aria-current={nav.isDecks ? 'page' : undefined}
       >
         <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
           <IconDecks size={18} />
