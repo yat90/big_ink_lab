@@ -20,12 +20,15 @@
     readLocalDrafts,
     writeLocalDrafts,
     applyDraftsToGames,
-    type LoreDraftMap,
     type LoreGame,
   } from '$lib/lore-draft';
   import { LORE_BUTTON_COOLDOWN_MS, LORE_INACTIVITY_CLEAR_MS, createCooldownState } from '$lib/lore-timers.svelte';
+  import { loreEventTypeLabel, checkWinCondition, resolveWinnerId } from '$lib/lore-game-state';
+  import LorePanel from './LorePanel.svelte';
   import LoreEventsPopup from './LoreEventsPopup.svelte';
   import LoreStarterChoice from './LoreStarterChoice.svelte';
+  import LoreCloseGameModal from './LoreCloseGameModal.svelte';
+  import LoreGameOverModal from './LoreGameOverModal.svelte';
 
   type Player = { _id: string; name: string; team: string };
   type Match = {
@@ -46,7 +49,6 @@
   const initialGameIndex = gameParam ? Math.max(0, parseInt(gameParam, 10) || 0) : 0;
 
   const LOCAL_DRAFT_STORAGE_KEY = getLocalDraftStorageKey(id ?? '');
-  const LORE_WIN = 20;
   const SCORE_SYNC_INTERVAL_MS = 60_000;
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -138,19 +140,6 @@
   let p2GamesWon = $derived(
     games.filter((g) => g.status === 'done' && gameWinnerId(g) === p2Id).length
   );
-
-  function loreEventTypeLabel(type: string): string {
-    void get(locale);
-    const loc = getLocale();
-    switch (type) {
-      case 'lore_increased': return translate(loc, 'matches.detail.eventTypes.lore_increased');
-      case 'lore_decreased': return translate(loc, 'matches.detail.eventTypes.lore_decreased');
-      case 'start': return translate(loc, 'matches.detail.eventTypes.start');
-      case 'end': return translate(loc, 'matches.detail.eventTypes.end');
-      case 'lore_update': return translate(loc, 'matches.detail.eventTypes.lore_update');
-      default: return type;
-    }
-  }
 
   function refreshPendingLocalSyncFlag() {
     hasPendingLocalSync = Object.keys(readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY)).length > 0;
@@ -432,9 +421,7 @@
       const draft = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY)[String(gameIndex)];
       const p1 = draft != null ? draft.p1Lore : p1Lore;
       const p2 = draft != null ? draft.p2Lore : p2Lore;
-      if (p1 >= LORE_WIN || p2 >= LORE_WIN) {
-        saveAsDone();
-      }
+      if (checkWinCondition(p1, p2)) saveAsDone();
     }, 500);
   }
 
@@ -496,17 +483,11 @@
     const draft = readLocalDrafts(LOCAL_DRAFT_STORAGE_KEY)[String(gameIndex)];
     const effectiveP1 = draft != null ? draft.p1Lore : p1Lore;
     const effectiveP2 = draft != null ? draft.p2Lore : p2Lore;
-    if (effectiveP1 < LORE_WIN && effectiveP2 < LORE_WIN) return;
+    const winner = checkWinCondition(effectiveP1, effectiveP2);
+    if (!winner) return;
     const _p1Id = typeof match.p1 === 'object' && match.p1 ? match.p1._id : match.p1;
     const _p2Id = typeof match.p2 === 'object' && match.p2 ? match.p2._id : match.p2;
-    let winnerId: string | undefined;
-    if (effectiveP1 >= LORE_WIN && effectiveP2 >= LORE_WIN) {
-      winnerId = effectiveP1 >= effectiveP2 ? _p1Id : _p2Id;
-    } else if (effectiveP1 >= LORE_WIN) {
-      winnerId = _p1Id;
-    } else if (effectiveP2 >= LORE_WIN) {
-      winnerId = _p2Id;
-    }
+    const winnerId = resolveWinnerId(winner, _p1Id, _p2Id, effectiveP1, effectiveP2);
     persistCurrentGameLocally();
     saving = true;
     error = '';
@@ -679,32 +660,16 @@
         {/if}
       </div>
 
-      <!-- P2 top (purple) -->
-      <div
-        class="lore-panel lore-panel--p2"
-        class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p2Id}
-        class:lore-panel--cooldown-flash={p2Cooldown.active}
-      >
-        <div class="lore-panel__center">
-          {#if canEditMatch}
-            <button type="button" class="lore-panel__btn lore-panel__btn--dec" onclick={decP2} aria-label={$t('matches.lore.decLoreAria')}>−</button>
-          {/if}
-          <span class="lore-panel__value">
-            <span class="lore-panel__number">{p2Lore}</span>
-            <span
-              class="lore-panel__delta"
-              class:lore-panel__delta--pos={p2DeltaLastSecond > 0}
-              class:lore-panel__delta--neg={p2DeltaLastSecond < 0}
-              aria-label={$t('matches.lore.recentDeltaAria')}
-            >
-              {#if p2DeltaLastSecond !== 0}{p2DeltaLastSecond > 0 ? '+' : ''}{p2DeltaLastSecond}{/if}
-            </span>
-          </span>
-          {#if canEditMatch}
-            <button type="button" class="lore-panel__btn lore-panel__btn--inc" onclick={incP2} aria-label={$t('matches.lore.incLoreAria')}>+</button>
-          {/if}
-        </div>
-      </div>
+      <LorePanel
+        player="p2"
+        lore={p2Lore}
+        delta={p2DeltaLastSecond}
+        canEdit={canEditMatch}
+        cooldownActive={p2Cooldown.active}
+        isWinner={showGameOverPrompt && gameOverWinnerId === p2Id}
+        onInc={incP2}
+        onDec={decP2}
+      />
 
       <div class="lore-divider">
         <span class="lore-divider__name lore-divider__name--p2" aria-hidden="true">{p2Name}</span>
@@ -716,32 +681,16 @@
         <span class="lore-divider__name lore-divider__name--p1" aria-hidden="true">{p1Name}</span>
       </div>
 
-      <!-- P1 bottom (grey) -->
-      <div
-        class="lore-panel lore-panel--p1"
-        class:lore-panel--winner={showGameOverPrompt && gameOverWinnerId === p1Id}
-        class:lore-panel--cooldown-flash={p1Cooldown.active}
-      >
-        <div class="lore-panel__center">
-          {#if canEditMatch}
-            <button type="button" class="lore-panel__btn lore-panel__btn--dec" onclick={decP1} aria-label={$t('matches.lore.decLoreAria')}>−</button>
-          {/if}
-          <span class="lore-panel__value">
-            <span class="lore-panel__number">{p1Lore}</span>
-            <span
-              class="lore-panel__delta"
-              class:lore-panel__delta--pos={p1DeltaLastSecond > 0}
-              class:lore-panel__delta--neg={p1DeltaLastSecond < 0}
-              aria-label={$t('matches.lore.recentDeltaAria')}
-            >
-              {#if p1DeltaLastSecond !== 0}{p1DeltaLastSecond > 0 ? '+' : ''}{p1DeltaLastSecond}{/if}
-            </span>
-          </span>
-          {#if canEditMatch}
-            <button type="button" class="lore-panel__btn lore-panel__btn--inc" onclick={incP1} aria-label={$t('matches.lore.incLoreAria')}>+</button>
-          {/if}
-        </div>
-      </div>
+      <LorePanel
+        player="p1"
+        lore={p1Lore}
+        delta={p1DeltaLastSecond}
+        canEdit={canEditMatch}
+        cooldownActive={p1Cooldown.active}
+        isWinner={showGameOverPrompt && gameOverWinnerId === p1Id}
+        onInc={incP1}
+        onDec={decP1}
+      />
     </div>
 
     {#if error}
@@ -764,17 +713,10 @@
   {/if}
 
   {#if showCloseGamePrompt}
-    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="close-game-title">
-      <button type="button" class="lore-modal__backdrop" aria-label={$t('matches.lore.close')} onclick={() => (showCloseGamePrompt = false)}></button>
-      <AppCard className="lore-modal__card">
-        <h2 id="close-game-title" class="lore-modal__title">{$t('matches.lore.leaveGameTitle')}</h2>
-        <p class="lore-modal__text muted">{$t('matches.lore.leaveGameBody')}</p>
-        <div class="lore-modal__actions">
-          <AppButton type="button" variant="primary" onclick={closeGameAndLeave}>{$t('matches.lore.leave')}</AppButton>
-          <AppButton type="button" onclick={() => (showCloseGamePrompt = false)}>{$t('common.cancel')}</AppButton>
-        </div>
-      </AppCard>
-    </div>
+    <LoreCloseGameModal
+      onConfirm={closeGameAndLeave}
+      onDismiss={() => (showCloseGamePrompt = false)}
+    />
   {/if}
 
   {#if showStarterPrompt}
@@ -790,21 +732,12 @@
   {/if}
 
   {#if showGameOverPrompt}
-    <div class="lore-modal" role="dialog" aria-modal="true" aria-labelledby="game-over-title">
-      <div class="lore-modal__backdrop"></div>
-      <AppCard className="lore-modal__card">
-        <h2 id="game-over-title" class="lore-modal__title lore-game-over__title">
-          {$t('matches.lore.winsExclaim', { name: gameOverWinnerName })}
-        </h2>
-        <p class="lore-modal__text muted">{$t('matches.lore.nextGamePrompt')}</p>
-        <div class="lore-modal__actions">
-          <AppButton href="/matches/{id}" variant="primary">{$t('matches.lore.backToMatch')}</AppButton>
-          {#if canEditMatch}
-            <AppButton type="button" onclick={() => goToNextGame()}>{$t('matches.lore.nextGame')}</AppButton>
-          {/if}
-        </div>
-      </AppCard>
-    </div>
+    <LoreGameOverModal
+      winnerName={gameOverWinnerName}
+      matchId={id}
+      {canEditMatch}
+      onNextGame={goToNextGame}
+    />
   {/if}
 </div>
 
@@ -914,110 +847,6 @@
     flex-shrink: 0;
   }
 
-  .lore-panel {
-    flex: 1 1 0;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-  .lore-panel--p1 {
-    background: rgba(87, 101, 124, 0.65);
-    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    border: 1px solid var(--glass-border);
-  }
-  .lore-panel--p2 {
-    background: rgba(122, 54, 171, 0.65);
-    backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
-    border: 1px solid var(--glass-border);
-    transform: rotate(180deg);
-  }
-  .lore-panel--winner {
-    animation: lore-winner-pulse-panel 2s ease-in-out;
-    box-shadow: inset 0 0 0 3px var(--ok);
-  }
-  .lore-panel--cooldown-flash {
-    animation: lore-cooldown-nudge 0.22s ease-out;
-  }
-  @keyframes lore-cooldown-nudge {
-    0%, 100% { filter: brightness(1); }
-    50% { filter: brightness(1.15); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35); }
-  }
-  @keyframes lore-winner-pulse-panel {
-    0%, 100% { box-shadow: inset 0 0 0 3px var(--ok), inset 0 0 24px rgba(34, 197, 94, 0.2); }
-    50% { box-shadow: inset 0 0 0 4px var(--ok), inset 0 0 32px rgba(34, 197, 94, 0.35); }
-  }
-  .lore-panel__center {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .lore-panel__value {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-    position: absolute;
-    pointer-events: none;
-    text-align: center;
-  }
-  .lore-panel__number {
-    font-size: 15rem;
-    font-weight: 500;
-    line-height: 15rem;
-    color: #fff;
-    min-width: 2ch;
-  }
-  .lore-panel__delta {
-    font-size: 2.4rem;
-    font-weight: 700;
-    line-height: 1;
-    opacity: 0.95;
-    letter-spacing: 0.02em;
-    min-height: 1.2em;
-  }
-  .lore-panel__delta--pos {
-    color: rgba(255, 255, 255, 0.95);
-    text-shadow: 0 0 8px rgba(134, 239, 172, 0.6);
-  }
-  .lore-panel__delta--neg {
-    color: rgba(255, 255, 255, 0.9);
-    text-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
-  }
-  .lore-panel__btn {
-    width: 50vw;
-    height: 50vh;
-    min-width: 48px;
-    min-height: 48px;
-    border: none;
-    background: transparent;
-    color: #fff;
-    font-size: 7rem;
-    font-weight: 400;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s, transform 0.1s;
-    touch-action: manipulation;
-    position: relative;
-    z-index: 2;
-  }
-  .lore-panel__btn--dec { transform: translateX(-10%); }
-  .lore-panel__btn--inc { transform: translateX(10%); }
-  @media (max-width: 480px) {
-    .lore-panel__btn {
-      min-width: 64px;
-      font-size: 4em;
-    }
-    .lore-panel__btn--dec { transform: translateX(-25%); }
-    .lore-panel__btn--inc { transform: translateX(25%); }
-  }
-
   .lore-divider {
     flex-shrink: 0;
     height: 2px;
@@ -1075,77 +904,4 @@
   }
   .lore-divider__menu:hover { background: #222; transform: scale(1.05); }
   .lore-divider__menu:active { transform: scale(0.98); }
-
-  /* Inline close-game modal (shared lore-modal pattern) */
-  .lore-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    animation: lore-fade-in 0.2s ease-out;
-  }
-  .lore-modal__backdrop {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    border: none;
-    background: rgba(0, 0, 0, 0.5);
-    cursor: pointer;
-    appearance: none;
-  }
-  .lore-modal__card {
-    position: relative;
-    z-index: 1;
-    max-width: 420px;
-    width: 100%;
-    text-align: center;
-  }
-  .lore-modal__title {
-    font-size: 1.5rem;
-    font-weight: 800;
-    margin: 0 0 24px;
-  }
-  .lore-modal__text {
-    margin: 0 0 24px;
-  }
-  .lore-modal__actions {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  @media (max-width: 480px) {
-    .lore-modal__actions :global(.btn) {
-      min-height: 52px;
-      padding: 14px 24px;
-      font-size: 1.1rem;
-    }
-  }
-  .lore-game-over__title {
-    color: var(--ok);
-  }
-  @keyframes lore-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @media (orientation: landscape) {
-    .lore-panel__number {
-      font-size: clamp(4rem, 36vh, 15rem);
-      line-height: 1;
-    }
-    .lore-panel__delta {
-      font-size: clamp(1rem, 4vh, 2.4rem);
-      min-height: auto;
-    }
-    .lore-panel__btn {
-      height: 48vh;
-      font-size: clamp(3rem, 8vh, 7rem);
-    }
-  }
 </style>
