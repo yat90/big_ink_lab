@@ -13,10 +13,11 @@ import { TournamentsModule } from './tournaments/tournaments.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { TeamModule } from './team/team.module';
 import { DEFAULT_MONGODB_URI, DEFAULT_DB_NAME } from './constants';
+import { validateEnv } from './config/env.config';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

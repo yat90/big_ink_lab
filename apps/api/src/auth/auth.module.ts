@@ -9,6 +9,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { RolesGuard } from './roles.guard';
 import { User, UserSchema } from './schemas/user.schema';
 import { PlayersModule } from '../players/players.module';
+import { resolveJwtSecret } from '../config/env.config';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { PlayersModule } from '../players/players.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') ?? 'dev-secret-change-me',
+        secret: resolveJwtSecret(config),
         signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') ?? '7d' },
       }),
     }),
