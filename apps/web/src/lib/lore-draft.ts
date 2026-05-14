@@ -1,6 +1,6 @@
 import { getStorageItem, setStorageItem, removeStorageItem } from '$lib/storage';
 
-export const LORE_MAX = 25;
+export const LORE_MAX = 30;
 
 export type LoreDraft = {
   p1Lore: number;

@@ -5,14 +5,14 @@
   import AppCard from '$lib/components/ui/AppCard.svelte';
   import { focusTrap, scrollLock } from '$lib/a11y';
   import { portal } from '$lib/portal';
-  import { fetchTeamMembers, type TeamMember } from '$lib/team-members';
+  import { fetchTeamMembers, type TeamMember } from '$lib/components/team/team-members';
   import {
     createTransaction,
     updateTransaction,
     type TeamTransaction,
     type TransactionType,
-  } from '$lib/team-transactions';
-  import { toDateInputValue } from '$lib/team-utils';
+  } from '$lib/components/team/team-transactions';
+  import { toDateInputValue } from '$lib/components/team/team-utils';
 
   interface Props {
     /** When null, the modal is in create mode. */

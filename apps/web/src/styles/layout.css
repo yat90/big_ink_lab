@@ -62,7 +62,7 @@ a {
   position: fixed;
   inset: 0;
   background-color: var(--bg2);
-  background-image: url('../images/Background.png');
+  background-image: url('../images/backgr.png');
   background-size: cover;
   background-position: center;
   opacity: 0.2;

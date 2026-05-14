@@ -6,11 +6,11 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authMe } from '$lib/me';
-  import { fetchTeamOverview, type TeamOverview } from '$lib/team-analytics';
-  import { formatMoney } from '$lib/team-utils';
+  import { fetchTeamOverview, type TeamOverview } from '$lib/components/team/team-analytics';
+  import { formatMoney } from '$lib/components/team/team-utils';
   import { getLocale, translate, t } from '$lib/i18n';
-  import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/teamTabs';
-  import { TEAM_DRIVE_MEETINGS_URL } from '$lib/teamDriveLinks';
+  import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/components/team/teamTabs';
+  import { TEAM_DRIVE_MEETINGS_URL } from '$lib/components/team/teamDriveLinks';
   import TeamTabMembers from './TeamTabMembers.svelte';
   import TeamTabRanking from './TeamTabRanking.svelte';
   import TeamTabFinance from './TeamTabFinance.svelte';

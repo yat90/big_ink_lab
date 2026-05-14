@@ -17,7 +17,7 @@
   import { authMe } from '$lib/me';
   import { locale, setLocale, t } from '$lib/i18n';
   import type { Locale } from '$lib/i18n';
-  import { TEAM_TAB_IDS, teamTabFromSearchParams } from '$lib/teamTabs';
+  import { TEAM_TAB_IDS, teamTabFromSearchParams } from '$lib/components/team/teamTabs';
   import { PRIMARY_NAV, isPrimaryNavActive } from '$lib/navConfig';
 
   interface Props {

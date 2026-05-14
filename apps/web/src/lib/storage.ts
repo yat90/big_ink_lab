@@ -1,8 +1,8 @@
 export const STORAGE_KEYS = {
   AUTH_TOKEN: 'bil.auth.token',
   AUTH_USER: 'bil.auth.user',
-  LOCALE: 'bigInkLab.locale',
-  INSTALL_DISMISSED: 'bil-install-prompt-dismissed',
+  LOCALE: 'bil.locale',
+  INSTALL_DISMISSED: 'bil.install-prompt-dismissed',
 } as const;
 
 export function getStorageItem<T>(key: string): T | null {

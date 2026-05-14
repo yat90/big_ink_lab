@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fetchTeamSettings, updateTeamSettings, type TeamPenalty } from '$lib/team-settings';
-  import { formatMoney } from '$lib/team-utils';
+  import { fetchTeamSettings, updateTeamSettings, type TeamPenalty } from '$lib/components/team/team-settings';
+  import { formatMoney } from '$lib/components/team/team-utils';
   import IconEdit from '$lib/icons/IconEdit.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
 

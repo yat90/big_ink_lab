@@ -1,4 +1,4 @@
-import type { MeRole } from './me';
+import type { MeRole } from '$lib/me';
 import { getJson, postJson, patchJson, deleteNoContent } from '$lib/api-client';
 
 export type MemberStatus = 'active' | 'padawan' | 'inactive';
