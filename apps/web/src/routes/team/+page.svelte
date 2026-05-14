@@ -18,23 +18,13 @@
   import TeamTabCourt from './TeamTabCourt.svelte';
   import TeamTabLinks from './TeamTabLinks.svelte';
   import IconUsers from '$lib/icons/IconUsers.svelte';
-  import IconTrophy from '$lib/icons/IconTrophy.svelte';
-  import IconPenalties from '$lib/icons/IconPenalties.svelte';
   import IconGavel from '$lib/icons/IconGavel.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
   import IconCloud from '$lib/icons/IconCloud.svelte';
   import IconChevronLeft from '$lib/icons/IconChevronLeft.svelte';
   import IconChevronRight from '$lib/icons/IconChevronRight.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
-
-  const TEAM_TAB_ICON_MAP = {
-    members: IconUsers,
-    ranking: IconTrophy,
-    penalties: IconPenalties,
-    court: IconGavel,
-    finance: IconBarChart,
-    links: IconCloud,
-  } as const;
+  import { TEAM_TAB_ICON_MAP } from '$lib/navConfig';
 
   let overview = $state<TeamOverview | null>(null);
   let loading = $state(true);
