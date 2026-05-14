@@ -350,11 +350,20 @@
   }
 
   .team-header {
-    padding: var(--space-lg);
-    margin-bottom: var(--space-lg);
+    padding: var(--space-md);
+    margin-bottom: var(--space-sm);
     display: flex;
     flex-direction: column;
-    gap: var(--space-lg);
+    gap: var(--space-md);
+    border-left: 3px solid var(--primary);
+  }
+
+  @media (min-width: 640px) {
+    .team-header {
+      padding: var(--space-lg);
+      gap: var(--space-lg);
+      margin-bottom: var(--space-md);
+    }
   }
 
   .team-header__hero {
@@ -362,30 +371,30 @@
     align-items: flex-start;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: var(--space-md);
+    gap: var(--space-sm);
   }
 
   .team-header__identity {
-    flex: 1 1 12rem;
+    flex: 1 1 10rem;
     min-width: 0;
   }
 
   .team-header__title {
     margin: 0;
-    font-size: clamp(1.35rem, 3vw, 1.65rem);
+    font-size: clamp(1.25rem, 3vw, 1.65rem);
     font-weight: 800;
     letter-spacing: -0.03em;
     line-height: 1.15;
   }
 
   .team-header__sub {
-    margin: 0.35rem 0 0 0;
-    font-size: 0.9rem;
+    margin: 0.3rem 0 0 0;
+    font-size: 0.85rem;
     line-height: 1.45;
   }
 
   .team-header__sub-sep {
-    margin: 0 0.35rem;
+    margin: 0 0.3rem;
   }
 
   .team-header__treasury {
@@ -393,16 +402,16 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 0.15rem;
-    padding: 0.65rem 1rem;
-    border-radius: var(--radius);
+    gap: 0.1rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     background: var(--glass-bg);
-    min-width: min(11rem, 100%);
+    min-width: min(9.5rem, 100%);
   }
 
   .team-header__treasury-label {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.09em;
@@ -410,7 +419,7 @@
   }
 
   .team-header__treasury-value {
-    font-size: clamp(1.35rem, 3.5vw, 1.65rem);
+    font-size: clamp(1.25rem, 3.5vw, 1.65rem);
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     color: var(--ok);
@@ -423,16 +432,22 @@
 
   .team-header__metrics {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
-    gap: var(--space-sm);
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: var(--space-xs);
+  }
+
+  @media (min-width: 640px) {
+    .team-header__metrics {
+      gap: var(--space-sm);
+    }
   }
 
   .team-metric {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
-    padding: 0.65rem 0.85rem;
-    border-radius: var(--radius);
+    gap: 0.55rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     background: var(--glass-bg-strong, rgba(0, 0, 0, 0.06));
   }
@@ -445,7 +460,7 @@
   }
 
   .team-metric__value {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     line-height: 1.1;
@@ -453,7 +468,7 @@
   }
 
   .team-metric__label {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -461,7 +476,7 @@
   }
 
   .team-metric__meetings-title {
-    font-size: 1.05rem;
+    font-size: 0.95rem;
     font-weight: 800;
     letter-spacing: -0.02em;
     line-height: 1.15;
@@ -517,8 +532,12 @@
   }
 
   .team-tabs-wrap {
-    position: relative;
-    margin: var(--space-lg) 0 var(--space-md) 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    margin: 0 0 var(--space-md) 0;
+    border-bottom: 1px solid var(--border);
   }
 
   .team-tabs-wrap::before,
@@ -602,7 +621,6 @@
   .team-tabs {
     display: flex;
     gap: 0;
-    border-bottom: 1px solid var(--border);
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -616,9 +634,9 @@
   .team-tab {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.65rem 1.1rem;
-    font-size: 0.95rem;
+    gap: 0.4rem;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.9rem;
     font-weight: 600;
     font-family: inherit;
     color: var(--muted);

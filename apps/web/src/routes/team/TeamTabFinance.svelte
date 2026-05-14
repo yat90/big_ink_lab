@@ -229,10 +229,12 @@
   {#if balance}
     <div class="card balance-card">
       <div class="balance-card__main">
-        <span class="muted balance-card__label">Treasury</span>
-        <span class="balance-card__value" class:balance-card__value--neg={balance.balance < 0}>
-          {formatMoney(balance.balance)}
-        </span>
+        <div class="balance-card__main-left">
+          <span class="balance-card__label">Treasury</span>
+          <span class="balance-card__value" class:balance-card__value--neg={balance.balance < 0}>
+            {formatMoney(balance.balance)}
+          </span>
+        </div>
       </div>
       <div class="balance-card__lower">
         <dl class="balance-card__breakdown">
@@ -463,28 +465,48 @@
   }
 
   .balance-card {
-    padding: var(--space-lg);
+    padding: var(--space-md);
     display: flex;
     flex-direction: column;
-    gap: var(--space-lg);
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 640px) {
+    .balance-card {
+      padding: var(--space-lg);
+      gap: var(--space-lg);
+    }
   }
 
   .balance-card__main {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+  }
+
+  .balance-card__main-left {
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
   }
 
   .balance-card__label {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.07em;
+    font-weight: 700;
+    color: var(--muted);
   }
 
   .balance-card__value {
-    font-size: 2rem;
+    font-size: clamp(1.6rem, 4vw, 2.2rem);
     font-weight: 800;
     color: var(--ok);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    line-height: 1;
   }
 
   .balance-card__value--neg {
@@ -493,41 +515,47 @@
 
   .balance-card__lower {
     display: grid;
-    gap: var(--space-xl);
+    gap: var(--space-lg);
     grid-template-columns: 1fr;
     align-items: start;
-    margin-top: var(--space-lg);
   }
 
   @media (min-width: 720px) {
     .balance-card__lower {
-      grid-template-columns: minmax(0, 1fr) minmax(260px, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(240px, 1fr);
     }
   }
 
   .balance-card__breakdown {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
-    gap: var(--space-md);
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: var(--space-sm);
     margin: 0;
   }
 
   .balance-card__breakdown div {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.1rem;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    background: var(--glass-bg);
+    border: 1px solid var(--border);
   }
 
   .balance-card__breakdown dt {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 600;
   }
 
   .balance-card__breakdown dd {
     margin: 0;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
   }
 
   .finance-tab__head {

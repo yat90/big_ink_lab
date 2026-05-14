@@ -185,53 +185,66 @@
     {/if}
     <ul class="member-list" role="list">
       {#each filteredMembers as member (member.playerId)}
-        <li class="card member-row">
-          <div class="member-row__main">
-            <div class="member-row__title">
-              <a href="/players/{member.playerId}" class="member-row__name">{member.name}</a>
-              {#if member.role === 'admin'}
-                <span class="member-row__badge member-row__badge--admin">Admin</span>
-              {/if}
-              {#if member.status === 'padawan'}
-                <span class="member-row__badge member-row__badge--padawan">Padawan</span>
-              {:else if member.status === 'inactive'}
-                <span class="member-row__badge member-row__badge--inactive">Inactive</span>
-              {/if}
-              {#if member.playerId === currentPlayerId}
-                <span class="member-row__badge member-row__badge--you">You</span>
-              {/if}
+        <li class="card member-card">
+          <div class="member-card__main">
+            <div
+              class="member-card__avatar"
+              class:member-card__avatar--inactive={member.status === 'inactive'}
+              aria-hidden="true"
+            >
+              {member.name[0].toUpperCase()}
             </div>
-            <div class="member-row__meta muted">
-              {#if member.email}<span>{member.email}</span>{/if}
-              <span>· Joined {formatDate(member.joinedAt)}</span>
-            </div>
-            {#if member.notes}
-              <p class="member-row__notes muted">{member.notes}</p>
-            {/if}
-          </div>
-          <div class="member-row__finance">
-            <div class="member-row__amount">
-              <span class="muted text-sm">Paid</span>
-              <strong>{formatMoney(member.contributedTotal)}</strong>
-            </div>
-            <div class="member-row__amount" class:member-row__amount--warn={member.outstanding > 0}>
-              <span class="muted text-sm">Outstanding</span>
-              <strong>{formatMoney(member.outstanding)}</strong>
+            <div class="member-card__body">
+              <div class="member-card__title-row">
+                <a href="/players/{member.playerId}" class="member-card__name">{member.name}</a>
+                {#if member.role === 'admin'}
+                  <span class="member-badge member-badge--admin">Admin</span>
+                {/if}
+                {#if member.status === 'padawan'}
+                  <span class="member-badge member-badge--padawan">Padawan</span>
+                {:else if member.status === 'inactive'}
+                  <span class="member-badge member-badge--inactive">Inactive</span>
+                {/if}
+                {#if member.playerId === currentPlayerId}
+                  <span class="member-badge member-badge--you">You</span>
+                {/if}
+              </div>
+              <div class="member-card__meta muted">
+                {#if member.email}<span>{member.email}</span>{/if}
+                <span>Joined {formatDate(member.joinedAt)}</span>
+              </div>
+              <div class="member-card__finance">
+                <span class="member-card__fin-item">
+                  <span class="member-card__fin-label muted">Paid</span>
+                  <strong class="member-card__fin-value">{formatMoney(member.contributedTotal)}</strong>
+                </span>
+                <span class="member-card__fin-sep" aria-hidden="true">·</span>
+                <span
+                  class="member-card__fin-item"
+                  class:member-card__fin-item--warn={member.outstanding > 0}
+                >
+                  <span class="member-card__fin-label muted">Owed</span>
+                  <strong class="member-card__fin-value">{formatMoney(member.outstanding)}</strong>
+                </span>
+              </div>
+              {#if member.notes}
+                <p class="member-card__notes muted">{member.notes}</p>
+              {/if}
             </div>
           </div>
           {#if isAdmin}
-            <div class="member-row__actions">
+            <div class="member-card__actions">
               <button
                 type="button"
-                class="btn btn--icon"
+                class="btn btn--icon btn--sm"
                 aria-label="Edit member"
                 onclick={() => openEdit(member)}
               >
-                <IconEdit size={16} className="icon-inline" />
+                <IconEdit size={15} className="icon-inline" />
               </button>
               <button
                 type="button"
-                class="btn btn--icon"
+                class="btn btn--icon btn--sm"
                 aria-label="Reset login password"
                 disabled={!member.hasAccount || resettingPlayerId === member.playerId}
                 title={!member.hasAccount
@@ -239,11 +252,11 @@
                   : 'Set a new temporary password'}
                 onclick={() => void confirmResetPassword(member)}
               >
-                <IconRefresh size={16} className="icon-inline" />
+                <IconRefresh size={15} className="icon-inline" />
               </button>
               <button
                 type="button"
-                class="btn btn--icon btn--danger"
+                class="btn btn--icon btn--sm btn--danger"
                 aria-label="Remove member"
                 disabled={removingPlayerId === member.playerId ||
                   member.playerId === currentPlayerId}
@@ -252,7 +265,7 @@
                   : 'Remove from team'}
                 onclick={() => void confirmRemove(member)}
               >
-                <IconTrash size={16} className="icon-inline" />
+                <IconTrash size={15} className="icon-inline" />
               </button>
             </div>
           {/if}
@@ -349,119 +362,170 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
   }
 
-  .member-row {
+  .member-card {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
-    gap: var(--space-md);
-    align-items: center;
-    padding: var(--space-md) var(--space-lg);
+    grid-template-columns: 1fr auto;
+    gap: var(--space-sm);
+    align-items: start;
+    padding: var(--space-md);
   }
 
-  @media (max-width: 760px) {
-    .member-row {
-      grid-template-columns: 1fr;
+  @media (min-width: 640px) {
+    .member-card {
+      padding: var(--space-md) var(--space-lg);
     }
   }
 
-  .member-row__main {
+  .member-card__main {
+    display: flex;
+    gap: var(--space-md);
     min-width: 0;
+    align-items: flex-start;
   }
 
-  .member-row__title {
+  .member-card__avatar {
+    flex-shrink: 0;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--primary) 18%, transparent);
+    color: var(--primary);
+    font-size: 0.88rem;
+    font-weight: 800;
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
-    flex-wrap: wrap;
+    justify-content: center;
+    letter-spacing: 0.02em;
+    user-select: none;
+    text-transform: uppercase;
   }
 
-  .member-row__name {
+  .member-card__avatar--inactive {
+    background: var(--glass-bg-strong);
+    color: var(--muted);
+  }
+
+  .member-card__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .member-card__title-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+    line-height: 1.3;
+  }
+
+  .member-card__name {
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 0.95rem;
     text-decoration: none;
     color: var(--fg);
   }
 
-  .member-row__name:hover {
+  .member-card__name:hover {
     text-decoration: underline;
   }
 
-  .member-row__badge {
+  .member-badge {
     display: inline-flex;
     align-items: center;
-    padding: 0.15rem 0.5rem;
+    padding: 0.1rem 0.45rem;
     border-radius: var(--radius-full);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     border: 1px solid var(--border);
   }
 
-  .member-row__badge--admin {
+  .member-badge--admin {
     color: var(--gold);
     border-color: var(--gold-dim);
     background: var(--gold-dim);
   }
 
-  .member-row__badge--inactive {
+  .member-badge--inactive {
     color: var(--muted);
     background: var(--glass-bg-strong);
   }
 
-  .member-row__badge--padawan {
+  .member-badge--padawan {
     color: var(--ok);
     border-color: var(--ok);
     background: var(--ok-glow);
   }
 
-  .member-row__badge--you {
+  .member-badge--you {
     color: var(--primary);
     border-color: var(--primary);
     background: rgba(168, 85, 247, 0.12);
   }
 
-  .member-row__meta {
-    margin-top: var(--space-xs);
-    font-size: 0.85rem;
+  .member-card__meta {
+    font-size: 0.78rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: 0.25rem 0.45rem;
   }
 
-  .member-row__notes {
-    margin: var(--space-sm) 0 0 0;
-    font-size: 0.85rem;
-    font-style: italic;
-  }
-
-  .member-row__finance {
+  .member-card__finance {
     display: flex;
-    gap: var(--space-lg);
-    align-items: center;
+    align-items: baseline;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+    font-size: 0.82rem;
   }
 
-  .member-row__amount {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    min-width: 5rem;
+  .member-card__fin-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.2rem;
   }
 
-  .member-row__amount strong {
+  .member-card__fin-label {
+    font-size: 0.75rem;
+  }
+
+  .member-card__fin-value {
     font-weight: 700;
-    font-size: 1rem;
   }
 
-  .member-row__amount--warn strong {
+  .member-card__fin-item--warn .member-card__fin-value {
     color: var(--gold);
   }
 
-  .member-row__actions {
+  .member-card__fin-sep {
+    color: var(--muted);
+    font-size: 0.75rem;
+  }
+
+  .member-card__notes {
+    margin: 0.1rem 0 0;
+    font-size: 0.78rem;
+    font-style: italic;
+  }
+
+  .member-card__actions {
     display: flex;
-    gap: var(--space-sm);
+    flex-direction: column;
+    gap: var(--space-xs);
+    align-items: flex-end;
+  }
+
+  @media (min-width: 480px) {
+    .member-card__actions {
+      flex-direction: row;
+      align-items: center;
+    }
   }
 
   .text-sm {
