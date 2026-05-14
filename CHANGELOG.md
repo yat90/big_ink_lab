@@ -6,6 +6,7 @@ Notable changes are recorded as **one file per calendar day** under [`changelogs
 
 | Date / file | Summary |
 |-------------|---------|
+| [`2026-05-14.md`](./changelogs/2026-05-14.md) | Lore tracker split into `lore-game-state` + `LorePanel`/`LoreCloseGameModal`/`LoreGameOverModal` sub-components (#67); security & config hardening — fail-fast env validation, JWT secret enforcement, closed-by-default CORS (#91) |
 | [`2026-05-12.md`](./changelogs/2026-05-12.md) | Shared utilities: `playerName` (#65), `gameWinnerId` (#66), `api-client` (#69), `storage` (#71); cooldown flash factory (#72); new match P2 inline picker (focus popover, max 3 players) + i18n |
 | [`2026-05-11.md`](./changelogs/2026-05-11.md) | Accessibility pass for custom Select and modal dialogs (#55); enterprise UI guideline document `apps/web/AGENTS.md` (#58) |
 | [`2026-05-10.md`](./changelogs/2026-05-10.md) | Remove viewport zoom lock (#44); add `768px` tablet breakpoint with fluid spacing/typography scale (#50) |
