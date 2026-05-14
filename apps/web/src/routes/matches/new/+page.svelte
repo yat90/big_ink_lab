@@ -597,6 +597,7 @@
                   type="button"
                   variant="primary"
                   disabled={createGuestLoading || !p2NameFilter.trim()}
+                  aria-busy={createGuestLoading}
                   onclick={createGuestOpponent}
                 >
                   {createGuestLoading
@@ -615,7 +616,7 @@
         {/if}
       </div>
       {#if p2}
-        <p class="card__sub muted" role="status">
+        <p class="card__sub muted" role="status" aria-live="polite">
           {$t('matches.new.opponentSelected', { name: p2PlayerDisplayName })}
         </p>
       {/if}
@@ -785,6 +786,11 @@
   .new-match__p2-row--selected {
     background: color-mix(in srgb, var(--primary, #2563eb) 12%, transparent);
     font-weight: 600;
+  }
+  .new-match__p2-row--selected::before {
+    content: '✓ ';
+    font-weight: 700;
+    color: var(--primary, #2563eb);
   }
   .new-match__p2-name {
     min-width: 0;

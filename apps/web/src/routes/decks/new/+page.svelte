@@ -16,11 +16,13 @@
   let selectedPlayerLabel = $state('');
   let playerPickerOpen = $state(false);
   let loading = $state(false);
+  let suggestLoading = $state(false);
   let error = $state('');
 
   const apiUrl = config.apiUrl ?? '/api';
 
   async function loadSuggestedName() {
+    suggestLoading = true;
     try {
       const token = getAuthToken();
       const res = await fetch(`${apiUrl}/decks/suggest-name`, {
@@ -33,6 +35,8 @@
       }
     } catch {
       /* ignore */
+    } finally {
+      suggestLoading = false;
     }
   }
 
@@ -127,7 +131,8 @@
             size="sm"
             className="deck-new__suggest-btn"
             onclick={() => loadSuggestedName()}
-            disabled={loading}
+            disabled={loading || suggestLoading}
+            aria-busy={suggestLoading}
           >
             {$t('decks.anotherName')}
           </AppButton>

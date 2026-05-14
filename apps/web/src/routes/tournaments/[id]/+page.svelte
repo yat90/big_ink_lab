@@ -597,7 +597,7 @@
       </AppCard>
     {:else}
       {#if listTruncated}
-        <p class="muted tournament-detail__truncated" role="status">
+        <p class="muted tournament-detail__truncated" role="status" aria-live="polite">
           {$t('tournaments.detail.truncatedBefore', {
             loaded: String(matches.length),
             total: String(total),

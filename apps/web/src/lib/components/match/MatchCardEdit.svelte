@@ -119,7 +119,7 @@
             class="input matchcard__player-select matchcard__deck-select-btn"
             disabled={updatingPlayer === 'p1'}
             onclick={() => openPlayerPicker('p1')}
-            aria-label="Player 1"
+            aria-label="Select Player 1"
             title="Click to choose player"
           >
             {p1PlayerDisplayName}
@@ -168,7 +168,7 @@
             class="input matchcard__player-select matchcard__deck-select-btn"
             disabled={updatingPlayer === 'p2'}
             onclick={() => openPlayerPicker('p2')}
-            aria-label="Player 2"
+            aria-label="Select Player 2"
             title="Click to choose player"
           >
             {p2PlayerDisplayName}
