@@ -2,9 +2,11 @@
   import AppBanner from '$lib/components/ui/AppBanner.svelte';
   import AppButton from '$lib/components/ui/AppButton.svelte';
   import AppCard from '$lib/components/ui/AppCard.svelte';
+  import StatusStateCard from '$lib/components/ui/StatusStateCard.svelte';
   import { config } from '$lib/config';
   import { onMount } from 'svelte';
   import { getAuthToken } from '$lib/auth';
+  import { getLocale, translate, t } from '$lib/i18n';
 
   type MeUser = { id: string; email: string; name?: string };
   type MePlayer = { _id: string; name: string; team: string };
@@ -23,7 +25,7 @@
 
   async function loadMe() {
     if (!token) {
-      error = 'Not logged in.';
+      error = translate(getLocale(), 'me.notLoggedIn');
       loading = false;
       return;
     }
@@ -32,7 +34,7 @@
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        error = 'Could not load profile.';
+        error = translate(getLocale(), 'me.loadError');
         loading = false;
         return;
       }
@@ -42,7 +44,7 @@
       teamName = player?.team ?? '';
       playerName = player?.name ?? '';
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       loading = false;
     }
@@ -63,7 +65,7 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Could not update team.';
+        error = data.message ?? translate(getLocale(), 'me.saveTeamError');
         return;
       }
       const data = await res.json();
@@ -72,7 +74,7 @@
         playerName = data.player.name;
       }
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       savingTeam = false;
     }
@@ -93,7 +95,7 @@
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        error = data.message ?? 'Could not update player name.';
+        error = data.message ?? translate(getLocale(), 'me.savePlayerNameError');
         return;
       }
       const data = await res.json();
@@ -103,7 +105,7 @@
         playerName = data.player.name;
       }
     } catch {
-      error = 'Could not reach API.';
+      error = translate(getLocale(), 'common.apiUnreachable');
     } finally {
       savingPlayerName = false;
     }
@@ -113,38 +115,38 @@
 </script>
 
 <svelte:head>
-  <title>Me · Big Ink Lab</title>
+  <title>{$t('me.pageTitle')}</title>
 </svelte:head>
 
 <div class="page">
   <AppCard className="stack">
-    <h1 class="card__title">My account</h1>
+    <h1 class="card__title">{$t('me.title')}</h1>
 
     {#if loading}
-      <p class="muted">Loading…</p>
+      <StatusStateCard kind="loading" message={$t('me.loading')} />
     {:else if error && !user}
       <AppBanner variant="danger" message={error} />
     {:else if user}
       <dl class="stack me-dl">
         <div class="dl-row">
-          <dt class="muted">Name</dt>
+          <dt class="muted">{$t('me.nameLabel')}</dt>
           <dd>{user.name || '–'}</dd>
         </div>
         <div class="dl-row">
-          <dt class="muted">Email</dt>
+          <dt class="muted">{$t('me.emailLabel')}</dt>
           <dd>{user.email}</dd>
         </div>
         {#if player}
           <div class="dl-row">
-            <dt class="muted">Player name</dt>
+            <dt class="muted">{$t('me.playerNameLabel')}</dt>
             <dd>
               <div class="me-team-row">
                 <input
                   type="text"
                   class="input"
                   bind:value={playerName}
-                  placeholder="Player name"
-                  aria-label="Player name"
+                  placeholder={$t('me.playerNamePlaceholder')}
+                  aria-label={$t('me.playerNameLabel')}
                   autocomplete="name"
                 />
                 <AppButton
@@ -153,21 +155,21 @@
                   disabled={savingPlayerName}
                   onclick={savePlayerName}
                 >
-                  {savingPlayerName ? 'Saving…' : 'Save'}
+                  {savingPlayerName ? $t('me.saving') : $t('me.save')}
                 </AppButton>
               </div>
             </dd>
           </div>
           <div class="dl-row">
-            <dt class="muted">Team name</dt>
+            <dt class="muted">{$t('me.teamLabel')}</dt>
             <dd>
               <div class="me-team-row">
                 <input
                   type="text"
                   class="input"
                   bind:value={teamName}
-                  placeholder="Team name"
-                  aria-label="Team name"
+                  placeholder={$t('me.teamPlaceholder')}
+                  aria-label={$t('me.teamLabel')}
                 />
                 <AppButton
                   type="button"
@@ -175,7 +177,7 @@
                   disabled={savingTeam}
                   onclick={saveTeam}
                 >
-                  {savingTeam ? 'Saving…' : 'Save'}
+                  {savingTeam ? $t('me.saving') : $t('me.save')}
                 </AppButton>
               </div>
             </dd>
@@ -190,9 +192,9 @@
   </AppCard>
   {#if player}
     <div class="me-stats-cta">
-      <a href="/me/statistics" class="me-stats-cta__link"> View all my statistics </a>
+      <a href="/me/statistics" class="me-stats-cta__link">{$t('me.statsLinkLabel')}</a>
       <p class="me-stats-cta__hint muted">
-        Win rates, matchups, play style, and recent results in one place.
+        {$t('me.statsLinkHint')}
       </p>
     </div>
   {/if}

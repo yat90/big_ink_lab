@@ -56,6 +56,7 @@
   let p1DeckColor = $state('');
   let p2DeckColor = $state('');
   let loading = $state(false);
+  let deckFetchError = $state('');
   let error = $state('');
 
   let createGuestLoading = $state(false);
@@ -96,6 +97,7 @@
 
   async function fetchDeck(deckId: string): Promise<{ name: string; deckColor: string } | null> {
     if (!deckId.trim()) return null;
+    deckFetchError = '';
     try {
       const res = await fetch(`${apiUrl}/decks/${deckId}`);
       if (res.ok) {
@@ -105,8 +107,9 @@
           deckColor: (deck?.deckColor ?? '').trim(),
         };
       }
+      deckFetchError = translate(getLocale(), 'matches.new.deckFetchError');
     } catch {
-      /* ignore */
+      deckFetchError = translate(getLocale(), 'matches.new.deckFetchError');
     }
     return null;
   }
@@ -640,6 +643,10 @@
         ariaLabel={$t('matches.new.ariaP2DeckColor')}
       />
     </section>
+
+    {#if deckFetchError}
+      <AppBanner variant="warning" message={deckFetchError} />
+    {/if}
 
     {#if error}
       <AppBanner variant="danger" message={error} />

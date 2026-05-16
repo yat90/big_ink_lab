@@ -3,6 +3,8 @@
   import type { LorcanaMatch } from '$lib/lorcana-match';
   import MatchLineRow from '$lib/components/match/MatchLineRow.svelte';
   import Pagination from '$lib/components/ui/Pagination.svelte';
+  import StatusStateCard from '$lib/components/ui/StatusStateCard.svelte';
+  import { getLocale, translate, t } from '$lib/i18n';
 
   let { deckId }: { deckId: string } = $props();
 
@@ -29,7 +31,7 @@
       params.set('sort', 'newest');
       const res = await fetch(`${apiUrl}/matches?${params}`);
       if (!res.ok) {
-        error = 'Could not load matches.';
+        error = translate(getLocale(), 'decks.matchesTab.loadError');
         return;
       }
       const data = await res.json();
@@ -37,7 +39,7 @@
       total = data.total ?? 0;
       currentPage = page;
     } catch {
-      error = 'Could not load matches.';
+      error = translate(getLocale(), 'decks.matchesTab.loadError');
     } finally {
       loading = false;
     }
@@ -50,11 +52,11 @@
 
 <div class="deck-view-matches" role="tabpanel" aria-label="Matches with this deck">
   {#if loading && matches.length === 0}
-    <p class="muted">Loading matches…</p>
+    <StatusStateCard kind="loading" message={$t('decks.matchesTab.loading')} />
   {:else if error}
-    <p class="deck-view-matches__error">{error}</p>
+    <StatusStateCard kind="error" message={error} />
   {:else if matches.length === 0}
-    <p class="muted">No matches recorded with this deck yet.</p>
+    <StatusStateCard kind="empty" message={$t('decks.matchesTab.empty')} />
   {:else}
     <ul class="match-line-row__list">
       {#each matches as match (match._id)}
@@ -70,9 +72,6 @@
 </div>
 
 <style>
-  .deck-view-matches__error {
-    color: var(--danger);
-  }
   .deck-view-matches__pagination {
     margin-top: var(--space-lg);
   }
