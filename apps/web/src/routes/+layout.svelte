@@ -207,10 +207,17 @@
 
 <style>
   .main__breadcrumb {
+    display: none;
     width: 100%;
     max-width: 920px;
     margin-left: auto;
     margin-right: auto;
+  }
+
+  @media (min-width: 640px) {
+    .main__breadcrumb {
+      display: block;
+    }
   }
 
   .main__breadcrumb--lore {
