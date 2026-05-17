@@ -363,6 +363,7 @@
     <PageHeader title={$t('matches.list.heading')} resultSummary={filterSummary}>
       {#snippet actions()}
         <AppButton href="/matches/quick">{$t('matches.list.quickMatch')}</AppButton>
+        <AppButton href="/matches/scan">{$t('matches.list.scanLore')}</AppButton>
         {#if myPlayerId}
           <AppButton
             type="button"
