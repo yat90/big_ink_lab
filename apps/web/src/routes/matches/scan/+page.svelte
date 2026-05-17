@@ -368,6 +368,10 @@
     <section class="card stack scan-card" aria-labelledby="scan-results-title">
       <h3 id="scan-results-title" class="card__title">{$t('matches.scan.resultsTitle')}</h3>
 
+      <p class="scan-p1-note muted">
+        {$t('matches.scan.resultsP1Note', { name: myPlayerName.trim() || $t('matches.new.you') })}
+      </p>
+
       {#if scanNotes}
         <p class="scan-notes muted">
           <strong>{$t('matches.scan.notesLabel')}:</strong> {scanNotes}
@@ -379,6 +383,7 @@
       {:else}
         <div class="scan-games" role="list">
           {#each games as game, idx (idx)}
+            {@const p1Label = myPlayerName.trim() || $t('matches.new.you')}
             <div class="scan-game-row card stack" role="listitem">
               <div class="scan-game-header">
                 <span class="scan-game-label">{$t('matches.scan.gameLabel', { n: idx + 1 })}</span>
@@ -391,7 +396,7 @@
               </div>
               <div class="scan-game-scores">
                 <label class="label scan-score-label">
-                  {$t('matches.scan.p1LoreLabel')}
+                  {$t('matches.scan.p1LoreLabel', { name: p1Label })}
                   <input
                     type="number"
                     min="0"
@@ -416,7 +421,7 @@
               <fieldset class="scan-winner-group">
                 <legend class="label">{$t('matches.scan.winnerLabel')}</legend>
                 <div class="scan-winner-options">
-                  {#each [['p1', $t('matches.scan.winnerP1')], ['p2', $t('matches.scan.winnerP2')], [null, $t('matches.scan.winnerNone')]] as [val, label]}
+                  {#each [['p1', $t('matches.scan.winnerP1', { name: p1Label })], ['p2', $t('matches.scan.winnerP2')], [null, $t('matches.scan.winnerNone')]] as [val, label]}
                     <label class="scan-winner-option">
                       <input
                         type="radio"
@@ -482,7 +487,7 @@
               onblur={onP2FilterBlur}
             />
             {#if p2FilterFocused}
-              <div class="scan-p2-popover" onmousedown={onP2SuggestionsMouseDown}>
+              <div class="scan-p2-popover" onmousedown={onP2SuggestionsMouseDown}  aria-hidden="true">
                 {#if p2ListError}
                   <AppBanner variant="danger" message={p2ListError} />
                 {:else if p2ListLoading}
@@ -563,6 +568,10 @@
     border-radius: var(--radius-sm, 6px);
     border: 1px solid var(--border);
     background: var(--bg2);
+  }
+  .scan-p1-note {
+    font-size: 0.875em;
+    margin: 0;
   }
   .scan-notes {
     font-size: 0.9em;
