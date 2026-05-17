@@ -29,6 +29,8 @@
     excludePlayerId = '',
     /** When true, pre-fill the Team filter from the logged-in user's player (e.g. P1). Set false for opponent (P2) so the list is not team-scoped. */
     presetTeamFromMe = true,
+    /** When true, include guest players in results. */
+    includeGuests = false,
     onSelect,
     onClose,
   }: {
@@ -37,6 +39,7 @@
     forLabel?: string;
     excludePlayerId?: string;
     presetTeamFromMe?: boolean;
+    includeGuests?: boolean;
     /** Second arg is the selected player's name/team when selecting from list; undefined when "No player". */
     onSelect: (playerId: string, player?: { name: string; team?: string }) => void;
     onClose: () => void;
@@ -64,6 +67,7 @@
       if (filterTeam.trim()) params.set('team', filterTeam.trim());
       params.set('page', String(currentPage));
       params.set('limit', String(PAGE_SIZE));
+      if (includeGuests) params.set('includeGuests', 'true');
       const res = await fetch(`${apiUrl}/players?${params}`);
       if (!res.ok) {
         error = await messageFromFailedResponse(res, ERR.loadPlayers);
