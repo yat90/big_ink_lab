@@ -32,6 +32,9 @@ export function breadcrumbTrail(pathname: string): TrailSegment[] {
   if (p === '/matches/new') {
     return [{ key: 'matches.list.heading', href: '/matches' }, { key: 'matches.new.title' }];
   }
+  if (p === '/matches/scan') {
+    return [{ key: 'matches.list.heading', href: '/matches' }, { key: 'matches.scan.title' }];
+  }
   if (p === '/matches/quick') {
     return [{ key: 'matches.list.heading', href: '/matches' }, { key: 'matches.list.quickMatch' }];
   }

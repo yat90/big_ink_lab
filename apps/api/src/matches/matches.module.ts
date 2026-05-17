@@ -8,6 +8,7 @@ import { PlayersModule } from '../players/players.module';
 import { MatchesController } from './matches.controller';
 import { MatchesService } from './matches.service';
 import { DuelsImportService } from './duels-import.service';
+import { LoreScanService } from './lore-scan.service';
 import { TournamentsModule } from '../tournaments/tournaments.module';
 
 @Module({
@@ -20,7 +21,7 @@ import { TournamentsModule } from '../tournaments/tournaments.module';
     PlayersModule,
   ],
   controllers: [MatchesController],
-  providers: [MatchesService, DuelsImportService],
+  providers: [MatchesService, DuelsImportService, LoreScanService],
   exports: [MatchesService],
 })
 export class MatchesModule {}

@@ -22,6 +22,7 @@ import { memoryStorage } from 'multer';
 import { Match } from './schemas/lorcana-match.schema';
 import { MatchesService } from './matches.service';
 import { DuelsImportService } from './duels-import.service';
+import { LoreScanService, type LoreScanResult } from './lore-scan.service';
 import { AuthService } from '../auth/auth.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { GlobalMatchStats } from '../analytics/interfaces/analytics-response.interface';
@@ -50,6 +51,7 @@ export class MatchesController {
   constructor(
     private readonly matchesService: MatchesService,
     private readonly duelsImportService: DuelsImportService,
+    private readonly loreScanService: LoreScanService,
     private readonly authService: AuthService,
     private readonly analyticsService: AnalyticsService,
   ) {}
@@ -119,6 +121,30 @@ export class MatchesController {
       file.buffer as Buffer,
     );
     return { matches };
+  }
+
+  /** Scans a lore counter paper image and returns extracted game scores. */
+  @Post('scan-lore-counter')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  async scanLoreCounter(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<LoreScanResult & { available: boolean }> {
+    if (!this.loreScanService.isAvailable()) {
+      return { available: false, games: [], notes: 'Scanning not configured on this server.' };
+    }
+    if (!file?.buffer?.length) {
+      throw new BadRequestException('No image uploaded.');
+    }
+    const result = await this.loreScanService.scanLoreCounter(
+      file.buffer as Buffer,
+      file.mimetype,
+    );
+    return { available: true, ...result };
   }
 
   /** Returns a single match by id. */
