@@ -8,6 +8,7 @@
   import { translate, getLocale } from '$lib/i18n';
 
   let name = $state('');
+  let realName = $state('');
   let team = $state('');
   /** Guest profiles have no login; hidden from default roster list. */
   let isGuest = $state(false);
@@ -26,6 +27,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
+          realName: realName.trim(),
           team: team.trim(),
           isGuest: isGuest,
         }),
@@ -68,15 +70,26 @@
 
       <div class="formgrid">
         <label class="label" for="name">
-          Name <span aria-hidden="true">*</span>
+          Managed player name <span aria-hidden="true">*</span>
           <input
             id="name"
             type="text"
             class="input"
             bind:value={name}
             required
+            autocomplete="off"
+            placeholder="e.g. xXShadow99"
+          />
+        </label>
+        <label class="label" for="realName">
+          Real name <span class="hint">(optional)</span>
+          <input
+            id="realName"
+            type="text"
+            class="input"
+            bind:value={realName}
             autocomplete="name"
-            placeholder="Player name"
+            placeholder="e.g. Max Mustermann"
           />
         </label>
         <label class="label" for="team">

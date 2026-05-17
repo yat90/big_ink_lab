@@ -11,6 +11,7 @@
 
   const id = $page.params.id;
   let name = $state('');
+  let realName = $state('');
   let team = $state('');
   let isGuest = $state(false);
   /** When true, cannot enable guest — someone logs in as this player. */
@@ -31,6 +32,7 @@
       }
       const player = await res.json();
       name = player.name ?? '';
+      realName = player.realName ?? '';
       team = player.team ?? '';
       isGuest = player.isGuest === true;
       hasLinkedAccount = player.hasLinkedAccount === true;
@@ -52,6 +54,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
+          realName: realName.trim(),
           team: team.trim(),
           isGuest: hasLinkedAccount ? false : isGuest,
         }),
@@ -118,15 +121,26 @@
 
         <div class="formgrid">
           <label class="label" for="name">
-            Name <span aria-hidden="true">*</span>
+            Managed player name <span aria-hidden="true">*</span>
             <input
               id="name"
               type="text"
               class="input"
               bind:value={name}
               required
+              autocomplete="off"
+              placeholder="e.g. xXShadow99"
+            />
+          </label>
+          <label class="label" for="realName">
+            Real name <span class="hint">(optional)</span>
+            <input
+              id="realName"
+              type="text"
+              class="input"
+              bind:value={realName}
               autocomplete="name"
-              placeholder="Player name"
+              placeholder="e.g. Max Mustermann"
             />
           </label>
           <label class="label" for="team">
