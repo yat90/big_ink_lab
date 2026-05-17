@@ -323,7 +323,9 @@
 </svelte:head>
 
 <div class="page scan-page">
-  <h2 class="page-title">{$t('matches.scan.title')}</h2>
+  <h2 class="page-title">
+    {$t('matches.scan.title')}<span class="scan-beta-badge" aria-label="Beta">Beta</span>
+  </h2>
   <p class="page-sub">{$t('matches.scan.subtitle')}</p>
 
   <!-- Image upload -->
@@ -553,6 +555,19 @@
 <style>
   .scan-page {
     max-width: 720px;
+  }
+  .scan-beta-badge {
+    display: inline-block;
+    margin-left: 0.45em;
+    padding: 0.1em 0.5em;
+    font-size: 0.55em;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--primary, #2563eb) 18%, transparent);
+    color: var(--primary, #2563eb);
+    vertical-align: middle;
   }
   .scan-card {
     margin-bottom: var(--space-md, 1rem);
