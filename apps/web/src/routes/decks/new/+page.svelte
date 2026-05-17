@@ -17,24 +17,29 @@
   let playerPickerOpen = $state(false);
   let loading = $state(false);
   let suggestLoading = $state(false);
+  let suggestError = $state('');
   let error = $state('');
 
   const apiUrl = config.apiUrl ?? '/api';
 
   async function loadSuggestedName() {
     suggestLoading = true;
+    suggestError = '';
     try {
       const token = getAuthToken();
       const res = await fetch(`${apiUrl}/decks/suggest-name`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        suggestError = translate(getLocale(), 'decks.suggestError');
+        return;
+      }
       const data = (await res.json()) as { name?: string };
       if (typeof data?.name === 'string' && data.name.trim()) {
         deckName = data.name.trim();
       }
     } catch {
-      /* ignore */
+      suggestError = translate(getLocale(), 'decks.suggestError');
     } finally {
       suggestLoading = false;
     }
@@ -137,6 +142,9 @@
             {$t('decks.anotherName')}
           </AppButton>
         </div>
+        {#if suggestError}
+          <AppBanner variant="warning" message={suggestError} />
+        {/if}
       </div>
       <label class="label" for="deckList">
         {$t('decks.labelDeckList')}
