@@ -21,6 +21,7 @@ export function breadcrumbTrail(pathname: string): TrailSegment[] {
   if (p === '/forgot-password') return [{ key: 'breadcrumb.forgotPassword' }];
 
   if (p === '/stats') return [{ key: 'nav.statistics' }];
+  if (p === '/changelog') return [{ key: 'nav.changelog' }];
   if (p === '/team') return [{ key: 'nav.team' }];
 
   if (p === '/me/statistics') {

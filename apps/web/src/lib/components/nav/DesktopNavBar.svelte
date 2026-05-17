@@ -8,6 +8,7 @@
   import IconCircleUser from '$lib/icons/IconCircleUser.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
   import IconBarChart from '$lib/icons/IconBarChart.svelte';
+  import IconInfo from '$lib/icons/IconInfo.svelte';
   import IconUser from '$lib/icons/IconUser.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import { authMe } from '$lib/me';
@@ -162,6 +163,17 @@
           <IconBarChart size={18} />
         </span>
         <span>{$t('nav.myStatistics')}</span>
+      </a>
+      <a
+        href="/changelog"
+        class="desktop-nav__dropdown-link"
+        class:desktop-nav__dropdown-link--active={nav.isChangelog}
+        aria-current={nav.isChangelog ? 'page' : undefined}
+      >
+        <span class="desktop-nav__dropdown-link-icon" aria-hidden="true">
+          <IconInfo size={18} />
+        </span>
+        <span>{$t('nav.changelog')}</span>
       </a>
     </div>
   </div>
