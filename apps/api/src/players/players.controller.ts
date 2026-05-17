@@ -13,11 +13,16 @@ import {
 } from '@nestjs/common';
 import { Player } from '../matches/schemas/player.schema';
 import { PlayersService } from './players.service';
+import type { MergePlayerResult } from './players.service';
 import { AnalyticsService } from '../analytics/analytics.service';
 import type { PlayerStatsDto, DeckUsed } from '../analytics/interfaces/analytics-response.interface';
 import { FindPlayersQueryDto } from './dto/find-players-query.dto';
+import { MergePlayerDto } from './dto/merge-player.dto';
 import { PaginatedResponse, createPaginatedResponse } from '../common/dto/paginated-response.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
+import { Role } from '../auth/roles.enum';
 import { DEFAULT_PAGE_SIZE } from '../constants';
 
 /** Response shape for GET /players/:id (player with stats and decks used). */
@@ -103,5 +108,13 @@ export class PlayersController {
     const player = await this.playersService.update(id, dto);
     if (!player) throw new NotFoundException('Player not found');
     return player;
+  }
+
+  /** Merges source player into target player. Requires admin role. */
+  @Post('merge')
+  @Roles(Role.Admin)
+  @UseGuards(RolesGuard)
+  async merge(@Body() dto: MergePlayerDto): Promise<MergePlayerResult> {
+    return this.playersService.mergePlayer(dto.sourceId, dto.targetId);
   }
 }
