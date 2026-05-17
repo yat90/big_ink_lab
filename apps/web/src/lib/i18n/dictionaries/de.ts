@@ -206,6 +206,13 @@ export default {
     teamSection: 'Team',
     accountSection: 'Konto',
     mobileMenu: 'Menü',
+    changelog: 'Changelog',
+    changelogSection: 'Changelog',
+    openChangelogSubmenu: 'Changelog öffnen',
+  },
+  changelog: {
+    pageTitle: 'Changelog · Big Ink Lab',
+    heading: 'Changelog',
   },
   decks: {
     pageTitle: 'Decks · Big Ink Lab',

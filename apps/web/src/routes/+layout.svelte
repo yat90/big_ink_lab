@@ -46,6 +46,7 @@
       if (p === '/tournaments/results') return 'Tournament results';
       if (/^\/tournaments\/[a-f\d]{24}$/i.test(p)) return 'Tournament';
       if (p === '/team') return 'Team';
+      if (p === '/changelog') return 'Changelog';
       if (p.startsWith('/matches')) return 'Matches';
       return 'Big Ink Lab';
     })()

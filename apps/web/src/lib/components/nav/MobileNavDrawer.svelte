@@ -5,6 +5,7 @@
   import IconCircleUser from '$lib/icons/IconCircleUser.svelte';
   import IconClose from '$lib/icons/IconClose.svelte';
   import IconCrownOutline from '$lib/icons/IconCrownOutline.svelte';
+  import IconInfo from '$lib/icons/IconInfo.svelte';
   import IconDecks from '$lib/icons/IconDecks.svelte';
   import IconLogOut from '$lib/icons/IconLogOut.svelte';
   import IconSparkle from '$lib/icons/IconSparkle.svelte';
@@ -38,7 +39,7 @@
       showLogoutPrompt = false;
       return;
     }
-    statsOpen = nav.isMyStatistics;
+    statsOpen = nav.isMyStatistics || nav.isChangelog;
     teamOpen = nav.isTeam;
   });
 
@@ -293,6 +294,18 @@
                   <IconBarChart size={18} />
                 </span>
                 {$t('nav.myStatistics')}
+              </a>
+              <a
+                href="/changelog"
+                class="mobile-nav__drawer-link mobile-nav__drawer-link--sub mobile-nav__drawer-link--panel-item"
+                class:mobile-nav__drawer-link--active={nav.isChangelog}
+                aria-current={nav.isChangelog ? 'page' : undefined}
+                onclick={closeMenu}
+              >
+                <span class="mobile-nav__drawer-link-icon" aria-hidden="true">
+                  <IconInfo size={18} />
+                </span>
+                {$t('nav.changelog')}
               </a>
             </div>
           </div>
