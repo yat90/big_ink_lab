@@ -1,6 +1,9 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import AppCard from '$lib/components/ui/AppCard.svelte';
+  import Pagination from '$lib/components/ui/Pagination.svelte';
+
+  const PAGE_SIZE = 3;
 
   const modules = import.meta.glob<string>('../../../../../changelogs/[0-9]*.md', {
     query: '?raw',
@@ -14,6 +17,15 @@
       content,
     }))
     .sort((a, b) => b.date.localeCompare(a.date));
+
+  let currentPage = $state(1);
+  const totalPages = $derived(Math.max(1, Math.ceil(entries.length / PAGE_SIZE)));
+  const pageEntries = $derived(entries.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE));
+
+  function handlePageChange(page: number) {
+    currentPage = page;
+    document.getElementById('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   function inline(text: string): string {
     return text
@@ -89,7 +101,7 @@
 <div class="page">
   <h2 class="cl-page__heading">{$t('changelog.heading')}</h2>
 
-  {#each entries as entry (entry.date)}
+  {#each pageEntries as entry (entry.date)}
     <AppCard className="cl-card">
       <div class="cl-body">
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -97,6 +109,8 @@
       </div>
     </AppCard>
   {/each}
+
+  <Pagination {currentPage} {totalPages} onPageChange={handlePageChange} />
 </div>
 
 <style>
