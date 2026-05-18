@@ -53,6 +53,26 @@
   let tabsFadeLeft = $state(false);
   let tabsFadeRight = $state(false);
 
+  let swipeStartX = 0;
+  let swipeStartY = 0;
+
+  function handleSwipeTouchStart(e: TouchEvent) {
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+  }
+
+  function handleSwipeTouchEnd(e: TouchEvent) {
+    const dx = e.changedTouches[0].clientX - swipeStartX;
+    const dy = e.changedTouches[0].clientY - swipeStartY;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    const idx = TEAM_TAB_IDS.indexOf(activeTab);
+    if (dx < 0 && idx < TEAM_TAB_IDS.length - 1) {
+      selectTeamTab(TEAM_TAB_IDS[idx + 1]);
+    } else if (dx > 0 && idx > 0) {
+      selectTeamTab(TEAM_TAB_IDS[idx - 1]);
+    }
+  }
+
   function syncTeamTabsScroll() {
     const el = teamTabsEl;
     if (!el) {
@@ -177,101 +197,107 @@
     </div>
 
     <div
-      id="team-panel-overview"
-      class="team-panel"
-      role="tabpanel"
-      aria-labelledby="team-tab-overview"
-      hidden={activeTab !== 'overview'}
+      class="team-panels"
+      ontouchstart={handleSwipeTouchStart}
+      ontouchend={handleSwipeTouchEnd}
     >
-      {#if activeTab === 'overview'}
-        <TeamTabOverview {overview} {isAdmin} />
-      {/if}
-    </div>
+      <div
+        id="team-panel-overview"
+        class="team-panel"
+        role="tabpanel"
+        aria-labelledby="team-tab-overview"
+        hidden={activeTab !== 'overview'}
+      >
+        {#if activeTab === 'overview'}
+          <TeamTabOverview {overview} {isAdmin} />
+        {/if}
+      </div>
 
-    <div
-      id="team-panel-members"
-      class="team-panel"
-      role="tabpanel"
-      aria-labelledby="team-tab-members"
-      hidden={activeTab !== 'members'}
-    >
-      {#if activeTab === 'members'}
-        <TeamTabMembers
-          {isAdmin}
-          team={overview.team}
-          currentPlayerId={overview.playerId}
-          onChange={handleTabRefresh}
-        />
-      {/if}
-    </div>
+      <div
+        id="team-panel-members"
+        class="team-panel"
+        role="tabpanel"
+        aria-labelledby="team-tab-members"
+        hidden={activeTab !== 'members'}
+      >
+        {#if activeTab === 'members'}
+          <TeamTabMembers
+            {isAdmin}
+            team={overview.team}
+            currentPlayerId={overview.playerId}
+            onChange={handleTabRefresh}
+          />
+        {/if}
+      </div>
 
-    <div
-      id="team-panel-ranking"
-      class="team-panel"
-      role="tabpanel"
-      aria-labelledby="team-tab-ranking"
-      hidden={activeTab !== 'ranking'}
-    >
-      {#if activeTab === 'ranking' && overview.internalRanking && overview.internalHeadToHead}
-        <TeamTabRanking
-          rows={overview.internalRanking}
-          matrix={overview.internalHeadToHead}
-          currentPlayerId={overview.playerId}
-        />
-      {/if}
-    </div>
+      <div
+        id="team-panel-ranking"
+        class="team-panel"
+        role="tabpanel"
+        aria-labelledby="team-tab-ranking"
+        hidden={activeTab !== 'ranking'}
+      >
+        {#if activeTab === 'ranking' && overview.internalRanking && overview.internalHeadToHead}
+          <TeamTabRanking
+            rows={overview.internalRanking}
+            matrix={overview.internalHeadToHead}
+            currentPlayerId={overview.playerId}
+          />
+        {/if}
+      </div>
 
-    <div
-      id="team-panel-penalties"
-      class="team-panel"
-      role="tabpanel"
-      aria-labelledby="team-tab-penalties"
-      hidden={activeTab !== 'penalties'}
-    >
-      {#if activeTab === 'penalties'}
-        <TeamTabPenalties {isAdmin} />
-      {/if}
-    </div>
+      <div
+        id="team-panel-penalties"
+        class="team-panel"
+        role="tabpanel"
+        aria-labelledby="team-tab-penalties"
+        hidden={activeTab !== 'penalties'}
+      >
+        {#if activeTab === 'penalties'}
+          <TeamTabPenalties {isAdmin} />
+        {/if}
+      </div>
 
-    <div
-      id="team-panel-court"
-      class="team-panel"
-      role="tabpanel"
-      aria-labelledby="team-tab-court"
-      hidden={activeTab !== 'court'}
-    >
-      {#if activeTab === 'court'}
-        <TeamTabCourt {isAdmin} currentPlayerId={overview.playerId} />
-      {/if}
-    </div>
+      <div
+        id="team-panel-court"
+        class="team-panel"
+        role="tabpanel"
+        aria-labelledby="team-tab-court"
+        hidden={activeTab !== 'court'}
+      >
+        {#if activeTab === 'court'}
+          <TeamTabCourt {isAdmin} currentPlayerId={overview.playerId} />
+        {/if}
+      </div>
 
-    <div
-      id="team-panel-finance"
-      class="team-panel"
-      role="tabpanel"
-      aria-labelledby="team-tab-finance"
-      hidden={activeTab !== 'finance'}
-    >
-      {#if activeTab === 'finance'}
-        <TeamTabFinance
-          {isAdmin}
-          balance={overview.balance}
-          authMeStore={authMe}
-          onChange={handleTabRefresh}
-        />
-      {/if}
-    </div>
+      <div
+        id="team-panel-finance"
+        class="team-panel"
+        role="tabpanel"
+        aria-labelledby="team-tab-finance"
+        hidden={activeTab !== 'finance'}
+      >
+        {#if activeTab === 'finance'}
+          <TeamTabFinance
+            {isAdmin}
+            balance={overview.balance}
+            authMeStore={authMe}
+            onChange={handleTabRefresh}
+          />
+        {/if}
+      </div>
 
-    <div
-      id="team-panel-links"
-      class="team-panel"
-      role="tabpanel"
-      aria-labelledby="team-tab-links"
-      hidden={activeTab !== 'links'}
-    >
-      {#if activeTab === 'links'}
-        <TeamTabLinks />
-      {/if}
+      <div
+        id="team-panel-links"
+        class="team-panel"
+        role="tabpanel"
+        aria-labelledby="team-tab-links"
+        hidden={activeTab !== 'links'}
+      >
+        {#if activeTab === 'links'}
+          <TeamTabLinks />
+        {/if}
+      </div>
     </div>
   {/if}
 </div>
