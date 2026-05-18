@@ -417,9 +417,11 @@
     display: flex;
     gap: 0;
     overflow-x: auto;
+    overflow-y: hidden;
     scrollbar-width: none;
     -ms-overflow-style: none;
     -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
   }
 
   .team-tabs::-webkit-scrollbar {
@@ -429,9 +431,9 @@
   .team-tab {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.7rem 1rem;
-    font-size: 1.1rem;
+    gap: 0.4rem;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.9rem;
     line-height: 1.2;
     font-weight: 600;
     font-family: inherit;
@@ -439,11 +441,13 @@
     background: none;
     border: none;
     border-bottom: 2px solid transparent;
+    border-radius: 8px 8px 0 0;
     cursor: pointer;
     margin-bottom: -1px;
     transition:
       color var(--transition),
-      border-color var(--transition);
+      border-color var(--transition),
+      background var(--transition);
     white-space: nowrap;
   }
 
@@ -460,6 +464,7 @@
 
   .team-tab:hover {
     color: var(--fg);
+    background: color-mix(in srgb, var(--primary) 8%, transparent);
   }
 
   .team-tab:hover .team-tab__icon {
@@ -469,10 +474,19 @@
   .team-tab--active {
     color: var(--primary);
     border-bottom-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
   }
 
   .team-tab--active .team-tab__icon {
     color: var(--primary);
+  }
+
+  @media (min-width: 640px) {
+    .team-tab {
+      gap: 0.5rem;
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+    }
   }
 
   .team-panel[hidden] {
