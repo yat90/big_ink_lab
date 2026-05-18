@@ -492,7 +492,7 @@ export default {
       title: 'Legendenzähler scannen',
       subtitle: 'Foto eines Legendenzähler-Bogens aufnehmen – KI liest die Punkte aus.',
       uploadLabel: 'Bild hochladen',
-      uploadHint: 'JPEG, PNG, WebP. Kamera auf Mobilgeräten nutzbar.',
+      uploadHint: 'JPEG, PNG, WebP. Foto aufnehmen oder aus der Galerie wählen.',
       scanButton: 'Scannen',
       scanning: 'Wird gescannt…',
       previewAlt: 'Vorschau des Legendenzähler-Bogens',

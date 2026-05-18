@@ -335,7 +335,6 @@
     <input
       type="file"
       accept="image/jpeg,image/png,image/webp,image/gif"
-      capture="environment"
       class="scan-file-input"
       aria-label={$t('matches.scan.uploadLabel')}
       onchange={handleFileChange}
