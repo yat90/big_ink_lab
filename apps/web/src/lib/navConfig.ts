@@ -4,6 +4,7 @@ import IconBarChart from '$lib/icons/IconBarChart.svelte';
 import IconCloud from '$lib/icons/IconCloud.svelte';
 import IconGavel from '$lib/icons/IconGavel.svelte';
 import IconPenalties from '$lib/icons/IconPenalties.svelte';
+import IconTeam from '$lib/icons/IconTeam.svelte';
 import IconTrophy from '$lib/icons/IconTrophy.svelte';
 import IconUsers from '$lib/icons/IconUsers.svelte';
 
@@ -77,6 +78,7 @@ export function isPrimaryNavActive(id: PrimaryNavId, pathname: string): boolean 
  */
 export const TEAM_TAB_ICON_MAP: Record<
   TeamTabId,
+  | typeof IconTeam
   | typeof IconUsers
   | typeof IconTrophy
   | typeof IconPenalties
@@ -84,6 +86,7 @@ export const TEAM_TAB_ICON_MAP: Record<
   | typeof IconBarChart
   | typeof IconCloud
 > = {
+  overview: IconTeam,
   members: IconUsers,
   ranking: IconTrophy,
   penalties: IconPenalties,

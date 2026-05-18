@@ -10,6 +10,7 @@
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
   import AppButton from '$lib/components/ui/AppButton.svelte';
   import StatusStateCard from '$lib/components/ui/StatusStateCard.svelte';
+  import { dicebearAvatarUrl } from '$lib/dicebearFunEmojiAvatar';
 
   type GuestScope = 'roster' | 'guests' | 'all';
 
@@ -338,18 +339,31 @@
       <div class="stack">
         {#each players as player}
           <a href="/players/{player._id}" class="card playercard link-inherit">
-            <div class="playercard__name">
-              {player.name}
-              {#if player.isGuest}
-                <span class="muted playercard__guest">(guest)</span>
-              {/if}
-            </div>
-            {#if player.realName}
+            <div class="playercard__row">
+              <img
+                class="playercard__avatar"
+                src={dicebearAvatarUrl(player.name, { size: 88 })}
+                alt=""
+                width="44"
+                height="44"
+                loading="lazy"
+                decoding="async"
+              />
+              <div class="playercard__text">
+                <div class="playercard__name">
+                  {player.name}
+                  {#if player.isGuest}
+                    <span class="muted playercard__guest">(guest)</span>
+                  {/if}
+                </div>
+                {#if player.realName}
               <div class="playercard__meta muted">{player.realName}</div>
             {/if}
             {#if player.team}
-              <div class="playercard__meta">{player.team}</div>
-            {/if}
+                  <div class="playercard__meta">{player.team}</div>
+                {/if}
+              </div>
+            </div>
           </a>
         {/each}
       </div>

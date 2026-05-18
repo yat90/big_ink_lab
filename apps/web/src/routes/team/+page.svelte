@@ -7,20 +7,15 @@
   import { goto } from '$app/navigation';
   import { authMe } from '$lib/me';
   import { fetchTeamOverview, type TeamOverview } from '$lib/components/team/team-analytics';
-  import { formatMoney } from '$lib/components/team/team-utils';
   import { getLocale, translate, t } from '$lib/i18n';
   import { TEAM_TAB_IDS, teamTabFromSearchParams, type TeamTabId } from '$lib/components/team/teamTabs';
-  import { TEAM_DRIVE_MEETINGS_URL } from '$lib/components/team/teamDriveLinks';
+  import TeamTabOverview from './TeamTabOverview.svelte';
   import TeamTabMembers from './TeamTabMembers.svelte';
   import TeamTabRanking from './TeamTabRanking.svelte';
   import TeamTabFinance from './TeamTabFinance.svelte';
   import TeamTabPenalties from './TeamTabPenalties.svelte';
   import TeamTabCourt from './TeamTabCourt.svelte';
   import TeamTabLinks from './TeamTabLinks.svelte';
-  import IconUsers from '$lib/icons/IconUsers.svelte';
-  import IconGavel from '$lib/icons/IconGavel.svelte';
-  import IconBarChart from '$lib/icons/IconBarChart.svelte';
-  import IconCloud from '$lib/icons/IconCloud.svelte';
   import IconChevronLeft from '$lib/icons/IconChevronLeft.svelte';
   import IconChevronRight from '$lib/icons/IconChevronRight.svelte';
   import { registerPageRefresh } from '$lib/pageRefreshRegistry';
@@ -129,76 +124,6 @@
       </p>
     </AppCard>
   {:else if overview}
-    <AppCard className="team-header">
-      <div class="team-header__hero">
-        <div class="team-header__identity">
-          <h1 class="team-header__title">{overview.team}</h1>
-          <p class="team-header__sub muted">
-            {#if isAdmin}
-              {$t('team.header.youManage')}
-            {:else}
-              {$t('team.header.youAreMember')}
-            {/if}
-            {#if overview.balance && overview.balance.monthlyDues > 0}
-              <span class="team-header__sub-sep" aria-hidden="true">·</span>
-              {formatMoney(overview.balance.monthlyDues)}{$t('team.header.monthlyDues')}
-            {/if}
-          </p>
-        </div>
-        {#if overview.balance}
-          <div class="team-header__treasury" aria-live="polite">
-            <span class="team-header__treasury-label">{$t('team.header.treasury')}</span>
-            <span
-              class="team-header__treasury-value"
-              class:team-header__treasury-value--neg={overview.balance.balance < 0}
-            >
-              {formatMoney(overview.balance.balance)}
-            </span>
-          </div>
-        {/if}
-      </div>
-      <div
-        class="team-header__metrics"
-        role="group"
-        aria-label={$t('team.header.metricsGroupLabel')}
-      >
-        <div class="team-metric">
-          <IconUsers size={22} className="team-metric__icon" />
-          <div class="team-metric__text">
-            <span class="team-metric__value">{overview.balance?.memberCount ?? 0}</span>
-            <span class="team-metric__label">{$t('team.header.statMembers')}</span>
-          </div>
-        </div>
-        {#if overview.openAccusationsCount != null}
-          <a
-            href="/team?tab=court"
-            class="team-metric team-metric--link"
-            class:team-metric--alert={overview.openAccusationsCount > 0}
-            aria-label={$t('team.header.openCourtRoomAria')}
-          >
-            <IconGavel size={22} className="team-metric__icon" />
-            <div class="team-metric__text">
-              <span class="team-metric__value">{overview.openAccusationsCount}</span>
-              <span class="team-metric__label">{$t('team.header.statOpenAccusations')}</span>
-            </div>
-          </a>
-        {/if}
-        <a
-          href={TEAM_DRIVE_MEETINGS_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="team-metric team-metric--link team-metric--meetings-drive"
-          aria-label={$t('team.quickLinks.meetingsAria')}
-        >
-          <IconCloud size={22} className="team-metric__icon" />
-          <div class="team-metric__text">
-            <span class="team-metric__meetings-title">{$t('team.quickLinks.meetingsTitle')}</span>
-            <span class="team-metric__label">{$t('team.quickLinks.meetingsHint')}</span>
-          </div>
-        </a>
-      </div>
-    </AppCard>
-
     <div
       class="team-tabs-wrap"
       class:team-tabs-wrap--fade-left={tabsFadeLeft}
@@ -249,6 +174,18 @@
           </button>
         {/each}
       </div>
+    </div>
+
+    <div
+      id="team-panel-overview"
+      class="team-panel"
+      role="tabpanel"
+      aria-labelledby="team-tab-overview"
+      hidden={activeTab !== 'overview'}
+    >
+      {#if activeTab === 'overview'}
+        <TeamTabOverview {overview} {isAdmin} />
+      {/if}
     </div>
 
     <div
@@ -345,180 +282,57 @@
     padding-bottom: 25px;
   }
 
-  .team-skeleton {
+  :global(.team-skeleton) {
     padding: var(--space-lg);
   }
 
-  .team-header {
-    padding: var(--space-lg);
-    margin-bottom: var(--space-lg);
+  .team-context {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-  }
-
-  .team-header__hero {
-    display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
     gap: var(--space-md);
-  }
-
-  .team-header__identity {
-    flex: 1 1 12rem;
-    min-width: 0;
-  }
-
-  .team-header__title {
-    margin: 0;
-    font-size: clamp(1.35rem, 3vw, 1.65rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.15;
-  }
-
-  .team-header__sub {
-    margin: 0.35rem 0 0 0;
-    font-size: 0.9rem;
-    line-height: 1.45;
-  }
-
-  .team-header__sub-sep {
-    margin: 0 0.35rem;
-  }
-
-  .team-header__treasury {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.15rem;
-    padding: 0.65rem 1rem;
+    flex-wrap: wrap;
+    margin-bottom: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
     border-radius: var(--radius);
     border: 1px solid var(--border);
     background: var(--glass-bg);
-    min-width: min(11rem, 100%);
   }
 
-  .team-header__treasury-label {
-    font-size: 0.68rem;
+  .team-context__link {
+    font-size: 0.85rem;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.09em;
-    color: var(--muted);
-  }
-
-  .team-header__treasury-value {
-    font-size: clamp(1.35rem, 3.5vw, 1.65rem);
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: var(--ok);
-    line-height: 1.1;
-  }
-
-  .team-header__treasury-value--neg {
-    color: var(--danger);
-  }
-
-  .team-header__metrics {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
-    gap: var(--space-sm);
-  }
-
-  .team-metric {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.65rem 0.85rem;
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    background: var(--glass-bg-strong, rgba(0, 0, 0, 0.06));
-  }
-
-  .team-metric__text {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1rem;
-    min-width: 0;
-  }
-
-  .team-metric__value {
-    font-size: 1.2rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-
-  .team-metric__label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--muted);
-  }
-
-  .team-metric__meetings-title {
-    font-size: 1.05rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.15;
-  }
-
-  .team-metric--meetings-drive .team-metric__label {
-    text-transform: none;
-    letter-spacing: 0.01em;
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1.35;
-  }
-
-  .team-metric--alert .team-metric__value {
-    color: var(--gold);
-  }
-
-  .team-metric--link {
-    text-decoration: none;
-    color: inherit;
-    transition:
-      border-color 0.15s ease,
-      background 0.15s ease;
-  }
-
-  .team-metric--link:hover {
-    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-    background: color-mix(in srgb, var(--primary) 8%, var(--glass-bg-strong, rgba(0, 0, 0, 0.06)));
-  }
-
-  .team-metric--link:hover .team-metric__value,
-  .team-metric--link:hover :global(.team-metric__icon) {
     color: var(--primary);
+    text-decoration: none;
   }
 
-  .team-metric--link.team-metric--alert:hover .team-metric__value {
-    color: color-mix(in srgb, var(--gold) 85%, var(--primary));
+  .team-context__link:hover {
+    text-decoration: underline;
   }
 
-  .team-metric--link:focus-visible {
+  .team-context__link:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 2px;
+    border-radius: var(--radius-sm);
   }
 
-  :global(.team-metric__icon) {
-    flex-shrink: 0;
-    color: var(--muted);
-    transition: color 0.15s ease;
-  }
-
-  .team-metric--link:hover :global(.team-metric__icon) {
-    color: var(--primary);
+  .team-context__name {
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .team-tabs-wrap {
-    position: relative;
-    margin: var(--space-lg) 0 var(--space-md) 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+    margin: 0 0 var(--space-md) 0;
+    border-bottom: 1px solid var(--border);
   }
 
   .team-tabs-wrap::before,
@@ -602,7 +416,6 @@
   .team-tabs {
     display: flex;
     gap: 0;
-    border-bottom: 1px solid var(--border);
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -616,9 +429,10 @@
   .team-tab {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.65rem 1.1rem;
-    font-size: 0.95rem;
+    gap: 0.5rem;
+    padding: 0.7rem 1rem;
+    font-size: 1.1rem;
+    line-height: 1.2;
     font-weight: 600;
     font-family: inherit;
     color: var(--muted);
