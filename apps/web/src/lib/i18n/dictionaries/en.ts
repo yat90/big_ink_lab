@@ -525,6 +525,7 @@ export default {
       creating: 'Creating…',
       errNoImage: 'Please select an image first.',
       errScanFailed: 'Scan failed. Try again.',
+      errHeicConvert: 'Could not convert HEIC image. Try exporting as JPEG from your Photos app.',
       errNoLinkedPlayer: 'Your account has no linked player.',
       errNoOpponent: 'Enter or select an opponent.',
       errOpponentSelf: 'Opponent must be different from you.',

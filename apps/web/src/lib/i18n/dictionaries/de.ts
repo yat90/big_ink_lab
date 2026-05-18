@@ -527,6 +527,7 @@ export default {
       creating: 'Wird angelegt…',
       errNoImage: 'Bitte zuerst ein Bild auswählen.',
       errScanFailed: 'Scan fehlgeschlagen. Bitte erneut versuchen.',
+      errHeicConvert: 'HEIC-Bild konnte nicht konvertiert werden. Bitte als JPEG aus der Fotos-App exportieren.',
       errNoLinkedPlayer: 'Kein Spieler mit deinem Konto verknüpft.',
       errNoOpponent: 'Bitte Gegner eingeben oder auswählen.',
       errOpponentSelf: 'Gegner muss ein anderer Spieler sein.',
