@@ -254,21 +254,19 @@
                 <p class="member-card__notes muted">{member.notes}</p>
               {/if}
             </div>
-            <div class="member-card__amounts">
-              {#if member.outstanding > 0}
-                <div class="member-card__amount">
-                  <span class="member-card__amount-label muted">{$t('team.members.owed')}</span>
-                  <strong class="member-card__amount-value member-card__amount-value--owed">{formatMoney(member.outstanding)}</strong>
-                </div>
-              {/if}
-              <div class="member-card__amount">
-                <span class="member-card__amount-label muted">{$t('team.members.contributed')}</span>
-                <strong class="member-card__amount-value">{formatMoney(member.contributedTotal)}</strong>
-              </div>
-              <div class="member-card__amount">
-                <span class="member-card__amount-label muted">{$t('team.members.penalties')}</span>
-                <strong class="member-card__amount-value member-card__amount-value--penalties">{formatMoney(member.penaltiesTotal)}</strong>
-              </div>
+          </div>
+          <div class="member-card__amounts">
+            <div class="member-card__amount">
+              <span class="member-card__amount-label muted">{$t('team.members.owed')}</span>
+              <strong class="member-card__amount-value member-card__amount-value--owed">{formatMoney(member.outstanding)}</strong>
+            </div>
+            <div class="member-card__amount">
+              <span class="member-card__amount-label muted">{$t('team.members.penalties')}</span>
+              <strong class="member-card__amount-value member-card__amount-value--penalties">{formatMoney(member.penaltiesTotal)}</strong>
+            </div>
+            <div class="member-card__amount">
+              <span class="member-card__amount-label muted">{$t('team.members.contributed')}</span>
+              <strong class="member-card__amount-value">{formatMoney(member.contributedTotal)}</strong>
             </div>
           </div>
           {#if isAdmin}
@@ -463,29 +461,10 @@
 
   .member-card__row {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr;
     gap: var(--space-md);
     align-items: start;
     min-width: 0;
-  }
-
-  @media (max-width: 520px) {
-    .member-card__row {
-      grid-template-columns: auto 1fr;
-      grid-template-rows: auto auto;
-    }
-
-    .member-card__amounts {
-      grid-column: 1 / -1;
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: flex-end;
-      justify-content: flex-end;
-      gap: var(--space-md);
-      width: 100%;
-      padding-top: var(--space-xs);
-      border-top: 1px solid var(--border);
-    }
   }
 
   .member-card__avatar {
@@ -581,9 +560,12 @@
 
   .member-card__amounts {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: flex-end;
-    gap: var(--space-sm);
+    justify-content: flex-end;
+    gap: var(--space-lg);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border);
   }
 
   .member-card__amount {
@@ -592,7 +574,6 @@
     align-items: flex-end;
     gap: 0.15rem;
     text-align: right;
-    min-width: 5rem;
   }
 
   .member-card__amount-label {
