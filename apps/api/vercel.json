@@ -1,5 +1,10 @@
 {
   "version": 2,
+  "functions": {
+    "dist/main.js": {
+      "maxDuration": 60
+    }
+  },
   "routes": [
     {
       "src": "/(.*)",
@@ -14,6 +19,9 @@
     },
     {
       "src": "/(.*)",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://big-ink-lab.vercel.app"
+      },
       "dest": "/dist/main.js"
     }
   ]
