@@ -93,7 +93,7 @@
         filterPlayer = myId;
       }
     } catch {
-      // non-blocking
+      allPlayers = [];
     } finally {
       playersReady = true;
     }
@@ -192,6 +192,8 @@
             bind:value={filterPlayer}
             onchange={onFilterChange}
             aria-label={$t('common.ariaFilterByPlayer')}
+            disabled={!playersReady}
+            aria-busy={!playersReady}
           >
             <option value="">{$t('common.all')}</option>
             {#each players as p (p._id)}

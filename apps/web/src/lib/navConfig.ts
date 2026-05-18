@@ -106,6 +106,7 @@ export interface NavRouteState {
   isStats: boolean;
   isMe: boolean;
   isMyStatistics: boolean;
+  isChangelog: boolean;
   /** Selected team tab when on `/team`, otherwise `null`. */
   activeTeamTab: TeamTabId | null;
 }
@@ -126,6 +127,7 @@ export function getNavRouteState(url: URL): NavRouteState {
     isStats: pathname === '/stats',
     isMe: pathname === '/me',
     isMyStatistics: pathname === '/me/statistics',
+    isChangelog: pathname === '/changelog',
     activeTeamTab: pathname.startsWith('/team')
       ? teamTabFromSearchParams(url.searchParams)
       : null,

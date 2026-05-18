@@ -37,6 +37,7 @@
 
   /** Loaded from `GET /tournaments/:id`; `null` while the initial fetch is in flight. */
   let tournamentInfo = $state<TournamentInfo | null>(null);
+  let tournamentFetchError = $state('');
   /** Linked player id from /auth/me (current user only — no picker). */
   let eventP1 = $state('');
   /** Display name from /auth/me for "Playing as …" and opponent name checks. */
@@ -102,19 +103,17 @@
     const id = tournamentIdFromUrl;
     if (!id) {
       tournamentInfo = null;
+      tournamentFetchError = '';
       return;
     }
     tournamentInfo = null;
+    tournamentFetchError = '';
     let cancelled = false;
     void (async () => {
       try {
         const res = await fetch(`${apiUrl}/tournaments/${id}`);
         if (!res.ok) {
-          if (!cancelled)
-            tournamentInfo = {
-              name: translate(get(locale), 'common.defaultTournamentName'),
-              date: '',
-            };
+          if (!cancelled) tournamentFetchError = translate(get(locale), 'tournaments.results.tournamentLoadError');
           return;
         }
         const payload = (await res.json()) as Record<string, unknown>;
@@ -140,11 +139,7 @@
           ...(meta ? { meta } : {}),
         };
       } catch {
-        if (!cancelled)
-          tournamentInfo = {
-            name: translate(get(locale), 'common.defaultTournamentName'),
-            date: '',
-          };
+        if (!cancelled) tournamentFetchError = translate(get(locale), 'tournaments.results.tournamentLoadError');
       }
     })();
     return () => {
@@ -453,7 +448,11 @@
       </p>
     </AppCard>
   {:else}
-    {#if tournamentInfo === null}
+    {#if tournamentFetchError}
+      <AppCard className="stack tournament-results__tournament-card" role="alert">
+        <AppBanner variant="danger" message={tournamentFetchError} />
+      </AppCard>
+    {:else if tournamentInfo === null}
       <AppCard className="stack tournament-results__tournament-card" aria-busy="true">
         <div class="loading-skeleton" aria-hidden="true">
           <div class="loading-skeleton__line loading-skeleton__line--title"></div>

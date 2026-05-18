@@ -14,6 +14,7 @@
   type PlayerWithStats = {
     _id: string;
     name: string;
+    realName?: string;
     team: string;
     isGuest?: boolean;
     hasLinkedAccount?: boolean;
@@ -104,6 +105,9 @@
             />
             <div class="player-overview__title-block">
               <h1 class="card__title" style="margin: 0;">{player.name}</h1>
+            {#if player.realName}
+              <p class="card__sub muted" style="margin-top: var(--space-xs);">{player.realName}</p>
+            {/if}
             {#if player.isGuest}
               <p class="card__sub muted" style="margin-top: var(--space-xs);">
                 Guest profile (no login)

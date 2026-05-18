@@ -14,10 +14,11 @@
 
   type GuestScope = 'roster' | 'guests' | 'all';
 
-  let players = $state<Array<{ _id: string; name: string; team: string; isGuest?: boolean }>>([]);
+  let players = $state<Array<{ _id: string; name: string; realName?: string; team: string; isGuest?: boolean }>>([]);
   let teamNames = $state<string[]>([]);
   let loading = $state(true);
   let error = $state('');
+  let isAdmin = $state(false);
   const DEFAULT_TEAM = 'The Big Ink Theory';
   let filterTeam = $state('');
   let filterName = $state('');
@@ -168,7 +169,14 @@
     fetchPlayers();
   });
 
-  onMount(() => registerPageRefresh(fetchPlayers));
+  onMount(() => {
+    registerPageRefresh(fetchPlayers);
+    const me = get(authMe);
+    if (me) isAdmin = me.user?.role === 'admin';
+    return authMe.subscribe((val) => {
+      if (val) isAdmin = val.user?.role === 'admin';
+    });
+  });
 </script>
 
 <div class="page players-page">
@@ -184,6 +192,9 @@
     >
       {#snippet actions()}
         <div class="row margin-top-sm gap-sm">
+          {#if isAdmin}
+            <AppButton href="/players/merge">Merge players</AppButton>
+          {/if}
           <div class="players-page__segment" role="group" aria-label="Which players to list">
             <button
               type="button"
@@ -230,6 +241,9 @@
       chips={filterTeam.trim() ? [{ label: `Team: ${filterTeam.trim()}`, onRemove: clearTeamFilter }] : []}
     >
       {#snippet actions()}
+        {#if isAdmin}
+          <AppButton href="/players/merge">Merge players</AppButton>
+        {/if}
         <AppButton href="/players/new" variant="primary">New player</AppButton>
       {/snippet}
     </PageHeader>
@@ -342,7 +356,10 @@
                     <span class="muted playercard__guest">(guest)</span>
                   {/if}
                 </div>
-                {#if player.team}
+                {#if player.realName}
+              <div class="playercard__meta muted">{player.realName}</div>
+            {/if}
+            {#if player.team}
                   <div class="playercard__meta">{player.team}</div>
                 {/if}
               </div>

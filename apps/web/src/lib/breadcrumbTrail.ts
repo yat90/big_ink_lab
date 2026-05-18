@@ -21,6 +21,7 @@ export function breadcrumbTrail(pathname: string): TrailSegment[] {
   if (p === '/forgot-password') return [{ key: 'breadcrumb.forgotPassword' }];
 
   if (p === '/stats') return [{ key: 'nav.statistics' }];
+  if (p === '/changelog') return [{ key: 'nav.changelog' }];
   if (p === '/team') return [{ key: 'nav.team' }];
 
   if (p === '/me/statistics') {
@@ -30,6 +31,9 @@ export function breadcrumbTrail(pathname: string): TrailSegment[] {
 
   if (p === '/matches/new') {
     return [{ key: 'matches.list.heading', href: '/matches' }, { key: 'matches.new.title' }];
+  }
+  if (p === '/matches/scan') {
+    return [{ key: 'matches.list.heading', href: '/matches' }, { key: 'matches.scan.title' }];
   }
   if (p === '/matches/quick') {
     return [{ key: 'matches.list.heading', href: '/matches' }, { key: 'matches.list.quickMatch' }];

@@ -1,17 +1,24 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Player } from '../matches/schemas/player.schema';
+import { Match } from '../matches/schemas/lorcana-match.schema';
 import { User } from '../auth/schemas/user.schema';
 
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+export interface MergePlayerResult {
+  matchesUpdated: number;
+  target: Player;
+}
+
 @Injectable()
 export class PlayersService {
   constructor(
     @InjectModel(Player.name) private readonly playerModel: Model<Player>,
+    @InjectModel(Match.name) private readonly matchModel: Model<Match>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
   ) {}
 
@@ -33,7 +40,8 @@ export class PlayersService {
       filter.isGuest = { $ne: true };
     }
     if (name?.trim()) {
-      filter.name = { $regex: name.trim(), $options: 'i' };
+      const nameRegex = { $regex: name.trim(), $options: 'i' };
+      filter.$or = [{ name: nameRegex }, { realName: nameRegex }];
     }
     if (team?.trim()) {
       filter.team = { $regex: team.trim(), $options: 'i' };
@@ -117,9 +125,80 @@ export class PlayersService {
     return this.playerModel.create({ name: trimmed, team: '', isGuest: true });
   }
 
+  /**
+   * Merges `sourceId` into `targetId`: re-points all match references, re-points any linked user
+   * account, then deletes the source player.
+   */
+  async mergePlayer(sourceId: string, targetId: string): Promise<MergePlayerResult> {
+    if (sourceId === targetId) {
+      throw new BadRequestException('Source and target player must be different.');
+    }
+    if (!Types.ObjectId.isValid(sourceId) || !Types.ObjectId.isValid(targetId)) {
+      throw new BadRequestException('Invalid player id.');
+    }
+    const [source, target] = await Promise.all([
+      this.playerModel.findById(sourceId).exec(),
+      this.playerModel.findById(targetId).exec(),
+    ]);
+    if (!source) throw new NotFoundException('Source player not found.');
+    if (!target) throw new NotFoundException('Target player not found.');
+
+    const srcOid = new Types.ObjectId(sourceId);
+    const tgtOid = new Types.ObjectId(targetId);
+
+    // Count how many matches are affected before updating
+    const affectedCount = await this.matchModel
+      .countDocuments({
+        $or: [{ p1: srcOid }, { p2: srcOid }, { matchWinner: srcOid }],
+      })
+      .exec();
+
+    // Update top-level match player references
+    await Promise.all([
+      this.matchModel.updateMany({ p1: srcOid }, { $set: { p1: tgtOid } }).exec(),
+      this.matchModel.updateMany({ p2: srcOid }, { $set: { p2: tgtOid } }).exec(),
+      this.matchModel.updateMany({ matchWinner: srcOid }, { $set: { matchWinner: tgtOid } }).exec(),
+    ]);
+
+    // Update player references inside embedded game sub-documents
+    await Promise.all([
+      this.matchModel
+        .updateMany(
+          { 'games.winner': srcOid },
+          { $set: { 'games.$[g].winner': tgtOid } },
+          { arrayFilters: [{ 'g.winner': srcOid }] },
+        )
+        .exec(),
+      this.matchModel
+        .updateMany(
+          { 'games.starter': srcOid },
+          { $set: { 'games.$[g].starter': tgtOid } },
+          { arrayFilters: [{ 'g.starter': srcOid }] },
+        )
+        .exec(),
+      this.matchModel
+        .updateMany(
+          { 'games.events.player': srcOid },
+          { $set: { 'games.$[].events.$[e].player': tgtOid } },
+          { arrayFilters: [{ 'e.player': srcOid }] },
+        )
+        .exec(),
+    ]);
+
+    // Re-point any user account linked to the source player
+    await this.userModel
+      .updateMany({ player: srcOid }, { $set: { player: tgtOid } })
+      .exec();
+
+    await this.playerModel.findByIdAndDelete(sourceId).exec();
+
+    const updatedTarget = (await this.playerModel.findById(targetId).exec()) as Player;
+    return { matchesUpdated: affectedCount, target: updatedTarget };
+  }
+
   async update(
     id: string,
-    dto: Partial<Pick<Player, 'name' | 'team' | 'isGuest'>>,
+    dto: Partial<Pick<Player, 'name' | 'team' | 'isGuest' | 'realName'>>,
   ): Promise<Player | null> {
     if (dto.isGuest === true) {
       const linked = await this.isPlayerLinkedToUser(id);
@@ -133,6 +212,7 @@ export class PlayersService {
     if (dto.name !== undefined) set.name = dto.name;
     if (dto.team !== undefined) set.team = dto.team;
     if (dto.isGuest !== undefined) set.isGuest = dto.isGuest;
+    if (dto.realName !== undefined) set.realName = dto.realName;
     if (Object.keys(set).length === 0) {
       return this.playerModel.findById(id).exec();
     }

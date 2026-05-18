@@ -363,6 +363,9 @@
     <PageHeader title={$t('matches.list.heading')} resultSummary={filterSummary}>
       {#snippet actions()}
         <AppButton href="/matches/quick">{$t('matches.list.quickMatch')}</AppButton>
+        <AppButton href="/matches/scan">
+          {$t('matches.list.scanLore')}<span class="beta-badge" aria-label="Beta">Beta</span>
+        </AppButton>
         {#if myPlayerId}
           <AppButton
             type="button"
@@ -563,6 +566,20 @@
 </div>
 
 <style>
+  .beta-badge {
+    display: inline-block;
+    margin-left: 0.4em;
+    padding: 0.1em 0.45em;
+    font-size: 0.7em;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--primary, #2563eb) 18%, transparent);
+    color: var(--primary, #2563eb);
+    vertical-align: middle;
+  }
   .matches-page__duels-file-input {
     position: absolute;
     width: 0;
