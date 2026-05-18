@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Anthropic from '@anthropic-ai/sdk';
+import sharp from 'sharp';
 
 export interface ScannedGame {
   p1Lore: number;
@@ -38,6 +39,7 @@ Rules:
 - If you cannot determine which player is which, assume the left/top column is p1 and the right/bottom is p2
 - If the image is not a lore counter sheet or no scores are visible, return {"games": [], "notes": "Could not recognise a lore counter sheet."}`;
 
+const HEIC_MIME_TYPES = ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence'];
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
 type SupportedMediaType = (typeof VALID_MIME_TYPES)[number];
 
@@ -46,9 +48,21 @@ function normalizeMime(raw: string): SupportedMediaType {
   if (VALID_MIME_TYPES.includes(lower as SupportedMediaType)) {
     return lower as SupportedMediaType;
   }
+  if (HEIC_MIME_TYPES.includes(lower)) {
+    return 'image/jpeg';
+  }
   throw new BadRequestException(
-    `Unsupported image type: ${raw}. Supported: JPEG, PNG, GIF, WebP.`,
+    `Unsupported image type: ${raw}. Supported: JPEG, PNG, GIF, WebP, HEIC.`,
   );
+}
+
+async function toJpegIfHeic(buffer: Buffer, mimeType: string): Promise<{ buffer: Buffer; mimeType: string }> {
+  const lower = mimeType.toLowerCase();
+  if (HEIC_MIME_TYPES.includes(lower)) {
+    const converted = await sharp(buffer).jpeg({ quality: 90 }).toBuffer();
+    return { buffer: converted, mimeType: 'image/jpeg' };
+  }
+  return { buffer, mimeType };
 }
 
 @Injectable()
@@ -72,8 +86,9 @@ export class LoreScanService {
       );
     }
 
-    const mediaType = normalizeMime(rawMimeType);
-    const base64 = imageBuffer.toString('base64');
+    const { buffer: processedBuffer, mimeType: processedMime } = await toJpegIfHeic(imageBuffer, rawMimeType);
+    const mediaType = normalizeMime(processedMime);
+    const base64 = processedBuffer.toString('base64');
 
     const message = await this.client.messages.create({
       model: 'claude-sonnet-4-6',

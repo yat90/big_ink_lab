@@ -334,7 +334,7 @@
     <p class="card__sub muted">{$t('matches.scan.uploadHint')}</p>
     <input
       type="file"
-      accept="image/jpeg,image/png,image/webp,image/gif"
+      accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
       class="scan-file-input"
       aria-label={$t('matches.scan.uploadLabel')}
       onchange={handleFileChange}

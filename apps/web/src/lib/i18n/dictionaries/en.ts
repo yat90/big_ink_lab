@@ -490,7 +490,7 @@ export default {
       title: 'Scan Lore Counter',
       subtitle: 'Take a photo of a lore counter tracking sheet and AI will extract the scores.',
       uploadLabel: 'Upload image',
-      uploadHint: 'Supports JPEG, PNG, WebP. Take a photo or choose from your gallery.',
+      uploadHint: 'Supports JPEG, PNG, WebP, HEIC. Take a photo or choose from your gallery.',
       scanButton: 'Scan',
       scanning: 'Scanning…',
       previewAlt: 'Lore counter sheet preview',
