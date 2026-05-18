@@ -72,7 +72,7 @@ export class TeamMembersService {
       .exec();
     if (players.length === 0) return [];
     const playerIds = players.map((p) => p._id);
-    const [profiles, accounts, contributions, monthlyDues] = await Promise.all([
+    const [profiles, accounts, contributions, penalties, monthlyDues] = await Promise.all([
       this.memberProfileModel
         .find({ player: { $in: playerIds } })
         .lean<MemberProfileLean[]>()
@@ -83,6 +83,7 @@ export class TeamMembersService {
         .lean<UserLean[]>()
         .exec(),
       this.aggregateContributionsByPlayer(team, playerIds),
+      this.aggregatePenaltiesByPlayer(team, playerIds),
       this.settingsService.getMonthlyDues(team),
     ]);
     const profileByPlayer = new Map(profiles.map((p) => [String(p.player), p]));
@@ -93,6 +94,7 @@ export class TeamMembersService {
         profileByPlayer.get(String(player._id)),
         accountByPlayer.get(String(player._id)),
         contributions.get(String(player._id)) ?? 0,
+        penalties.get(String(player._id)) ?? 0,
         monthlyDues,
       ),
     );
@@ -107,7 +109,7 @@ export class TeamMembersService {
     if ((player.team ?? '').trim() !== team) {
       throw new NotFoundException('Player is not part of your team.');
     }
-    const [profile, account, total, monthlyDues] = await Promise.all([
+    const [profile, account, total, penaltiesTotal, monthlyDues] = await Promise.all([
       this.memberProfileModel
         .findOne({ player: player._id })
         .lean<MemberProfileLean>()
@@ -118,6 +120,7 @@ export class TeamMembersService {
         .lean<UserLean>()
         .exec(),
       this.sumContributionsForPlayer(team, player._id),
+      this.sumPenaltiesForPlayer(team, player._id),
       this.settingsService.getMonthlyDues(team),
     ]);
     return this.buildMember(
@@ -125,6 +128,7 @@ export class TeamMembersService {
       profile ?? undefined,
       account ?? undefined,
       total,
+      penaltiesTotal,
       monthlyDues,
     );
   }
@@ -245,6 +249,7 @@ export class TeamMembersService {
     profile: MemberProfileLean | undefined,
     account: UserLean | undefined,
     contributedTotal: number,
+    penaltiesTotal: number,
     monthlyDues: number,
   ): TeamMember {
     const joinedAt = profile?.joinedAt ?? null;
@@ -264,6 +269,7 @@ export class TeamMembersService {
       status,
       notes: profile?.notes ?? '',
       contributedTotal,
+      penaltiesTotal,
       outstanding,
     };
   }
@@ -310,6 +316,41 @@ export class TeamMembersService {
       .aggregate<{ total: number }>([
         {
           $match: { team, type: TransactionType.Contribution, player: playerId },
+        },
+        { $group: { _id: null, total: { $sum: '$amount' } } },
+      ])
+      .exec();
+    return rows[0]?.total ?? 0;
+  }
+
+  private async aggregatePenaltiesByPlayer(
+    team: string,
+    playerIds: Types.ObjectId[],
+  ): Promise<Map<string, number>> {
+    if (playerIds.length === 0) return new Map();
+    const rows = await this.transactionModel
+      .aggregate<{ _id: Types.ObjectId; total: number }>([
+        {
+          $match: {
+            team,
+            type: TransactionType.PenaltyFine,
+            player: { $in: playerIds },
+          },
+        },
+        { $group: { _id: '$player', total: { $sum: '$amount' } } },
+      ])
+      .exec();
+    return new Map(rows.map((r) => [String(r._id), r.total]));
+  }
+
+  private async sumPenaltiesForPlayer(
+    team: string,
+    playerId: Types.ObjectId,
+  ): Promise<number> {
+    const rows = await this.transactionModel
+      .aggregate<{ total: number }>([
+        {
+          $match: { team, type: TransactionType.PenaltyFine, player: playerId },
         },
         { $group: { _id: null, total: { $sum: '$amount' } } },
       ])

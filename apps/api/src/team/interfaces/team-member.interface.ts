@@ -13,6 +13,8 @@ export interface TeamMember {
   status: MemberStatus;
   notes: string;
   contributedTotal: number;
+  /** Sum of all penalty-fine transactions paid by this member. */
+  penaltiesTotal: number;
   /**
    * Outstanding amount based on team-wide monthly dues × calendar months from
    * `joinedAt` through today, inclusive (the join month counts). Padawan and

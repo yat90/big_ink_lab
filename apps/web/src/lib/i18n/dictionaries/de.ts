@@ -161,6 +161,7 @@ export default {
       roleAdmin: 'Team-Admin',
       roleMember: 'Mitglied',
       contributed: 'Gezahlt',
+      penalties: 'Strafen',
       owed: 'Offen',
       joined: 'Beitritt',
     },
