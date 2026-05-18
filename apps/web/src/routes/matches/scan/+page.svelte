@@ -77,9 +77,41 @@
     });
   });
 
-  function handleFileChange(e: Event) {
+  async function heicToJpeg(file: File): Promise<File> {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = reject;
+        el.src = url;
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext('2d')!.drawImage(img, 0, 0);
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('canvas toBlob failed'))), 'image/jpeg', 0.92),
+      );
+      return new File([blob], file.name.replace(/\.hei[cf]$/i, '.jpg'), { type: 'image/jpeg' });
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  async function handleFileChange(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
+    let file = input.files?.[0] ?? null;
+    if (file && /image\/hei[cf]/i.test(file.type)) {
+      try {
+        file = await heicToJpeg(file);
+      } catch {
+        scanError = translate(getLocale(), 'matches.scan.errHeicConvert');
+        imageFile = null;
+        imagePreviewUrl = null;
+        return;
+      }
+    }
     imageFile = file;
     scanDone = false;
     scanError = '';
@@ -334,7 +366,7 @@
     <p class="card__sub muted">{$t('matches.scan.uploadHint')}</p>
     <input
       type="file"
-      accept="image/jpeg,image/png,image/webp,image/gif"
+      accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif"
       class="scan-file-input"
       aria-label={$t('matches.scan.uploadLabel')}
       onchange={handleFileChange}
