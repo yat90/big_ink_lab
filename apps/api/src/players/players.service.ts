@@ -40,7 +40,8 @@ export class PlayersService {
       filter.isGuest = { $ne: true };
     }
     if (name?.trim()) {
-      filter.name = { $regex: name.trim(), $options: 'i' };
+      const nameRegex = { $regex: name.trim(), $options: 'i' };
+      filter.$or = [{ name: nameRegex }, { realName: nameRegex }];
     }
     if (team?.trim()) {
       filter.team = { $regex: team.trim(), $options: 'i' };
@@ -197,7 +198,7 @@ export class PlayersService {
 
   async update(
     id: string,
-    dto: Partial<Pick<Player, 'name' | 'team' | 'isGuest'>>,
+    dto: Partial<Pick<Player, 'name' | 'team' | 'isGuest' | 'realName'>>,
   ): Promise<Player | null> {
     if (dto.isGuest === true) {
       const linked = await this.isPlayerLinkedToUser(id);
@@ -211,6 +212,7 @@ export class PlayersService {
     if (dto.name !== undefined) set.name = dto.name;
     if (dto.team !== undefined) set.team = dto.team;
     if (dto.isGuest !== undefined) set.isGuest = dto.isGuest;
+    if (dto.realName !== undefined) set.realName = dto.realName;
     if (Object.keys(set).length === 0) {
       return this.playerModel.findById(id).exec();
     }

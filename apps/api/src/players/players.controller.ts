@@ -29,6 +29,7 @@ import { DEFAULT_PAGE_SIZE } from '../constants';
 export interface PlayerWithStatsResponse {
   _id: unknown;
   name?: string;
+  realName?: string;
   team?: string;
   isGuest?: boolean;
   /** True when a login account references this player — guest flag cannot be enabled. */
@@ -103,7 +104,7 @@ export class PlayersController {
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() dto: Partial<Pick<Player, 'name' | 'team' | 'isGuest'>>,
+    @Body() dto: Partial<Pick<Player, 'name' | 'team' | 'isGuest' | 'realName'>>,
   ): Promise<Player> {
     const player = await this.playersService.update(id, dto);
     if (!player) throw new NotFoundException('Player not found');

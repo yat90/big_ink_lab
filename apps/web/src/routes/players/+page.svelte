@@ -13,7 +13,7 @@
 
   type GuestScope = 'roster' | 'guests' | 'all';
 
-  let players = $state<Array<{ _id: string; name: string; team: string; isGuest?: boolean }>>([]);
+  let players = $state<Array<{ _id: string; name: string; realName?: string; team: string; isGuest?: boolean }>>([]);
   let teamNames = $state<string[]>([]);
   let loading = $state(true);
   let error = $state('');
@@ -344,6 +344,9 @@
                 <span class="muted playercard__guest">(guest)</span>
               {/if}
             </div>
+            {#if player.realName}
+              <div class="playercard__meta muted">{player.realName}</div>
+            {/if}
             {#if player.team}
               <div class="playercard__meta">{player.team}</div>
             {/if}
