@@ -892,6 +892,26 @@ a[class*='playercard']:active {
   }
 }
 
+.playercard__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.playercard__avatar {
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 1px solid var(--border-ui);
+}
+
+.playercard__text {
+  min-width: 0;
+}
+
 .playercard__name {
   font-weight: 800;
   font-size: 1.1rem;

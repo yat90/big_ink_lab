@@ -8,6 +8,7 @@
   import { t } from '$lib/i18n';
   import PlayerStatsOverview, { type PlayerStats } from '$lib/components/player/PlayerStatsOverview.svelte';
   import IconEdit from '../../../lib/icons/IconEdit.svelte';
+  import { dicebearAvatarUrl } from '$lib/dicebearFunEmojiAvatar';
 
   type DeckUsed = { _id: string; name: string };
   type PlayerWithStats = {
@@ -91,8 +92,18 @@
           class="row"
           style="justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-md);"
         >
-          <div>
-            <h1 class="card__title" style="margin: 0;">{player.name}</h1>
+          <div class="player-overview__identity">
+            <img
+              class="player-overview__avatar"
+              src={dicebearAvatarUrl(player._id, { size: 128 })}
+              alt=""
+              width="64"
+              height="64"
+              loading="eager"
+              decoding="async"
+            />
+            <div class="player-overview__title-block">
+              <h1 class="card__title" style="margin: 0;">{player.name}</h1>
             {#if player.isGuest}
               <p class="card__sub muted" style="margin-top: var(--space-xs);">
                 Guest profile (no login)
@@ -105,6 +116,7 @@
             {#if player.team}
               <p class="card__sub" style="margin-top: var(--space-xs);">{player.team}</p>
             {/if}
+            </div>
           </div>
           <div class="row" style="gap: var(--space-sm);">
             <AppButton href="/players/{player._id}/edit" icon={true}>
@@ -148,7 +160,27 @@
     gap: var(--space-lg);
   }
 
-  .player-overview__header {
+  :global(.player-overview__header) {
     padding: var(--space-lg);
+  }
+
+  .player-overview__identity {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+    min-width: 0;
+  }
+
+  .player-overview__title-block {
+    min-width: 0;
+  }
+
+  .player-overview__avatar {
+    flex-shrink: 0;
+    width: 4rem;
+    height: 4rem;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    border: 1px solid var(--border-ui);
   }
 </style>

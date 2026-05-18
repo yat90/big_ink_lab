@@ -1,5 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import {
     fetchTeamMembers,
     removeTeamMember,
@@ -7,11 +10,15 @@
     type TeamMember,
   } from '$lib/components/team/team-members';
   import { formatDate, formatMoney } from '$lib/components/team/team-utils';
+  import { t } from '$lib/i18n';
+  import AppButton from '$lib/components/ui/AppButton.svelte';
   import IconEdit from '$lib/icons/IconEdit.svelte';
   import IconRefresh from '$lib/icons/IconRefresh.svelte';
   import IconTrash from '$lib/icons/IconTrash.svelte';
+  import IconUsers from '$lib/icons/IconUsers.svelte';
   import MemberEditModal from './MemberEditModal.svelte';
   import AddMemberModal from './AddMemberModal.svelte';
+  import { dicebearAvatarUrl } from '$lib/dicebearFunEmojiAvatar';
 
   interface Props {
     isAdmin: boolean;
@@ -56,6 +63,21 @@
       loading = false;
     }
   }
+
+  async function afterLoadInviteFlow() {
+    const invite = get(page).url.searchParams.get('invite');
+    if (invite === '1' && isAdmin) {
+      adding = true;
+      void goto('/team?tab=members', { replaceState: true, noScroll: true, keepFocus: true });
+    }
+  }
+
+  onMount(() => {
+    void (async () => {
+      await load();
+      await afterLoadInviteFlow();
+    })();
+  });
 
   async function confirmRemove(member: TeamMember) {
     const ok = window.confirm(
@@ -124,28 +146,31 @@
     resetPasswordCopied = false;
   }
 
-  onMount(load);
+  function openAddMember() {
+    adding = true;
+  }
 </script>
 
 <div class="members-tab">
   <div class="members-tab__header">
+    <h2 class="members-tab__title">{$t('team.members.title')}</h2>
     <div class="members-tab__search-row">
       <input
         type="search"
         class="input members-tab__search"
-        placeholder="Search by name, email or notes…"
+        placeholder={$t('team.members.searchPlaceholder')}
         bind:value={search}
-        aria-label="Search members"
+        aria-label={$t('team.members.searchPlaceholder')}
       />
       {#if isAdmin}
-        <button type="button" class="btn btn--primary" onclick={() => (adding = true)}>
-          Add member
+        <button type="button" class="btn btn--primary members-tab__add-inline" onclick={openAddMember}>
+          {$t('team.members.addMember')}
         </button>
       {/if}
     </div>
     {#if !isAdmin}
       <p class="muted text-sm members-tab__note">
-        Only team admins can edit member profiles. Ask an admin to update your dues, role or notes.
+        {$t('team.members.adminNote')}
       </p>
     {/if}
   </div>
@@ -159,7 +184,7 @@
   {:else if error}
     <div class="card" role="alert">
       <p class="alert">{error}</p>
-      <button type="button" class="btn" onclick={load}>Retry</button>
+      <button type="button" class="btn" onclick={load}>{$t('common.retry')}</button>
     </div>
   {:else if members.length === 0}
     <div class="card stack">
@@ -171,6 +196,12 @@
           Once your admin adds members they'll appear here.
         {/if}
       </p>
+      {#if isAdmin}
+        <AppButton variant="primary" className="members-tab__empty-cta" icon={true} onclick={openAddMember}>
+          <IconUsers size={18} className="icon-inline" />
+          <span style="margin-left: var(--space-xs);">{$t('team.members.inviteCta')}</span>
+        </AppButton>
+      {/if}
     </div>
   {:else if filteredMembers.length === 0}
     <div class="card stack">
@@ -186,16 +217,19 @@
     <ul class="member-list" role="list">
       {#each filteredMembers as member (member.playerId)}
         <li class="card member-card">
-          <div class="member-card__main">
-            <div
+          <div class="member-card__row">
+            <img
               class="member-card__avatar"
               class:member-card__avatar--inactive={member.status === 'inactive'}
-              aria-hidden="true"
-            >
-              {member.name[0].toUpperCase()}
-            </div>
-            <div class="member-card__body">
-              <div class="member-card__title-row">
+              src={dicebearAvatarUrl(member.name, { size: 88 })}
+              alt=""
+              width="44"
+              height="44"
+              loading="lazy"
+              decoding="async"
+            />
+            <div class="member-card__mid">
+              <div class="member-card__title-line">
                 <a href="/players/{member.playerId}" class="member-card__name">{member.name}</a>
                 {#if member.role === 'admin'}
                   <span class="member-badge member-badge--admin">Admin</span>
@@ -209,31 +243,30 @@
                   <span class="member-badge member-badge--you">You</span>
                 {/if}
               </div>
+              <p class="member-card__role muted">
+                {member.role === 'admin' ? $t('team.members.roleAdmin') : $t('team.members.roleMember')}
+              </p>
               <div class="member-card__meta muted">
                 {#if member.email}<span>{member.email}</span>{/if}
-                <span>Joined {formatDate(member.joinedAt)}</span>
+                <span>{$t('team.members.joined')} {formatDate(member.joinedAt)}</span>
               </div>
-              <div class="member-card__finance">
-                <span class="member-card__fin-item">
-                  <span class="member-card__fin-label muted">Paid</span>
-                  <strong class="member-card__fin-value">{formatMoney(member.contributedTotal)}</strong>
-                </span>
-                <span class="member-card__fin-sep" aria-hidden="true">·</span>
-                <span
-                  class="member-card__fin-item"
-                  class:member-card__fin-item--warn={member.outstanding > 0}
-                >
-                  <span class="member-card__fin-label muted">Owed</span>
-                  <strong class="member-card__fin-value">{formatMoney(member.outstanding)}</strong>
-                </span>
-              </div>
+              {#if member.outstanding > 0}
+                <p class="member-card__owe">
+                  <span class="muted">{$t('team.members.owed')}</span>
+                  <strong class="member-card__owe-value">{formatMoney(member.outstanding)}</strong>
+                </p>
+              {/if}
               {#if member.notes}
                 <p class="member-card__notes muted">{member.notes}</p>
               {/if}
             </div>
+            <div class="member-card__amount" aria-label={$t('team.members.contributed')}>
+              <span class="member-card__amount-label muted">{$t('team.members.contributed')}</span>
+              <strong class="member-card__amount-value">{formatMoney(member.contributedTotal)}</strong>
+            </div>
           </div>
           {#if isAdmin}
-            <div class="member-card__actions">
+            <div class="member-card__admin">
               <button
                 type="button"
                 class="btn btn--icon btn--sm"
@@ -272,6 +305,15 @@
         </li>
       {/each}
     </ul>
+  {/if}
+
+  {#if isAdmin && !loading && members.length > 0}
+    <div class="members-tab__footer">
+      <AppButton variant="primary" className="members-tab__invite-btn" icon={true} onclick={openAddMember}>
+        <IconUsers size={18} className="icon-inline" />
+        <span style="margin-left: var(--space-xs);">{$t('team.members.inviteCta')}</span>
+      </AppButton>
+    </div>
   {/if}
 </div>
 
@@ -340,6 +382,13 @@
     margin-bottom: var(--space-md);
   }
 
+  .members-tab__title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
   .members-tab__search-row {
     display: flex;
     gap: var(--space-md);
@@ -352,8 +401,36 @@
     min-width: 14rem;
   }
 
+  .members-tab__add-inline {
+    flex-shrink: 0;
+    align-self: stretch;
+  }
+
+  @media (max-width: 479px) {
+    .members-tab__add-inline {
+      width: 100%;
+    }
+  }
+
   .members-tab__note {
     margin: 0;
+  }
+
+  .members-tab__footer {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--border);
+  }
+
+  :global(.members-tab__invite-btn) {
+    width: 100%;
+    justify-content: center;
+    min-height: var(--tap);
+  }
+
+  :global(.members-tab__empty-cta) {
+    margin-top: var(--space-md);
+    align-self: flex-start;
   }
 
   .member-list {
@@ -362,14 +439,13 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
+    gap: var(--space-sm);
   }
 
   .member-card {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: var(--space-sm);
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
     padding: var(--space-md);
   }
 
@@ -379,44 +455,56 @@
     }
   }
 
-  .member-card__main {
-    display: flex;
+  .member-card__row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
     gap: var(--space-md);
+    align-items: start;
     min-width: 0;
-    align-items: flex-start;
+  }
+
+  @media (max-width: 520px) {
+    .member-card__row {
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto;
+    }
+
+    .member-card__amount {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      align-items: baseline;
+      justify-content: space-between;
+      width: 100%;
+      padding-top: var(--space-xs);
+      border-top: 1px solid var(--border);
+    }
   }
 
   .member-card__avatar {
     flex-shrink: 0;
-    width: 2.2rem;
-    height: 2.2rem;
+    width: 2.75rem;
+    height: 2.75rem;
     border-radius: var(--radius-full);
-    background: color-mix(in srgb, var(--primary) 18%, transparent);
-    color: var(--primary);
-    font-size: 0.88rem;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    letter-spacing: 0.02em;
+    object-fit: cover;
+    display: block;
     user-select: none;
-    text-transform: uppercase;
+    box-sizing: border-box;
+    border: 1px solid var(--border-ui);
   }
 
   .member-card__avatar--inactive {
-    background: var(--glass-bg-strong);
-    color: var(--muted);
+    opacity: 0.55;
+    filter: grayscale(0.35);
   }
 
-  .member-card__body {
-    flex: 1;
+  .member-card__mid {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 0.2rem;
   }
 
-  .member-card__title-row {
+  .member-card__title-line {
     display: flex;
     align-items: center;
     gap: var(--space-xs);
@@ -425,8 +513,8 @@
   }
 
   .member-card__name {
-    font-weight: 700;
-    font-size: 0.95rem;
+    font-weight: 800;
+    font-size: 1rem;
     text-decoration: none;
     color: var(--fg);
   }
@@ -435,22 +523,28 @@
     text-decoration: underline;
   }
 
+  .member-card__role {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
   .member-badge {
     display: inline-flex;
     align-items: center;
     padding: 0.1rem 0.45rem;
     border-radius: var(--radius-full);
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     border: 1px solid var(--border);
   }
 
   .member-badge--admin {
-    color: var(--gold);
-    border-color: var(--gold-dim);
-    background: var(--gold-dim);
+    color: var(--primary);
+    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
   }
 
   .member-badge--inactive {
@@ -477,55 +571,55 @@
     gap: 0.25rem 0.45rem;
   }
 
-  .member-card__finance {
+  .member-card__owe {
+    margin: 0.15rem 0 0;
+    font-size: 0.82rem;
     display: flex;
     align-items: baseline;
-    gap: var(--space-xs);
-    flex-wrap: wrap;
-    font-size: 0.82rem;
+    gap: 0.35rem;
   }
 
-  .member-card__fin-item {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.2rem;
-  }
-
-  .member-card__fin-label {
-    font-size: 0.75rem;
-  }
-
-  .member-card__fin-value {
-    font-weight: 700;
-  }
-
-  .member-card__fin-item--warn .member-card__fin-value {
+  .member-card__owe-value {
     color: var(--gold);
+    font-variant-numeric: tabular-nums;
   }
 
-  .member-card__fin-sep {
-    color: var(--muted);
-    font-size: 0.75rem;
+  .member-card__amount {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.15rem;
+    text-align: right;
+    min-width: 5rem;
+  }
+
+  .member-card__amount-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .member-card__amount-value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--ok);
+    line-height: 1.1;
   }
 
   .member-card__notes {
-    margin: 0.1rem 0 0;
+    margin: 0.15rem 0 0;
     font-size: 0.78rem;
     font-style: italic;
   }
 
-  .member-card__actions {
+  .member-card__admin {
     display: flex;
-    flex-direction: column;
-    gap: var(--space-xs);
-    align-items: flex-end;
-  }
-
-  @media (min-width: 480px) {
-    .member-card__actions {
-      flex-direction: row;
-      align-items: center;
-    }
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    padding-top: var(--space-xs);
+    border-top: 1px solid var(--border);
   }
 
   .text-sm {
