@@ -13,7 +13,7 @@
   import { getLocale, translate, t, locale } from '$lib/i18n';
   import { get } from 'svelte/store';
 
-  type Player = { _id: string; name: string; team: string };
+  type Player = { _id: string; name: string; realName?: string; team: string };
 
   type TournamentPick = { _id: string; name: string; date: string };
 
@@ -114,6 +114,26 @@
     return null;
   }
 
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function highlightMatch(text: string, query: string): string {
+    if (!text) return '';
+    if (!query.trim()) return escapeHtml(text);
+    const regex = new RegExp(`(${query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts: string[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(text)) !== null) {
+      parts.push(escapeHtml(text.slice(lastIndex, match.index)));
+      parts.push(`<mark class="new-match__highlight">${escapeHtml(match[1])}</mark>`);
+      lastIndex = regex.lastIndex;
+    }
+    parts.push(escapeHtml(text.slice(lastIndex)));
+    return parts.join('');
+  }
+
   function mergePlayers(rows: Player[]) {
     const byId: Record<string, Player> = {};
     for (const p of players) byId[p._id] = p;
@@ -121,6 +141,7 @@
       byId[r._id] = {
         _id: r._id,
         name: r.name,
+        realName: r.realName,
         team: (r.team ?? '').trim(),
       };
     }
@@ -169,10 +190,11 @@
       }
       const json = await res.json();
       if (gen !== p2ListGen) return;
-      const rows: Player[] = (json?.data ?? []).map((r: Player) => ({
-        _id: r._id,
-        name: r.name,
-        team: (r.team ?? '').trim(),
+      const rows: Player[] = (json?.data ?? []).map((r: Record<string, unknown>) => ({
+        _id: String(r._id ?? ''),
+        name: String(r.name ?? ''),
+        realName: String(r.realName ?? '').trim(),
+        team: String(r.team ?? '').trim(),
       }));
       const rowsNoSelf = rows.filter((r) => r._id !== p1);
       p2Candidates = rowsNoSelf;
@@ -585,7 +607,10 @@
                       class:new-match__p2-row--selected={p2 === pl._id}
                       onclick={() => selectP2FromList(pl)}
                     >
-                      <span class="new-match__p2-name">{pl.name}</span>
+                      <span class="new-match__p2-name">{@html highlightMatch(pl.name, p2NameFilter)}</span>
+                      {#if pl.realName}
+                        <span class="muted new-match__p2-realname">{@html highlightMatch(pl.realName, p2NameFilter)}</span>
+                      {/if}
                       {#if pl.team}
                         <span class="muted new-match__p2-team">({pl.team})</span>
                       {/if}
@@ -801,9 +826,21 @@
   }
   .new-match__p2-name {
     min-width: 0;
+    font-weight: 600;
+  }
+  .new-match__p2-realname {
+    font-size: 0.85em;
+    font-style: italic;
   }
   .new-match__p2-team {
     font-size: 0.9em;
+  }
+  :global(.new-match__highlight) {
+    background: color-mix(in srgb, var(--primary, #2563eb) 22%, transparent);
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
+    font-style: normal;
   }
   .new-match__guest-create {
     display: flex;
