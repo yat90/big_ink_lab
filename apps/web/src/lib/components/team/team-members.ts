@@ -14,6 +14,7 @@ export interface TeamMember {
   status: MemberStatus;
   notes: string;
   contributedTotal: number;
+  penaltiesTotal: number;
   outstanding: number;
 }
 

@@ -250,19 +250,25 @@
                 {#if member.email}<span>{member.email}</span>{/if}
                 <span>{$t('team.members.joined')} {formatDate(member.joinedAt)}</span>
               </div>
-              {#if member.outstanding > 0}
-                <p class="member-card__owe">
-                  <span class="muted">{$t('team.members.owed')}</span>
-                  <strong class="member-card__owe-value">{formatMoney(member.outstanding)}</strong>
-                </p>
-              {/if}
               {#if member.notes}
                 <p class="member-card__notes muted">{member.notes}</p>
               {/if}
             </div>
-            <div class="member-card__amount" aria-label={$t('team.members.contributed')}>
-              <span class="member-card__amount-label muted">{$t('team.members.contributed')}</span>
-              <strong class="member-card__amount-value">{formatMoney(member.contributedTotal)}</strong>
+            <div class="member-card__amounts">
+              {#if member.outstanding > 0}
+                <div class="member-card__amount">
+                  <span class="member-card__amount-label muted">{$t('team.members.owed')}</span>
+                  <strong class="member-card__amount-value member-card__amount-value--owed">{formatMoney(member.outstanding)}</strong>
+                </div>
+              {/if}
+              <div class="member-card__amount">
+                <span class="member-card__amount-label muted">{$t('team.members.contributed')}</span>
+                <strong class="member-card__amount-value">{formatMoney(member.contributedTotal)}</strong>
+              </div>
+              <div class="member-card__amount">
+                <span class="member-card__amount-label muted">{$t('team.members.penalties')}</span>
+                <strong class="member-card__amount-value member-card__amount-value--penalties">{formatMoney(member.penaltiesTotal)}</strong>
+              </div>
             </div>
           </div>
           {#if isAdmin}
@@ -469,11 +475,13 @@
       grid-template-rows: auto auto;
     }
 
-    .member-card__amount {
+    .member-card__amounts {
       grid-column: 1 / -1;
       flex-direction: row;
-      align-items: baseline;
-      justify-content: space-between;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: flex-end;
+      gap: var(--space-md);
       width: 100%;
       padding-top: var(--space-xs);
       border-top: 1px solid var(--border);
@@ -571,17 +579,11 @@
     gap: 0.25rem 0.45rem;
   }
 
-  .member-card__owe {
-    margin: 0.15rem 0 0;
-    font-size: 0.82rem;
+  .member-card__amounts {
     display: flex;
-    align-items: baseline;
-    gap: 0.35rem;
-  }
-
-  .member-card__owe-value {
-    color: var(--gold);
-    font-variant-numeric: tabular-nums;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-sm);
   }
 
   .member-card__amount {
@@ -606,6 +608,14 @@
     font-variant-numeric: tabular-nums;
     color: var(--ok);
     line-height: 1.1;
+  }
+
+  .member-card__amount-value--owed {
+    color: var(--gold);
+  }
+
+  .member-card__amount-value--penalties {
+    color: var(--primary);
   }
 
   .member-card__notes {
