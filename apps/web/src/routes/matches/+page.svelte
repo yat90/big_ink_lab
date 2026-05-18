@@ -15,6 +15,7 @@
   } from '$lib/lorcana-match';
   import InkIcons from '$lib/components/ui/InkIcons.svelte';
   import IconCrown from '$lib/icons/IconCrown.svelte';
+  import IconMore from '$lib/icons/IconMore.svelte';
   import IconUpload from '$lib/icons/IconUpload.svelte';
   import AppBanner from '$lib/components/ui/AppBanner.svelte';
   import AppButton from '$lib/components/ui/AppButton.svelte';
@@ -61,6 +62,7 @@
   let importingDuels = $state(false);
   let duelsImportError = $state('');
   let duelsHelpOpen = $state(false);
+  let mobileMoreOpen = $state(false);
 
   const apiUrl = config.apiUrl ?? '/api';
 
@@ -362,30 +364,72 @@
   {:else}
     <PageHeader title={$t('matches.list.heading')} resultSummary={filterSummary}>
       {#snippet actions()}
-        <AppButton href="/matches/quick">{$t('matches.list.quickMatch')}</AppButton>
-        <AppButton href="/matches/scan">
-          {$t('matches.list.scanLore')}<span class="beta-badge" aria-label="Beta">Beta</span>
-        </AppButton>
-        {#if myPlayerId}
-          <AppButton
-            type="button"
-            icon={true}
-            onclick={triggerDuelsImport}
-            disabled={importingDuels}
-            aria-busy={importingDuels}
-            aria-label={importingDuels
-              ? $t('matches.list.importing')
-              : $t('matches.list.importLabel')}
-            title={$t('matches.list.duelsImportTooltip')}
-          >
-            <IconUpload size={20} />
-            <span
-              >{importingDuels
-                ? $t('matches.list.importing')
-                : $t('matches.list.importLabel')}</span
-            >
+        <span class="actions-desktop">
+          <AppButton href="/matches/quick">{$t('matches.list.quickMatch')}</AppButton>
+          <AppButton href="/matches/scan">
+            {$t('matches.list.scanLore')}<span class="beta-badge" aria-label="Beta">Beta</span>
           </AppButton>
-        {/if}
+          {#if myPlayerId}
+            <AppButton
+              type="button"
+              icon={true}
+              onclick={triggerDuelsImport}
+              disabled={importingDuels}
+              aria-busy={importingDuels}
+              aria-label={importingDuels
+                ? $t('matches.list.importing')
+                : $t('matches.list.importLabel')}
+              title={$t('matches.list.duelsImportTooltip')}
+            >
+              <IconUpload size={20} />
+              <span
+                >{importingDuels
+                  ? $t('matches.list.importing')
+                  : $t('matches.list.importLabel')}</span
+              >
+            </AppButton>
+          {/if}
+        </span>
+        <span class="actions-mobile-more">
+          <button
+            type="button"
+            class="btn btn--icon mobile-more-btn"
+            onclick={() => (mobileMoreOpen = !mobileMoreOpen)}
+            aria-haspopup="menu"
+            aria-expanded={mobileMoreOpen}
+            aria-label="More actions"
+          >
+            <IconMore size={20} />
+          </button>
+          {#if mobileMoreOpen}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <div class="mobile-more-backdrop" role="presentation" onclick={() => (mobileMoreOpen = false)}></div>
+            <div
+              class="mobile-more-dropdown"
+              role="menu"
+            >
+              <a href="/matches/quick" class="mobile-more-item" role="menuitem" onclick={() => (mobileMoreOpen = false)}>
+                {$t('matches.list.quickMatch')}
+              </a>
+              <a href="/matches/scan" class="mobile-more-item" role="menuitem" onclick={() => (mobileMoreOpen = false)}>
+                {$t('matches.list.scanLore')}<span class="beta-badge" aria-label="Beta">Beta</span>
+              </a>
+              {#if myPlayerId}
+                <button
+                  type="button"
+                  class="mobile-more-item"
+                  role="menuitem"
+                  onclick={() => { mobileMoreOpen = false; triggerDuelsImport(); }}
+                  disabled={importingDuels}
+                  aria-busy={importingDuels}
+                >
+                  <IconUpload size={16} />
+                  {importingDuels ? $t('matches.list.importing') : $t('matches.list.importLabel')}
+                </button>
+              {/if}
+            </div>
+          {/if}
+        </span>
         <AppButton href="/matches/new" variant="primary">{$t('matches.list.newMatch')}</AppButton>
       {/snippet}
     </PageHeader>
@@ -566,6 +610,73 @@
 </div>
 
 <style>
+  .actions-desktop {
+    display: contents;
+  }
+
+  .actions-mobile-more {
+    display: none;
+    position: relative;
+  }
+
+  .mobile-more-btn {
+    line-height: 1;
+  }
+
+  .mobile-more-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+  }
+
+  .mobile-more-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 200;
+    min-width: 180px;
+    background: var(--surface, #1e1e2e);
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.12));
+    border-radius: var(--radius-md, 8px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+  }
+
+  .mobile-more-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+    color: var(--fg, #fafafa);
+    background: none;
+    border: none;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--transition, 0.15s);
+  }
+
+  .mobile-more-item:hover {
+    background: color-mix(in srgb, var(--fg, #fafafa) 8%, transparent);
+  }
+
+  .mobile-more-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 639px) {
+    .actions-desktop {
+      display: none;
+    }
+
+    .actions-mobile-more {
+      display: block;
+    }
+  }
+
   .beta-badge {
     display: inline-block;
     margin-left: 0.4em;
