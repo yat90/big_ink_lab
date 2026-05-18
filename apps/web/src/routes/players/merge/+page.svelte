@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { authMe } from '$lib/me';
-  import { config } from '$lib/config';
+  import { postJson, ApiError } from '$lib/api-client';
   import AppBanner from '$lib/components/ui/AppBanner.svelte';
   import AppButton from '$lib/components/ui/AppButton.svelte';
   import AppCard from '$lib/components/ui/AppCard.svelte';
@@ -10,8 +10,6 @@
   import { toast } from '$lib/toast';
 
   type Player = { _id: string; name: string; team?: string };
-
-  const apiUrl = config.apiUrl;
 
   let isAdmin = $state(false);
   let authLoaded = $state(false);
@@ -55,25 +53,18 @@
     merging = true;
     mergeError = '';
     try {
-      const res = await fetch(`${apiUrl}/players/merge`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId: sourcePlayer._id, targetId: targetPlayer._id }),
+      const result = await postJson<{ matchesUpdated: number }>('/players/merge', {
+        sourceId: sourcePlayer._id,
+        targetId: targetPlayer._id,
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        mergeError = Array.isArray(data.message) ? data.message.join(', ') : (data.message ?? `Error ${res.status}`);
-        return;
-      }
-      const result = await res.json();
       const n = result.matchesUpdated;
       toast.schedule(
         `Merged "${sourcePlayer.name}" into "${targetPlayer.name}" (${n} match${n === 1 ? '' : 'es'} updated).`,
         'success',
       );
       await goto(`/players/${targetPlayer._id}`);
-    } catch {
-      mergeError = 'Could not reach API.';
+    } catch (err) {
+      mergeError = err instanceof ApiError ? err.message : 'Could not reach API.';
     } finally {
       merging = false;
     }
